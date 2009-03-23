@@ -6,6 +6,9 @@
 ; Algorithm [2]:
 ;		val_new[i,j,k] = (val_old[i,j,k] - mu[j,k]) * sig[m] / sig[j, k] + mu[m]
 ;
+; Algorithm [3]:
+;		val_new[i,j,k] = (val_old[i,j,k] - mu[j,k]) * sig[c] / sig[j, k] + mu[c]
+;
 ; where:
 ;	i = row
 ;	j = column
@@ -13,17 +16,18 @@
 ;	mu[j, k], sig[j, k] = mean and std of all original values in column j in band k
 ;	mu[k],    sig[k]    = mean and std of all original values in band k
 ;	mu[m],    sig[m]    = mean and std of all original values in all bands
+;	mu[c],    sig[c]    = mean and std of all original values in band c (for [3])
 ;
-; Remove striping by applying [1] or [2]
-; If the keywords 'm' and 'sd' are set (both are needed) then [2] is
+; Remove striping by applying [1], [2] or [3]
+; If the keywords 'm' and 'sd' are set (both are needed) then [2,3] is
 ; calculated, otherwise [1] is calculated
 ; Parameters:
 ;	band:		The band data to correct
 ;	nl:			The number of lines
 ;	ns:			The number of samples
 ; Keywords:
-;	m:			The mean in case image based ([2])
-;	sd:			The standard deviation in case image based ([2])
+;	m:			The mean in case image/neigborband based ([2,3])
+;	sd:			The standard deviation in case image/neigborband based ([2,3])
 ;
 ; Return:
 ;	The band after destriping
@@ -67,25 +71,36 @@ end
 ; helper function to load an image, destripe and write the result back to a (new) file
 ; can be used as a test
 ; Parameter
-;	type:	1 for formula [1] or 2 for formula [2]
-; Keyword
-;	bands:	list all the bands to destripe
+;	type:	1 for formula [1], 2 for formula [2] or 3 for formula [3]
+; Keywords
+;	bands:		list all the bands to destripe
+;	neighbor:	band to get the statistics from for formula [3]
 ;
 ; Examples;
 ; 	destripe, 2						; destripe all bands in the image with formula [2]
 ;	destripe, 2, bands=4			; only destripe band 4 in the image with formula [2]
 ;	destripe, 1, bands=[4, 5, 19]	; only destripe bands 4, 5, 19 in the image with formula [1]
+;	destripe, 3, neighbor=5			; destripe all bands with formula [3] using band 5 for stats
 ;
 ; The module will ask for a image filename
 ; The band numbers are 0-based, so can range from [0..#bands-1]
-pro destripe, type, bands = bands
+pro destripe, type, bands = bands, neighbor = neighbor
 	if (n_params() eq 0) then begin
-		res = dialog_message('No algorithm specified; select 1 or 2', /error)
+		res = dialog_message('No algorithm specified; select 1, 2 or 3', /error)
 		return
 	endif
 
-	if (type ne 1) and (type ne 2) then begin
-		res = dialog_message('Wrong algorithm specified; select 1 or 2', /error)
+	if (type ne 1) and (type ne 2) and (type ne 3) then begin
+		res = dialog_message('Wrong algorithm specified; select 1, 2 or 3', /error)
+		return
+	endif
+
+	if (type eq 3) and (n_elements(neighbor) eq 0) then begin
+		res = dialog_message('Type 3 algorithm requires the neighbor keyword to be set', /error)
+		return
+	endif
+	if (type eq 3) and (n_elements(neighbor) gt 1) then begin
+		res = dialog_message('The neighbor value must be a single band number', /error)
 		return
 	endif
 
@@ -101,12 +116,20 @@ pro destripe, type, bands = bands
 		images[*, *, pos] = envi_get_data(fid = fid, dims = dims, pos = pos)
 	endfor
 
-	m_img = mean(images)
-	sd_img = stddev(images)
+	if type eq 2 then begin
+		m_img = mean(images)
+		sd_img = stddev(images)
+	endif else if type eq 3 then begin
+		m_img = mean(images[*, *, neighbor])
+		sd_img = stddev(images[*, *, neighbor])
+	endif
 
 	band_arr = intarr(nb)
-	if n_elements(bands) gt 0 then $
+	if n_elements(bands) gt 0 then begin
 		band_arr[bands] = 1
+	endif else begin
+		band_arr[*] = 1
+	endelse
 
 	envi_report_init, 'Destriping', title = 'Destripe', base = base
 	envi_report_inc, base, nb
