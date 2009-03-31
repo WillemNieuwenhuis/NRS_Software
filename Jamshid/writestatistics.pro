@@ -9,7 +9,7 @@ pro writeStatistics, band_stat, col_stats, type, filename
 	;	mean		= mean of the band/image
 	;	stddev		= standard deviation of the band/image
 	;
-	outname = filename + '_bandstats_' + string(type, format='(i0)') + '.csv'
+	outname = filename + '_bandstat_' + string(type, format='(i0)') + '.csv'
 	openw, lun, outname, /GET_LUN
 	; first the header
 	printf, lun, 'destripe,type,src_band,mean,stddev'
