@@ -9,13 +9,13 @@ pro writeStatistics, band_stat, col_stats, type, filename
 	;	mean		= mean of the band/image
 	;	stddev		= standard deviation of the band/image
 	;
-	outname = filename + '_bandstats_' + string(type, format='(i0)')
+	outname = filename + '_bandstats_' + string(type, format='(i0)') + '.csv'
 	openw, lun, outname, /GET_LUN
 	; first the header
 	printf, lun, 'destripe,type,src_band,mean,stddev'
 
 	; then handle the band statistics
-	fmtString = '(i0,i0,i0,2(f12.3, ","))'
+	fmtString = '(3(i0,","),2(f12.3, ","))'
 	rows = n_elements(band_stat[0, *])
 	for row = 0, rows - 1 do begin
 		smyStr = string(band_stat[*, row], format = fmtstring)
@@ -34,16 +34,16 @@ pro writeStatistics, band_stat, col_stats, type, filename
 	;
 	;	The columns [column, mean, stddev] are repeated for all columns in the band
 	;
-	outname = filename + '_colstats_' + string(type, format='(i0)')
+	outname = filename + '_colstats_' + string(type, format='(i0)') + '.csv'
 	openw, lun, outname, /GET_LUN
 	; first the header
 	header_str = 'band'
-	col_count = (n_elements(col_stats) - 1) / 3
+	col_count = (n_elements(col_stats[*, 0]) - 1) / 3
 	for c = 0, col_count - 1 do $
 		header_str += ',column,mean,stddev'
 	printf, lun, header_str
 
-	fmtstring = '(i0,' + string(col_count, format = '(i0)') + '(f12.3, ","))'
+	fmtstring = '(i0,","' + string(col_count, format = '(i0)') + '(i0,",",f12.3,",",f12.3, ","))'
 	rows = n_elements(col_stats[0, *])
 	for row = 0, rows - 1 do begin
 		smyStr = string(col_stats[*, row], format = fmtstring)
@@ -52,5 +52,4 @@ pro writeStatistics, band_stat, col_stats, type, filename
 
 	close, lun
 	free_lun, lun
-
 end
