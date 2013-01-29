@@ -1,5 +1,10 @@
 pro _build_all_utils
   files = ['calc_permutation.pro' $
+           , 'cgpickcolorname.pro' $
+           , 'cgcolor24.pro' $
+           , 'cgcentertlb.pro' $
+           , 'cgrootname.pro' $
+           , 'getprimaryscreensize.pro' $
            , 'closeallresources.pro' $
            , 'cw_dirfile.pro' $
            , 'cw_field_ex.pro' $
@@ -27,7 +32,7 @@ pro _build_all_utils
            , 'nrs_logging.pro' $
            , 'nrs_nice_numbers.pro' $
            , 'nrs_parse_modis_name.pro' $
-           , 'nrs_read_listfile' $
+           , 'nrs_read_listfile.pro' $
            , 'nrs_shapefile_utils.pro' $
            , 'nrs_update_progress.pro' $
            , 'pickcolorname.pro' $
