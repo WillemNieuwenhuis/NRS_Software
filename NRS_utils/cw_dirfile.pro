@@ -151,19 +151,21 @@ pro cw_dirfile_set, base, value
   stateholder = widget_info(base, /child)
   widget_control, stateholder, get_uvalue = state
   
-  pos = strpos(svalue, 'style:filter:title:')
-  
-  if strlen(svalue) ne 0 then begin
+  pos = strpos(svalue, ':')
+  if pos ge 0 then begin
     sn = (strsplit(svalue, ':', /extract))[1]
-    pos = -1
+    pos = where(sn eq ['style','filter','title'], cnt)
   endif
-  if pos eq 0 then state.style = sn $
-  else if pos eq 6 then state.filter = sn $
-  else if pos eq 13 then begin
-    state.title = sn + ':'
-    widget_control, state.lblid, set_value = state.title
-  endif else $
-    index = cw_dirfile_addhist(state, svalue)
+  
+  case pos of
+    0 : state.style = sn
+    1 : state.filter = sn
+    2 : begin
+           state.title = sn + ':'
+           widget_control, state.lblid, set_value = state.title
+         end
+    else: index = cw_dirfile_addhist(state, svalue)
+  endcase
   
   widget_control, stateholder, set_uvalue = state, /no_copy
 end
