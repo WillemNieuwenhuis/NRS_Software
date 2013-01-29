@@ -1,0 +1,27 @@
+From: Kees de Bie
+Sent: Tuesday, 27 January, 2009 14:01
+To: Valentijn Venus; Willem Nieuwenhuis
+Subject: FW: pyTimesat code
+
+Attachments: pyTIMESAT_v11.py; GEMtoolBox.pyc
+
+ The Python code to derive the "envelop" of time series ...
+
+-----Original Message-----
+From: Jose Beltran [mailto:jbeltranmx@googlemail.com] 
+Sent: Monday, November 03, 2008 4:22 PM
+To: Kees de Bie
+Subject: pyTimesat code
+
+Dear Kees,
+
+Please find attached the source code for the python implementation of the adaptive Savitzky-Golay filter used by TIMESAT v2.3.
+I also included a set of tools that are needed to run the script and should be placed on the %\Python25\Lib\site-packages.
+Just remember that this tools are not yet fool-proof. Not that much user friendly.
+
+You need to have installed the python 2.5 with the following modules:
+numpy, GDAL and Gnuplot.
+I will come up to help you installed this in your computer.
+
+Cheers,
+Jose
