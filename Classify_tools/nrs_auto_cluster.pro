@@ -48,7 +48,7 @@ pro nrs_auto_cluster, stack, run_range = run_range, basename = basename $
     return
   endif
 
-  if n_elements(basename) eq 0 then basename = getOutname(stack, postfix = '_iso', ext = '.')
+  if n_elements(basename) eq 0 then basename = getOutname(stack, postfix = '_iso', ext = '.dat')
   if n_elements(outtable) eq 0 then outtable = getOutname(stack, postfix = '_separ', ext = '.csv')
   
   if n_elements(run_range) ne 2 then begin
@@ -84,7 +84,7 @@ pro nrs_auto_cluster, stack, run_range = run_range, basename = basename $
                       )
   nrs_set_progress_property, prog_obj_inner, xs = 650, ys = 150
 
-  nrs_log_line, outtable, 'nr_classes,min_sep,avg_sep', append = append ; write header
+  nrs_log_line, outtable, 'nr_classes,min_sep,avg_sep', append = append, /header ; write header
   for c = nr_class_min, nr_class_max do begin
     if nrs_update_progress(prog_obj, c - nr_class_min, nr_class_out, cancelled = cancelled) then return
     

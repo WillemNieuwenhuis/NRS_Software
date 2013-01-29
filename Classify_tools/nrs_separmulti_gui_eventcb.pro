@@ -91,7 +91,7 @@ pro nrs_separmulti_handleOK, event
   nrs_set_progress_property, prog_obj_outer, title = 'Analysing class images', /start
   
   matname = getOutname(basename, postfix = '_mat', ext = '.csv')
-  nrs_log_line, basename, 'nr_classes,min_sep,avg_sep', append = doAppend ; write header
+  nrs_log_line, basename, 'nr_classes,min_sep,avg_sep', append = doAppend, /header ; write header
   nrs_log_line, matname, 'Covariance matrices', append = doAppend
   
   nf = n_elements(cl_maps)

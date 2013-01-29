@@ -2,10 +2,10 @@ pro nrs_autoclus_handle_input, event
   val_fld = widget_info(event.top, find_by_uname = 'nrs_autoclus_refstack')
   widget_control, val_fld, get_value = target
 
-  target_str = strtrim(target)
+  target_str = strtrim(target[0])
   if strlen(target_str) eq 0 then return
 
-  basename = getOutname(target_str, postfix = '_iso', ext = '.')
+  basename = getOutname(target_str, postfix = '_iso', ext = '.dat')
   outtable = getOutname(target_str, postfix = '_separ', ext = '.csv')
   val_fld = widget_info(event.top, find_by_uname = 'nrs_autoclus_outputFile')
   widget_control, val_fld, set_value = basename
