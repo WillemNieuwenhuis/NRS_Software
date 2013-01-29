@@ -32,7 +32,8 @@ pro nrs_stratify_ChangeLutType, event
     nrcol = ots - state.reserved_colors
     lut2 = congrid(lut[*, 0:ots - 3], 3, nrcol)
     lut[*, 0:nrcol - 1]  = lut2
-    rc = nrs_get_reserved_colors()
+    tvlct, r, g, b, /get
+    rc = [transpose(r[nrcol : ots - 1]), transpose(g[nrcol : ots - 1]), transpose(b[nrcol : ots - 1])]
     lut[*, nrcol: nrcol+n_elements(rc[0,*])-1] = rc
     tvlct, lut[0,*], lut[1,*], lut[2,*]
 	  nrs_stratify_draw_graph, event
@@ -45,30 +46,20 @@ pro nrs_stratify_color_select, event
   
   widget_control, event.top, get_uvalue = state
   
-  sel_col = cgPickColorName(index = state.line_colix, cancel = cancel)
+  sel_col = cgPickColorName(index = 250, cancel = cancel)
   if cancel eq 1 then return
   
   val_fld = widget_info(event.top, find_by_uname='nrs_stratify_draw_id')
   widget_control, val_fld, get_value = dispid
   cur_win = !d.window
   wset, dispid
-  erase, color = state.line_colix
+  erase, color = 250
   wset, cur_win ; restore old window
   
-;  tvlct, r, g, b, /get
-;  col = cgColor(sel_col, state.line_colix)
-;  r[state.line_colix] = red
-;  g[state.line_colix] = green
-;  b[state.line_colix] = blue
-;  tvlct, r, g, b
-
   val_fld = widget_info(event.top, find_by_uname = 'nrs_stratify_track_method')
-  widget_control, val_fld, get_value = track_method ; 0 = replace, 1 = add
-  if track_method eq 1 then state.line_colix++ ; add track data
+;  widget_control, val_fld, get_value = track_method ; 0 = replace, 1 = add
+;  if track_method eq 1 then state.line_colix++ ; add track data
   
-;  state.line_colix++
-;  if state.line_colix gt 252 then state.line_colix = 240
-
   widget_control, event.top, set_uvalue = state
 end
 
@@ -229,12 +220,25 @@ pro nrs_stratify_display_track, event
     ld_ar = [ld_ar, newdat] ; append the new data
 
     state.line_data = ptr_new(ld_ar, /no_copy)
-    state.header = strjoin([fields, colnames[2 : -1]], ',') 
+    state.header = strjoin([fields, colnames[2 : -1]], ',')
+     
+    state.line_colix++
+    if state.line_colix ge 250 then state.line_colix = 239
   endif else begin
     if ptr_valid(state.line_data) then ptr_free, state.line_data
     state.line_data = ptr_new(newdat, /no_copy)
     state.header = strjoin(colnames[2 : -1], ',')
+    
+    state.line_colix = 240
   endelse
+  
+  tvlct, r, g, b, /get
+  track_color = 250 ; index of last selected color
+  r[state.line_colix] = r[track_color]
+  g[state.line_colix] = g[track_color]
+  b[state.line_colix] = b[track_color]
+  tvlct, r, g, b  ; assign the new color to the track color
+
   widget_control, event.top, set_uvalue = state
 
   nrs_stratify_draw_graph, event
@@ -357,9 +361,7 @@ pro nrs_stratify_draw_graph, event
 
   if ~ptr_valid(state.matrix) then return
 
-  font_size =  (!D.name eq 'Z' ? '*24' : '*12')
-  device, decomposed = 0
-  device, set_font = 'Helvetica' + font_size, /tt_font
+  font_size =  !D.name eq 'Z' ? 1.7 : 1
 
   sy = state.start_year
   ey = state.end_year
@@ -385,10 +387,10 @@ pro nrs_stratify_draw_graph, event
   line_thick = 2 * 1.5 * state.draw_scale - 0.75
   symbol_size = state.draw_scale
 
-  margin_left = 0.15
-  margin_bottom = 0.15
-  margin_height = 0.75
-  margin_width = 0.72
+  margin_left = 0.10
+  margin_bottom = 0.20
+  margin_height = 0.70
+  margin_width = 0.77
   draw_height = margin_height * plot_height - 1
   draw_width = margin_width * plot_width -1
   freq = indgen(23)
@@ -460,21 +462,21 @@ pro nrs_stratify_draw_graph, event
     , xstyle = 8 $
     , yticklen = -0.02 $
     , yrange = [new_min, new_max], /ystyle $
-      , Position = [margin_left, margin_bottom $
-              , margin_left + margin_width $
-              , margin_bottom + margin_height] $
-      , font = 1 $
-      , charsize = character_size $
-      , charthick = character_thick
+    , Position = [margin_left, margin_bottom $
+                , margin_left + margin_width $
+                , margin_bottom + margin_height] $
+    , font = 1 $
+    , charsize = character_size * font_size $
+    , charthick = character_thick
 
   ; draw x-axis title separately (default: title is too close to x-axis)
   xtx_pos = margin_left + margin_width / 2
-  xty_pos = margin_bottom / 6
+  xty_pos = margin_bottom / 10
 
   xyouts, xtx_pos, xty_pos, 'Date (month)' $
     , alignment = 0.5 $
     , font = 1 $
-    , charsize = character_size $
+    , charsize = character_size * font_size $
     , charthick = character_thick $
     , color = 0 $
     , /normal
@@ -494,7 +496,7 @@ pro nrs_stratify_draw_graph, event
     , xminor = 1 $
     , color = 0 $ ; black
     , font = 1 $
-    , charsize = character_size $
+    , charsize = character_size * font_size $
     , charthick = character_thick $
     , /normal $
     , ticklen = -0.04 $
@@ -504,18 +506,18 @@ pro nrs_stratify_draw_graph, event
   ytx_pos = margin_left / 4
   yty_pos = margin_bottom + margin_height / 2
 
-  xyouts, ytx_pos, yty_pos, 'Latitude (degrees)' $
+  xyouts, ytx_pos, yty_pos, 'Latitude (degree)' $
     , orientation = 90 $
     , alignment = 0.5 $
     , font = 1 $
-    , charsize = character_size $
-      , charthick = character_thick $
+    , charsize = character_size * font_size $
+    , charthick = character_thick $
     , color = 0 $
     , /normal
 
   ; draw the tracking graphs for the different species
 ;  field_color = ots - state.reserved_colors
-  field_color = state.line_colix
+  field_color = 240
   _sym = 0 ; 4 = diamond, 5 = square, 6 = up_triangle, 7 = circle
   field_count = 0
   if n_elements(line_data) gt 0 then $
@@ -632,7 +634,7 @@ pro nrs_stratify_draw_graph, event
         , /continue
 
     ; draw the legend for altitude graphs for the different species
-    field_color = ots - state.reserved_colors
+;    field_color = 240
     _sym = 0 ; 4 = diamond, 5 = square, 6 = up_triangle, 7 = circle
     sndx = strsplit(header, ',', count = count, /extract)
     for tc = 0, field_count - 1 do begin
@@ -666,7 +668,7 @@ pro nrs_stratify_draw_graph, event
       label = sndx[tc]
       xyouts, left_leg + 0.065, bg_y - (tc + 1) * line_size + line_base, label $
         , /normal $
-          , charsize = character_size * 0.9 $
+          , charsize =  * font_size * 0.9 $
           , charthick = character_thick $
         , font=1 $
         , color = 0
@@ -690,11 +692,11 @@ pro nrs_stratify_draw_graph, event
   width_leg *= (5.0 /60) / (!D.name eq 'Z' ? nryears : 1)
 
   ; plot the RPD legend
-  y = top_y + 0.025
+  y = top_y + 0.04;0.025
   xyouts, left_leg, y, 'RPD(%)' $
     , font = 1 $
-      , charsize = character_size $
-      , charthick = character_thick $
+    , charsize = character_size * font_size $
+    , charthick = character_thick $
     , color = 0 $
     , /normal
   plots, left_leg, base_y, /normal
@@ -717,7 +719,7 @@ pro nrs_stratify_draw_graph, event
     if ii eq leg_steps then y -= 0.02
     str = string(hv, format='(i3)')
     xyouts, left_leg + width_leg + 0.0016, y, str $
-      , charsize = character_size $
+      , charsize = character_size * font_size $
       , charthick = character_thick $
       , font = 1 $
       , color = 0 $

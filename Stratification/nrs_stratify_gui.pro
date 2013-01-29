@@ -61,7 +61,7 @@ pro nrs_stratify_gui, event
             end_year:       long(0), $     ; year of the (last) stack
             line_data:      ptr_new(), $   ; the track data for the graphs
             line_color:     ptr_new(), $   ; array[10] with RGB color for each graph
-            line_colix:     long(240), $   ; rotating index for selecting colors for graphs
+            line_colix:     long(239), $   ; rotating index for selecting colors for graphs
             show_points:    long(1), $     ; draw track points (1) or not (0)
             show_line:      long(0), $     ; draw track line (1) or not (0)
             smooth_line:    long(0), $     ; Smooth line before drawing
@@ -101,7 +101,7 @@ pro nrs_stratify_gui, event
   inputPanel = strat_form; widget_base(strat_form, /col)
 
   nrs_stratify_timeseries_panel = widget_base(inputPanel, /row)
-  nrs_stratify_input_group = cw_groupbox(nrs_stratify_timeseries_panel, group_title = 'Timeseries')
+  nrs_stratify_input_group = cw_groupbox(nrs_stratify_timeseries_panel, group_title = 'Time series')
 
   nrs_stratify_refstack = cw_dirfile(nrs_stratify_input_group $
                 , title = 'Input time series' $
