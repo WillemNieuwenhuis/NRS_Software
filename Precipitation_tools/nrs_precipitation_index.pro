@@ -121,6 +121,8 @@ end
 ;
 ;-
 pro nrs_spi_gamma, precip, time_scales, ibegyr, iendyr, nodata, spi_ar
+  compile_opt idl2
+
   freq_per_year = 12
   maxyrs = iendyr - ibegyr + 1
   spi_ar = dblarr(maxyrs * freq_per_year, n_elements(time_scales))
@@ -186,6 +188,8 @@ end
 ; :Author: nieuwenhuis
 ;-
 function nrs_trans_prob, probs
+  compile_opt idl2
+
   cnt = n_elements(probs)
   res = dblarr(cnt)
   c0 = 2.515517
@@ -241,6 +245,8 @@ end
 ; :Author: nieuwenhuis
 ;-
 pro nrs_gamma_fitting, datarr, alpha, beta, pzero, A = A
+  compile_opt idl2
+
   n = n_elements(datarr)
   ix = where(datarr gt 0.0, nact)
   
@@ -283,6 +289,8 @@ end
 ; :Author: nieuwenhuis
 ;-
 function nrs_gamma_dist, x, alpha, beta, pzero
+  compile_opt idl2
+
   if x le 0.0 then return, pzero
     
   res = pzero + (1.0 - pzero) * igamma(alpha, x / beta, /double)
