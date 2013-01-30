@@ -35,23 +35,27 @@ pro nrs_stratify_gui_event, Event
 end
 
 pro nrs_stratify_draw_color, drawer, color, sel = sel
-    widget_control, drawer, get_value = dispid
-    wset, dispid
-    erase, color = color
-    
-    if keyword_set(sel) then begin
-      plots, [ [0.01, 0.01] $
-          , [0.01, 0.95] $
-          , [0.95, 0.95] $
-          , [0.95, 0.01] $
-          , [0.01, 0.01] ] $
-          , /normal $
-          , color = 0 $
-          , /continue
-    endif
+  compile_opt idl2
+  
+  widget_control, drawer, get_value = dispid
+  wset, dispid
+  erase, color = color
+  
+  if keyword_set(sel) then begin
+    plots, [ [0.01, 0.01] $
+        , [0.01, 0.95] $
+        , [0.95, 0.95] $
+        , [0.95, 0.01] $
+        , [0.01, 0.01] ] $
+        , /normal $
+        , color = 0 $
+        , /continue
+  endif
 end
 
 pro nrs_stratify_gui, event
+  compile_opt idl2
+
   statevalue={parent:       long(0), $
             matrix:         ptr_new(), $   ; stratification matrix
             mat_steps:      long(0), $     ; number of steps in Y direction
@@ -328,9 +332,7 @@ pro nrs_stratify_gui, event
 
   ; Initialize stuff
   widget_control, nrs_stratify_track_toggles, set_value = [1, 0, 0, 0]
-;  color =  nrs_get_reserved_colors()
-;  for i = 0, n_elements(draw_ids) - 1 do $
-;    nrs_stratify_draw_color, draw_ids[i], color[i], sel = (i eq 5)
+  device, decomposed = 0  ; we are using LUT colors
 
   XManager, 'nrs_stratify_gui', strat_form, /no_block
 
