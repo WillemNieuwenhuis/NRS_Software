@@ -1,3 +1,34 @@
+;+
+; :description:
+;    Interpolate the input timeseries to another, usually smaller
+;    time step. The calculation uses linear interpolation.
+;
+; :params:
+;    image: in, required
+;      The input timeseries
+;    start_date : in, required
+;      The date of the first band in the input timeseries
+;    end_date : in, required
+;      The date of the last band in the input timeseries
+;    interval : in, required
+;      A string indicating the new time step. It can be any of the following:
+;      'day', '8-day', '10-day', '16-day', 'month', 'year'
+;
+; :keywords:
+;    outname : in, optional
+;      The name of the output; if not specified defaults to the input
+;      name with postfix '_tinp'
+;    prog_obj : in, optional
+;      A progress indicator object ('PROGRESSBAR'). If missing no progress
+;      will be displayed
+;    cancelled : out, optional
+;      If set: the opreation failed, or was interrupted by the user
+;
+; :author: nieuwenhuis
+; 
+; :history:
+;   nov 2012: created
+;-
 pro nrs_time_interpolate, image, outname = outname $
                    , start_date, end_date $
                    , interval $
@@ -44,7 +75,7 @@ pro nrs_time_interpolate, image, outname = outname $
   nrs_get_dt_indices, jul_range, period = interval, julian_out = jul_out
 
   if n_elements(outname) eq 0 then $
-    outname = getOutname(image, postfix = '_tinp', ext = '.')
+    outname = getOutname(image, postfix = '_tinp', ext = '.dat')
 
   catch, stat
   if stat ne 0 then begin

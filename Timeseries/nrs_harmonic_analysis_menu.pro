@@ -1,4 +1,4 @@
-pro nrs_harmonic_analysis_define_buttons, buttonInfo
+pro nrs_timeseries_define_buttons, buttonInfo
   envi_define_menu_button, buttoninfo, value = 'Timeseries', $
     uvalue = 'Timeseries', /menu, $ ;/sibling, $
     ref_value = 'NRS', position = 'after'

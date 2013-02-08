@@ -40,9 +40,7 @@ pro nrs_period_stat, image, period_len, outname = outname $
   envi_open_file, image, r_fid = fid, /no_realize, /no_interactive_query
   if fid eq -1 then return
   
-  envi_file_query, fid, ns = ns, nl = nl, nb = nb, data_type = dt, dims = dims, data_ignore_value = undef
-  mi = envi_get_map_info(fid = fid, undef = csy_undef)
-  if csy_undef then delvar, mi
+  envi_file_query, fid, ns = ns, nl = nl, nb = nb, dims = dims, data_ignore_value = undef
   
   if n_elements(period_len) le 0 then return
 
@@ -113,14 +111,16 @@ pro nrs_period_stat, image, period_len, outname = outname $
   yns = reform(string(yn, format = '(i02)'), 1, period_len * nr_stats)
   bnames = string([yns, dns], format = '("period.stat ",a,".",a)')
 
+  meta = envi_set_inheritance(fid, dims, /full)
+  
   envi_setup_head, fname = outname $
           , data_type = 4 $   ; float
           , /write $
           , interleave = 1 $  ; BIL
           , nb = period_len * nr_stats, nl = nl, ns = ns $
           , bnames = bnames $
-          , map_info = mi $
-          , data_ignore_value = undef
+          , data_ignore_value = undef $
+          , inherit = meta
 
   close, unit
   free_lun, unit  ; close assoc

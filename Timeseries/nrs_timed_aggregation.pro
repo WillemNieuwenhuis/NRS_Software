@@ -46,8 +46,6 @@ pro nrs_timed_aggregation, image $
   if fid eq -1 then return
   
   envi_file_query, fid, ns = ns, nl = nl, nb = nb, data_type = dt, dims = dims, data_ignore_value = undef
-  mi = envi_get_map_info(fid = fid, undef = csy_undef)
-  if csy_undef then delvar, mi
 
   ; parameter checking
   sd = nrs_str2julian(start_date)
@@ -130,13 +128,15 @@ pro nrs_timed_aggregation, image $
   yy = reform(yy, 1, nb_out, /overwrite)
   bnames = string([bn, yy], format = '("Period.year ",i02, ".", i04)')
 
+  meta = envi_set_inheritance(fid, dims, /full)
+  
   envi_setup_head, fname = outname $
           , data_type = 4 $   ; float
           , /write $
           , interleave = 1 $  ; BIL
           , nb = nb_out, nl = nl, ns = ns $
           , bnames = bnames $
-          , map_info = mi $
+          , inherit = meta $
           , data_ignore_value = undef
 
   close, unit
