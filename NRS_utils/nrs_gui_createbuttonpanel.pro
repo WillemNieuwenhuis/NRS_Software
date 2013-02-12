@@ -26,13 +26,13 @@ pro nrs_gui_createButtonPanel, parent $
 
   if ~no_ok then $
     nrs_gui_gobutton = widget_button(buttonpanel, uname = ok_uname  $
-      , scr_xsize = 50, scr_ysize = 22  $
+;      , scr_xsize = 50, scr_ysize = 22  $
       , /align_center $
       , tooltip = ok_tooltip ,value = ok_value)
 
   if ~no_cancel then $
     nrs_gui_cancelbutton = widget_button(buttonpanel, uname = cancel_uname  $
-      , scr_xsize = 50, scr_ysize = 22  $
+;      , scr_xsize = 50, scr_ysize = 22  $
       , /align_center $
       , tooltip = cancel_tooltip, value = cancel_value)
 

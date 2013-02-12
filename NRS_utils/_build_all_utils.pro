@@ -49,4 +49,7 @@ pro _build_all_utils
   
   files = ['nrsmenu.pro']
   _auto_build, files, 'bin\_nrsmenu.sav', /no_lib, logfile = 'bin\nrs_menu.log'
+
+  files = ['nrs_show_routines.pro']
+  _auto_build, files, 'bin\nrs_routines_in_sav_gui.sav', /no_lib, logfile = 'bin\nrs_routines_in_sav_gui.log'
 end
