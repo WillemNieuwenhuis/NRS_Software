@@ -5,7 +5,7 @@ pro nrs_time_interpol_handle_input, event
   target_str = strtrim(target)
   if strlen(target_str) eq 0 then return
 
-  basename = getOutname(target_str, postfix = '_tinp', ext = '.')
+  basename = getOutname(target_str, postfix = '_tinp', ext = '.dat')
   val_fld = widget_info(event.top, find_by_uname = 'nrs_time_interpol_outputFile')
   widget_control, val_fld, set_value = basename
 end

@@ -33,7 +33,7 @@ pro nrs_time_interpol_gui, event
   nrs_time_interpol_group = cw_groupbox(nrs_time_interpol_mainPanel, group_title = 'Timeseries')              
 
   nrs_time_interpol_refstack = cw_dirfile(nrs_time_interpol_group $
-                , title = 'Input stack' $
+                , title = 'Input time series' $
                 , style = 'envi' $
                 , xsize = text_width $
                 , xtitlesize = label_width $
