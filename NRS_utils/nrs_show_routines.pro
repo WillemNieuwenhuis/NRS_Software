@@ -65,10 +65,9 @@ pro nrs_routines_in_sav_work, event, show_list = show_list, save_csv = save_csv
   
   list = nrs_find_sav_routines(savefile, csv_file = csv_file)
   
-  list = strjoin(list, string(13b)+string(10b))
-  
   if show_list && (n_elements(list) gt 0) then begin
     list = list[sort(list)]
+    list = strjoin(list, string(13b) + string(10b))
     fld = widget_info(event.top, find_by_uname = 'nrs_routines_in_sav_wl')
     widget_control, fld, set_value = list
   endif else widget_control, fld, set_value = ['']
