@@ -406,17 +406,19 @@ pro nrs_nc_get_data, filename, out_name = outname $
     nodata_set = n_elements(nodata) gt 0
 
     postfix = '_' + var.name
-    if n_elements(outname) eq 0 then outname = getOutname(filename, postfix = postfix, ext = '.')
+    if n_elements(outname) eq 0 then output_name = getOutname(filename, postfix = postfix, ext = '.dat')
   
     dt = var.data_type
+    if n_elements(scale_factor) gt 0 then dt = size(scale_factor, /type) $
+    else if n_elements(offset) gt 0 then dt = size(offset, /type)
   
     ; open the output for writing
-    openw, unit, outname, /get_lun
+    openw, unit, output_name, /get_lun
     out_data = assoc(unit, make_array(ns, nl, type = dt))  ; bsq
   
     catch, stat
     if stat ne 0 then begin
-      nrs_assoc_cleanup, unit, outname, prog_obj
+      nrs_assoc_cleanup, unit, output_name, prog_obj
       cancelled = 1
       return
     endif
@@ -440,11 +442,13 @@ pro nrs_nc_get_data, filename, out_name = outname $
       ncdf_varget, nc_id, var.vid, band, count = var_cnt, offset = var_offset  ; read next band
       if nz eq 1 then band = reform(band, ns, nl, /overwrite)
       
+      if nodata_set then ndix = where(band eq nodata, nd_cnt)
       do_scale = n_elements(scale_factor) gt 0 && abs(1.0 - scale_factor) gt 0.001
       do_offset = n_elements(offset) gt 0 && abs(0.0 - offset) gt 0.001 
       if do_scale || do_offset then begin
         if do_scale then band *= scale_factor
         if do_offset then band += offset
+        if nd_cnt gt 0 then band[ndix] = nodata
       endif
       
       ; check for 2D-coord vars
@@ -482,7 +486,7 @@ pro nrs_nc_get_data, filename, out_name = outname $
       endelse
     endif
 
-    envi_setup_head, fname = outname $
+    envi_setup_head, fname = output_name $
             , descrip = var_desc $
             , data_type = dt $
             , /write $
@@ -613,19 +617,32 @@ end
 ;-
 pro nrs_nc_import, folder
   compile_opt idl2, logical_predicate
-  
-  ; initialise tranquilizer
-  progressBar = Obj_New("PROGRESSBAR", background = 'white', color = 'green', ysize = 15 $
-                        , title = 'Importing netCDF files to ENVI')
+
+  ; outer progress indicator  
+  progressBar = Obj_New("PROGRESSBAR", background = 'white', color = 'green' $
+                        , ysize = 15, title = 'Importing netCDF files to ENVI' $
+                        , /fast_loop $
+                        )
+
+  progressBar->Start
+
+  ; inner progress indicator
+  progressInner = Obj_New("PROGRESSBAR", background = 'white', color = 'green' $
+                        , ysize = 15, title = 'Importing netCDF files to ENVI' $
+                        , level = 1 $
+                        , /fast_loop $
+                        )
 
   files = nrs_find_images(folder, '.*', extension = 'nc')
-  if n_elements(fileset) gt 0 && fileset[0] ne -1 then $
+  if n_elements(files) gt 0 && size(files[0], /type) eq 7 then begin
     for f = 0, n_elements(files) - 1 do begin
       if nrs_update_progress(progressBar, f, n_elements(files)) then return
 
-      nrs_nc_get_data, files[f], prog_obj = progressBar, cancelled = cancelled
+      nrs_nc_get_data, files[f], prog_obj = progressInner, cancelled = cancelled
     endfor
+  endif
 
-  progressBar -> Destroy
+  if obj_valid(progressBar) gt 0 then progressBar -> Destroy
+  if obj_valid(progressInner) gt 0 then progressInner -> Destroy
   
 end
