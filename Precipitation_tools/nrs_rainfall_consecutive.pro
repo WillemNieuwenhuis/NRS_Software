@@ -1,4 +1,32 @@
-pro nrs_rainfall_consecutive, inname, calcdry = dry, wet = wet $
+;+
+; :description:
+;    Calculate the longest period of a dry spell or a wet period. The criteria for
+;    wet or dry is determined by the dry_limit: dry = precipitation < dry_limit;
+;    wet = precipitation >= dry_limit
+;
+; :params:
+;    inname : in, required
+;      Name of the input time series
+;
+; :keywords:
+;    calcdry : in
+;      If specified and set let the software calculate the longest dry spell
+;    calcwet : in
+;      If specified and set let the software calculate the longest wet spell
+;    outname : in
+;      The name of the output
+;    dry_limit : in, default 1 (mm)
+;      The limit dividing dry and wet
+;    high_limit : in, default 20 (mm)
+;      the limit above which precipitation is considered very heavy
+;    prog_obj : in, optional
+;      Progressbar object to indicate progress of the calculation
+;    cancelled : in, optional
+;      If a progressbar is used, signals that the user stopped the calculation
+;
+; :author: nieuwenhuis
+;-
+pro nrs_rainfall_consecutive, inname, calcdry = dry, calcwet = wet $
            , outname = outname $
            , dry_limit = dry_limit, high_limit = high_limit $
            , prog_obj = prog_obj, cancelled = cancelled
