@@ -21,11 +21,14 @@ pro nrs_rainfall_handleOK, event
   fld = widget_info(event.top, find_by_uname = 'nrs_rainfall_refstack')
   widget_control, fld, get_value = infile
   
-  fld = widget_info(event.top, find_by_uname = 'nrs_rainfall_start_year')
-  widget_control, fld, get_value = sy
+  fld = widget_info(event.top, find_by_uname = 'nrs_rainfall_drylimit')
+  widget_control, fld, get_value = dry
   
-  fld = widget_info(event.top, find_by_uname = 'nrs_rainfall_end_year')
-  widget_control, fld, get_value = ey
+;  fld = widget_info(event.top, find_by_uname = 'nrs_rainfall_start_date')
+;  widget_control, fld, get_value = sy
+;  
+;  fld = widget_info(event.top, find_by_uname = 'nrs_rainfall_end_date')
+;  widget_control, fld, get_value = ey
 
   fld = widget_info(event.top, find_by_uname = 'nrs_rainfall_outputFile')
   widget_control, fld, get_value = outfile
@@ -33,16 +36,17 @@ pro nrs_rainfall_handleOK, event
   ; check input values
   infile = strtrim(infile, 2)
   if strlen(infile) eq 0 then return
+  drylimit = float(dry[0])
   
-  if strlen(strtrim(sy, 2)) eq 0 then begin
-    void = dialog_message('You need to specify the start year', /error)
-    return
-  endif
-  
-  if strlen(strtrim(ey, 2)) eq 0 then begin
-    void = dialog_message('You need to specify the end year', /error)
-    return
-  endif
+;  if strlen(strtrim(sy, 2)) eq 0 then begin
+;    void = dialog_message('You need to specify the start year', /error)
+;    return
+;  endif
+;  
+;  if strlen(strtrim(ey, 2)) eq 0 then begin
+;    void = dialog_message('You need to specify the end year', /error)
+;    return
+;  endif
   
   outfile = strtrim(outfile, 2)
   if strlen(outfile) eq 0 then begin
@@ -50,9 +54,9 @@ pro nrs_rainfall_handleOK, event
     return
   endif
   
-  ; start rainfall calculation
-  start_year = fix(sy[0])
-  end_year = fix(ey[0])
+;  ; start rainfall calculation
+;  start_date = fix(sy[0])
+;  end_date = fix(ey[0])
   
   progressBar = Obj_New("PROGRESSBAR", background = 'white', color = 'green' $
                         , ysize = 15, title = 'Calculate consecutive wet/dry days' $
@@ -62,7 +66,9 @@ pro nrs_rainfall_handleOK, event
 
   nrs_rainfall_consecutive, infile $
                        , outname = outfile $
-                       , start_year, end_year $
+                       , /calcdry $
+                       , dry_limit = drylimit $
+;                       , start_date, end_date $
                        , prog_obj = progressBar, cancelled = cancelled
 
   progressBar->Destroy

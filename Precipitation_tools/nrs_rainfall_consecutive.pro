@@ -59,13 +59,15 @@ pro nrs_rainfall_consecutive, inname, calcdry = dry, calcwet = wet $
 
   pos = indgen(nb)
   for line = 0, nl - 1 do begin
+    if nrs_update_progress(prog_obj, line, nl, cancelled = cancelled) then return
+    
     slice = envi_get_slice(fid = fid, line = line, xs = 0, xe = ns - 1, pos = pos, /bip)
     
     dry = slice lt dry_limit
     for s = 0, ns - 1 do begin
       res = label_region([0, dry[*, s], 0])
       h = histogram(res)
-      out_data[s, line, 0] = max(h[1:-1])
+      out_data[s, line, 0] = n_elements(h) gt 1 ? max(h[1:-1]) : h[0]
     endfor
 
     wet = slice ge dry_limit

@@ -58,26 +58,24 @@ pro nrs_rainfall_gui, event
                 , unittext = 'mm' $
               )
               
-  nrs_rainfall_start_year = fsc_inputfield(nrs_rainfall_mainPanel $
-                , uname = 'nrs_rainfall_start_year' $
-                , title = 'Start year' $
-                , /integervalue $
-                , labelalign = 1 $
-                , labelsize = label_width $
-                , xsize = text_small_width $
-                , unittext = '(dd-mm-yyyy)' $
-              )
-              
-  nrs_rainfall_end_year = fsc_inputfield(nrs_rainfall_mainPanel $
-                , uname = 'nrs_rainfall_end_year' $
-                , title = 'End year' $
-                , /integervalue $
-                , labelalign = 1 $
-                , labelsize = label_width $
-                , xsize = text_small_width $
-                , unittext = '(dd-mm-yyyy)' $
-              )
-  
+;  nrs_rainfall_start_date = fsc_inputfield(nrs_rainfall_mainPanel $
+;                , uname = 'nrs_rainfall_start_date' $
+;                , title = 'Start date' $
+;                , labelalign = 1 $
+;                , labelsize = label_width $
+;                , xsize = text_small_width $
+;                , unittext = '(dd-mm-yyyy)' $
+;              )
+;              
+;  nrs_rainfall_end_date = fsc_inputfield(nrs_rainfall_mainPanel $
+;                , uname = 'nrs_rainfall_end_date' $
+;                , title = 'End date' $
+;                , labelalign = 1 $
+;                , labelsize = label_width $
+;                , xsize = text_small_width $
+;                , unittext = '(dd-mm-yyyy)' $
+;              )
+;  
   nrs_rainfall_output_panel = widget_base(nrs_rainfall_contentPanel, /frame, /col)
   nrs_rainfall_outputFile = cw_dirfile(nrs_rainfall_output_panel, uname = 'nrs_rainfall_outputFile' $
         , style = 'file' $
