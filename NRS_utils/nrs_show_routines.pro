@@ -65,12 +65,19 @@ pro nrs_routines_in_sav_work, event, show_list = show_list, save_csv = save_csv
   
   list = nrs_find_sav_routines(savefile, csv_file = csv_file)
   
-  if show_list && (n_elements(list) gt 0) then begin
+  cnt_fld = widget_info(event.top, find_by_uname = 'nrs_routines_in_sav_count')
+  cnt = n_elements(list)
+  if show_list && (cnt gt 0) then begin
     list = list[sort(list)]
     list = strjoin(list, string(13b) + string(10b))
     fld = widget_info(event.top, find_by_uname = 'nrs_routines_in_sav_wl')
     widget_control, fld, set_value = list
-  endif else widget_control, fld, set_value = ['']
+    
+    widget_control, cnt_fld, set_value = 'Number of routines = ' + string(cnt, format = '(i0)')
+  endif else begin
+    widget_control, fld, set_value = ['']
+    widget_control, cnt_fld, set_value = ''
+  endelse
 end
 
 pro nrs_routines_in_sav_load, event
@@ -124,6 +131,14 @@ pro nrs_routines_in_sav_gui, event
                 , /editable $
                 , /scroll $
               )
+              
+  nrs_routines_in_sav_count = widget_label(nrs_routines_in_sav_mainPanel $
+                , uname = 'nrs_routines_in_sav_count' $
+                , value = '' $
+                , xsize = text_width * 8 $
+                , /align_left $
+              )
+
   nrs_routines_in_sav_output_panel = widget_base(nrs_routines_in_sav_contentPanel, /frame, /col)
   nrs_routines_in_sav_outputFile = cw_dirfile(nrs_routines_in_sav_output_panel $
         , uname = 'nrs_routines_in_sav_outputFile' $
