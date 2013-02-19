@@ -14,5 +14,5 @@ pro _build_all_timeseries_tools
            , 'nrs_time_interpol_gui.pro' $
            , 'nrs_time_interpolate.pro' $
           ]
-  _auto_build, files, 'bin\nrs_timeseries.sav', logfile = 'bin\nrs_timeseries.log'
+  _auto_build, files, 'bin' + path_sep() + 'nrs_timeseries.sav', logfile = 'bin' + path_sep() + 'nrs_timeseries.log'
 end

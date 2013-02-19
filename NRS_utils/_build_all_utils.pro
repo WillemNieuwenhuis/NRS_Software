@@ -33,6 +33,7 @@ pro _build_all_utils
            , 'nrs_nice_numbers.pro' $
            , 'nrs_parse_modis_name.pro' $
            , 'nrs_read_listfile.pro' $
+           , 'nrs_sec_to_string.pro' $
            , 'nrs_shapefile_utils.pro' $
            , 'nrs_update_progress.pro' $
            , 'pickcolorname.pro' $
@@ -45,11 +46,11 @@ pro _build_all_utils
            , 'sourcepath.pro' $
            , 'widgetfont.pro' $
           ]
-  _auto_build, files, 'bin\nrs_utils.sav',logfile = 'bin\nrs_utils.log'
+  _auto_build, files, 'bin' + path_sep() + 'nrs_utils.sav',logfile = 'bin' + path_sep() + 'nrs_utils.log'
   
   files = ['nrsmenu.pro']
-  _auto_build, files, 'bin\_nrsmenu.sav', /no_lib, logfile = 'bin\nrs_menu.log'
+  _auto_build, files, 'bin' + path_sep() + '_nrsmenu.sav', /no_lib, logfile = 'bin' + path_sep() + 'nrs_menu.log'
 
   files = ['nrs_show_routines.pro']
-  _auto_build, files, 'bin\nrs_routines_in_sav_gui.sav', /no_lib, logfile = 'bin\nrs_routines_in_sav_gui.log'
+  _auto_build, files, 'bin' + path_sep() + 'nrs_routines_in_sav_gui.sav', /no_lib, logfile = 'bin' + path_sep() + 'nrs_routines_in_sav_gui.log'
 end

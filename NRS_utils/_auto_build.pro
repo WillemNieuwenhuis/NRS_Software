@@ -2,11 +2,16 @@ pro _auto_build, files, sav_name, logfile = logfile, no_lib = no_lib
   routines = nrs_find_my_routines(/exclude_sav, files = files, no_lib = no_lib)
   rout_cnt = n_elements(routines.name)
   
+  urout = []
+  usrc = []
   if rout_cnt le 0 then msg = sav_name + ' not built, no modules' $
   else begin
     six = sort(routines.name)
     sorted = routines.name[six]
-    urout = sorted[uniq(sorted)]
+    sort_src = routines.source[six]
+    uix = uniq(sorted)
+    urout = sorted[uix]
+    usrc = sort_src[uix]
     sav_cmd = 'save, filename = "' + sav_name + '", /routines'
     sav_cmd += ',' + strjoin(string(urout, format = '("''",a,"''")'), ',')
 
@@ -19,7 +24,7 @@ pro _auto_build, files, sav_name, logfile = logfile, no_lib = no_lib
     openw, unit, logfile, /get_lun, /append
     printf, unit, systime()
     if rout_cnt gt 0 then $
-      printf, unit ,[transpose(routines.name),transpose(routines.source)], for = '(a,",",a)
+      printf, unit ,[transpose(urout),transpose(usrc)], for = '(a,",",a)
     printf, unit
     printf, unit, sav_cmd
     printf, unit

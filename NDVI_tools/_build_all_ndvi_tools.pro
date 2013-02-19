@@ -12,5 +12,5 @@ pro _build_all_ndvi_tools
            , 'nrs_winter_ndvi_gui_eventcb.pro' $
            , 'nrs_ndvi_menu.pro' $
           ]
-  _auto_build, files, 'bin\nrs_ndvi_tools.sav', logfile = 'bin\nrs_ndvi_tools.log'
+  _auto_build, files, 'bin' + path_sep() + 'nrs_ndvi_tools.sav', logfile = 'bin' + path_sep() + 'nrs_ndvi_tools.log'
 end

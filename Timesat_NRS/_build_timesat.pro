@@ -6,6 +6,6 @@ pro _build_timesat
            , 'timesat_v11.pro' $
            , 'nrs_timesat_batch.pro' $
           ]
-  _auto_build, files, 'timesat_gui.sav'
+  _auto_build, files, 'bin' + path_sep() + 'timesat_gui.sav', logfile = 'bin' + path_sep() + 'timesat_gui.log'
 
 end

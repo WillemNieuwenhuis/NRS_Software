@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>Timesat</name>
+	<name>Timesat_NRS</name>
 	<comment></comment>
 	<projects>
-		<project>NRS_utils</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

@@ -4,5 +4,5 @@ pro _build_all_amapp
            , 'strat_stratify.pro' $
            , 'nrs_amapp_menu.pro' $
           ]
-  _auto_build, files, 'bin\nrs_stratify_gui.sav', logfile = 'bin\nrs_stratify_gui.log'
+  _auto_build, files, 'bin' + path_sep() + 'nrs_stratify_gui.sav', logfile = 'bin' + path_sep() + 'nrs_stratify_gui.log'
 end
