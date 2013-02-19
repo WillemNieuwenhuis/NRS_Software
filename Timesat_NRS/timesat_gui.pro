@@ -6,6 +6,15 @@ pro timesat_gui_define_buttons, buttonInfo
 
 end
 
+pro timesat_gui_extensions_init
+  compile_opt idl2
+  
+  e = envi(/current)
+  if e eq !NULL then return
+  
+  e.AddExtension, 'Timesat (NRS)', 'timesat_gui';, PATH='Spatial'
+end
+
 pro timesat_gui_event, event
 	wTarget = (widget_info(Event.id,/NAME) eq 'TREE' ?  $
 	  	widget_info(Event.id, /tree_root) : event.id)

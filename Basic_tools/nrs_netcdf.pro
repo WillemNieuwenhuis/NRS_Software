@@ -79,6 +79,8 @@ pro nrs_nc_get_varatt, nc_id, var_id, desc = desc, grid_mapping = grid_mapping, 
 end
 
 function nrs_nc_parse_units, unit_str
+  compile_opt idl2, logical_predicate
+  
   switch unit_str of
     'degree_n' : 
     'degree_north' :
@@ -102,6 +104,8 @@ function nrs_nc_parse_units, unit_str
 end
  
 function nrs_datatype_from_string, datatype_str
+  compile_opt idl2, logical_predicate
+  
   all_dts = ['byte', 'char', 'int', 'long', 'float', 'double']
   all_dt  = [1, 1, 2, 3, 4, 5]
   
@@ -323,6 +327,8 @@ end
 ; :Author: nieuwenhuis
 ;-
 pro nrs_nc_error_message, nc_id, msg, title = title, cancelled = cancelled
+  compile_opt idl2, logical_predicate
+  
   ans = dialog_message(msg, title = title, /error)
   ncdf_close, nc_id
   cancelled = 1
@@ -505,6 +511,8 @@ pro nrs_nc_get_data, filename, out_name = outname $
 end
 
 function nrs_yyyymmdd_to_julian, ymd
+  compile_opt idl2, logical_predicate
+  
   y = fix(ymd / 10000)
   m = fix((ymd - y * 10000L) / 100)
   d = fix(ymd - y * 10000L - m * 100)
@@ -544,6 +552,8 @@ end
 ; :Author: nieuwenhuis
 ;-
 function nrs_get_dt_from_units, timar, time_units, julian = julian, interval = interval
+  compile_opt idl2, logical_predicate
+  
   ; first determine the absolute start date and the time interval
   periods = ['d', 'day', 'days', 'h', 'hr', 'hour', 'hours', 'min', 'minute', 'minutes', 's', 'sec', 'seconds']
   piv = [86400, 86400, 86400, 3600, 3600, 3600, 3600, 60, 60, 60, 1, 1, 1]
