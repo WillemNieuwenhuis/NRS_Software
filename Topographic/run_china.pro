@@ -1,4 +1,4 @@
-pro run_china
+pro run_china_month_1k
   demname = 'E:\NRS\Jiang Yanbing\Solar radiation model\PP\DEM_CN'
   
   envi_open_file, demname, r_fid = dem, /no_realize, /no_interactive_query
@@ -30,4 +30,33 @@ pro run_china
 ;  nrs_shortwaverad, dem, 274, 304, 60, output_name = oct ; october
 ;  nrs_shortwaverad, dem, 305, 334, 60, output_name = nov ; november
 ;  nrs_shortwaverad, dem, 335, 365, 60, output_name = dec ; december
+end
+
+pro run_china_year_250
+
+  envi, /restore_base_save_files
+  envi_batch_init, log_file='E:\NRS\Fangyuan\DEM of China_250m\batch.txt', /no_status_window
+  
+  dems = [ 'E:\NRS\Fangyuan\DEM of China_250m\dem_tl.dat' $
+;         , 'E:\NRS\Fangyuan\DEM of China_250m\dem_tr.dat' $
+;         , 'E:\NRS\Fangyuan\DEM of China_250m\dem_bl.dat' $
+;         , 'E:\NRS\Fangyuan\DEM of China_250m\dem_br.dat' $
+         ]
+  
+  for i = 0, n_elements(dems) -1 do begin
+    envi_open_file, dems[i], r_fid = dem, /no_realize, /no_interactive_query
+  
+    if dem eq -1 then begin
+      print, 'Could not open ' + dems[i]
+      continue
+    endif
+  
+    name = getoutname(dems[i], postfix = '_rad', ext = '.dat')
+;    nrs_shortwaverad, dem, 1, 365, 60, output_name = name
+  print,name
+    
+    envi_file_mng, id = dem, /remove
+  endfor
+  
+  envi_batch_exit
 end
