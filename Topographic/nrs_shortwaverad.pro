@@ -25,163 +25,251 @@
 ; :Author: nieuwenhuis
 ;-
 pro nrs_shortwaverad, dem, start_day, end_day, interval, output_name = energy
-    pi = !dpi
-    deg2rad = pi / 180
-    time = interval * 2 * pi / (24 * 60) ; convert minutes into radians
+  compile_opt idl2, logical_predicate
+  
+  pi = !dpi
+  deg2rad = pi / 180
+  time = interval * 2 * pi / (24 * 60) ; convert minutes into radians
 
-    envi_file_query, dem, dims = dims, ns = ns, nl = nl, fname = demname
-    mi = envi_get_map_info(fid = dem, undefined = no_csy)
-    if mi.proj.type ne 1 then begin
-      void = error_message('No Geographic coordinate system', /error)
-      return
-    endif
+  envi_file_query, dem, dims = dims, ns = ns, nl = nl, fname = demname
+  mi = envi_get_map_info(fid = dem, undefined = no_csy)
+  if mi.proj.type ne 1 then begin
+    void = error_message('No Geographic coordinate system', /error)
+    return
+  endif
+  
+  envi_convert_file_coordinates, dem, 0.0, 0.0, x_left, y_top, /to_map
+  envi_convert_file_coordinates, dem, ns, nl, x_right, y_bot, /to_map
+  
+  lat_ext = y_bot - y_top
+  nr_strips = ceil(abs(lat_ext))
+  dim_ystep = 1 + nl / nr_strips
+  
+  intermediate = nrs_prepare_slap_maps(demname, /swap_aspect)
+  if n_elements(intermediate) ne 6 then begin
+    void = error_message('Failed to calculate slope / aspect image', /error)
+    return
+  endif
+  
+  envi_open_file, intermediate[0], r_fid = fid_coslope, /no_realize, /no_interactive_query
+  envi_open_file, intermediate[1], r_fid = fid_sincos, /no_realize, /no_interactive_query
+  envi_open_file, intermediate[2], r_fid = fid_sinsin, /no_realize, /no_interactive_query
+  
+  if n_elements(energy) eq 0 then begin
+    outname = getOutname(demname, postfix = '_rad', ext = '.dat')
+  endif else begin
+    outname = energy
+  endelse
+
+  openw, energy_unit, outname, /get_lun
+  
+  initialgrid = fltarr(ns, dim_ystep)
+  for strip = 0, nr_strips - 1 do begin
+    s_y = strip * dim_ystep
+    e_y = min([s_y + dim_ystep - 1, nl - 1])
+    if (e_y - s_y + 1) ne dim_ystep then $
+      initialgrid = fltarr(ns, e_y - s_y + 1) ; special case: last part can be smaller
+    dims_ut = [-1, 0, ns - 1, s_y, e_y]
+    nl_cur = e_y - s_y + 1
+    nl_center = (e_y + s_y) / 2
+     
+    envi_convert_file_coordinates, dem, ns / 2, nl_center, londeg, latdeg, /to_map
+    latitude = latdeg * deg2rad
+
+    cosslope = envi_get_data(fid = fid_coslope, dims = dims_ut, pos = [0])
+    sincos = envi_get_data(fid = fid_sincos, dims = dims_ut, pos = [0])
+    sinsin = envi_get_data(fid = fid_sinsin, dims = dims_ut, pos = [0])
+
+    daynumber = start_day
+    while daynumber le end_day do begin
+      io = 1.367 * (1 + 0.034 * cos(2 * pi * daynumber / 365))  ; eq 7
+      decl = 23.45 * deg2rad * sin(2 * pi * (284 + daynumber) / 365) ; eq 4
+      
+      ; eq 6
+      ; (adjusted for latitudes exceeding 66.5° N/S)
+      tl_td = -1 * tan(latitude) * tan(decl)
+      if tl_td lt -1 then sunrise = pi $
+      else if tl_td gt 1 then sunrise = 0.0 $
+      else sunrise = acos(tl_td)      ; regular cases
+
+      sunset = -1 * sunrise
     
-    envi_convert_file_coordinates, dem, 0.0, 0.0, x_left, y_top, /to_map
-    envi_convert_file_coordinates, dem, ns, nl, x_right, y_bot, /to_map
+      ; ensure calculations are at half the time interval
+      hourangle = sunrise - (time / 2)
+      
+      ; extract individual terms of the equation to speed up calculations
+      ;        cosi = cosi1 + cos(decl) * cos(hourangle) * cosi2 + cosi3 * sin(hourangle)
+      ; terms of the cosi equation which do not depend on the inner loop
+      cosi1 = sin(decl) * (sin(latitude) * cosslope - cos(latitude) * sinslope * cosaspect)
+      cosi2 = cos(latitude) * cosslope + sin(latitude) * sinslope * cosaspect
+      cosi3 = cos(decl) * sinslope * sinaspect
+
+      while hourangle ge sunset do begin
+         ; eq 2:
+         solaralt = asin(sin(latitude) * sin(decl) + cos(latitude) * cos(decl) * cos(hourangle))
+         test = tan(decl) / tan(latitude)
+  
+         ; eq 3:
+         if (cos(hourangle) gt test) then                                  $
+           solaraz = asin(cos(decl) * sin(hourangle) / cos(solaralt))      $
+         else if (cos(hourangle) lt test) then                             $
+           solaraz = pi - asin(cos(decl) * sin(hourangle) / cos(solaralt)) $
+         else if (test eq cos(hourangle)) and (hourangle ge 0) then        $
+           solaraz = pi / 2                                                $
+         else if (test eq cos(hourangle)) and (hourangle lt 0) then        $
+           solaraz = -1 * pi / 2
+  
+         if (solaraz ge 0) then                         $
+           solarazdeg = solaraz / deg2rad               $
+         else                                           $
+           solarazdeg = 360 - (abs(solaraz) / deg2rad)
+
+         ; eq 11:
+         m = sqrt(1229 + (614 * sin(solaralt)) ^ 2) - 614 * sin(solaralt)
+         
+         ; eq 15:
+         iso = io * 0.56 * (exp(-0.65 * m) + exp(-0.095 * m))
+  
+         solaraltdeg = solaralt / deg2rad
+  
+         if (solarazdeg le 180) then                    $  ; correct for northern lat.s
+           azi = (180 - solarazdeg)                     $  ;        "
+         else                                           $  ;        "
+           azi = (180 + (360 - solarazdeg))                ;        "
+
+         envi_doit, 'topo_doit', fid = dem $
+                     , bptr = [2], dims = dims_ut $
+                     , out_bname = ['Hillshade'] $
+                     , azimuth = azi $
+                     , elevation = solaraltdeg $
+                     , pixel_size = mi.ps $
+                     , pos = [0] $
+                     , /in_memory $
+                     , r_fid = shade 
+
+         envi_file_query, shade, dims = dims_sh, nl = nl_cur
+         sungrid = envi_get_data(fid = shade, dims = dims_sh, pos = [0])
+         envi_file_mng, id = shade, /remove
+
+         cosi = cosi1 + cos(decl) * cos(hourangle) * cosi2 + cosi3 * sin(hourangle)
+         shaded = bytarr(ns, nl_cur)
+         ix = where(cosi gt 0, count)
+         if count gt 0 then shaded[ix] = 1
+
+         initialgrid += iso * cosi * sungrid * shaded * 60 * interval
+
+         hourangle = hourangle - time
+      endwhile
+      daynumber++
+    endwhile
     
-    lat_ext = y_bot - y_top
-    nr_strips = ceil(abs(lat_ext))
-    dim_ystep = 1 + nl / nr_strips
-    
-    outname = getOutname(demname, postfix = '_slap')
-    ; calculate slope (in degrees) and aspect
-    envi_doit, 'topo_doit', fid = dem $
-                , /no_realize $
-                , bptr = [0, 1], dims = dims $
-                , out_bname = ['Slope', 'Aspect'] $
-                , pixel_size = mi.ps $
-                , pos = [0] $
-                , /in_memory $
-                , r_fid = demslop 
-    
-    if demslop eq -1 then return
-    
+    writeu, energy_unit, initialgrid
+  endfor  ; strips
+  
+  close, energy_unit
+  free_lun, energy_unit
+
+  envi_file_mng, id = fid_coslope, /remove
+  envi_file_mng, id = fid_sincos, /remove
+  envi_file_mng, id = fid_sinsin, /remove
+;  envi_file_mng, id = dem, /remove
+
+  inherit = envi_set_inheritance(dem, dims, /full)
+  
+  envi_setup_head, fname = energy $
+    , data_type = 4 $ ; float
+    , ns = ns, nl = nl $
+    , /write $
+    , inherit = inherit
+
+  
+end
+
+function nrs_prepare_slap_maps, demname, swap_aspect = swap_aspect
+  compile_opt idl2, logical_predicate
+  
+  ; swap_aspect = -1  : swap north for south and change from clockwise to counter clockwise
+  ; swap_aspect =  1   ; keep north where it is
+  swap_aspect = keyword_set(swap_aspect) ? -1 : 1
+  
+  outname = getOutname(demname, postfix = '_slap', ext = '.dat')
+  outcoslope = getOutname(demname, postfix = '_cosslp', ext = '.dat')
+  outsincos = getOutname(demname, postfix = '_cossin', ext = '.dat')
+  outsinsin = getOutname(demname, postfix = '_sinsin', ext = '.dat')
+  
+  ; calculate slope (in degrees) and aspect
+  envi_doit, 'topo_doit', fid = dem $
+              , /no_realize $
+              , bptr = [0, 1], dims = dims $
+              , out_name = outname $
+              , out_bname = ['Slope', 'Aspect'] $
+              , pixel_size = mi.ps $
+              , pos = [0] $
+              , r_fid = demslop 
+
+  envi_file_query, demslop, ns = ns, nl = nl
+  inherit = envi_set_inheritance(demslop, dims, /full)
+  
+  openw, f_coslope, outcoslope, /get_lun
+  openw, f_sincos, outsincos, /get_lun
+  openw, f_sinsin, outsinsin, /get_lun
+
+  nr_steps = (ns * nl) / 10000000L + 1
+  line_step = nl / nr_steps
+  sl = 0
+  el = line_step - 1
+  for s = 0, nr_steps - 1 do begin
+    dims = [-1, 0, ns, sl, el]
+    sl = el + 1
+    el = min([nl, el + line_step])
     slope = envi_get_data(fid = demslop, dims = dims, pos = [0]) * deg2rad ; slope to radians
     aspect = envi_get_data(fid = demslop, dims = dims, pos = [1])
-    envi_file_mng, id = demslop, /remove
     
     ix = where(aspect lt 0, count)
-    if count gt 0 then aspect[ix] = 0.0
-    ix = where(aspect le 180, count)
-    if count gt 0 then aspect[ix] = 180.0 - aspect[ix]
-    ix = where(aspect gt 180, count)
-    if count gt 0 then aspect[ix] = 540.0 - aspect[ix]
+    if count gt 0 then aspect[ix] = 0.0 ; handle flat spots
     aspect *= deg2rad
     
-    
-    initialgrid = fltarr(ns, nl)
-    for strip = 0, nr_strips - 1 do begin
-      s_y = strip * dim_ystep
-      e_y = min([s_y + dim_ystep - 1, nl - 1])
-      dims_ut = [-1, 0, ns - 1, s_y, e_y]
-      nl_cur = e_y - s_y + 1
-      nl_center = (e_y + s_y) / 2
-       
-      envi_convert_file_coordinates, dem, ns / 2, nl_center, londeg, latdeg, /to_map
-      latitude = latdeg * deg2rad
+    sinslope = sin(slope)
+    cosslope = cos(slope)
+    sinaspect = sin(aspect)
+    cosaspect = cos(aspect) * swap_aspect
+    sincos = sinslope * cosaspect
+    sinsin = sinslope * sinaspect
 
-      sinslope = sin(slope[*, s_y:e_y])
-      cosslope = cos(slope[*, s_y:e_y])
-      sinaspect = sin(aspect[*, s_y:e_y])
-      cosaspect = cos(aspect[*, s_y:e_y])
-      
-      daynumber = start_day
-      while daynumber le end_day do begin
-        io = 1.367 * (1 + 0.034 * cos(2 * pi * daynumber / 365))  ; eq 7
-        decl = 23.45 * deg2rad * sin(2 * pi * (284 + daynumber) / 365) ; eq 4
-        
-        ; eq 6
-        ; (this needed to be adjusted for latitudes exceeding 66.5° N/S)
-        if (-1 * tan(latitude) * tan(decl)) lt -1 then      $ ; check that x is not > 1.0 for acos(x)
-          sunrise = acos(-1)                                $ ;             "
-        else if (-1 * tan(latitude) * tan(decl)) gt 1 then  $ ;             "
-          sunrise = acos(1)                                 $ ;             "
-        else                                                $ ;             "
-          sunrise = acos(-1 * tan(latitude) * tan(decl))      ; valid cases
-  
-        sunset = -1 * sunrise
-      
-        ; ensure calculations are at half the time interval
-        hourangle = sunrise - (time / 2)
-        
-        ; extract individual terms of the equation to speed up calculations
-        ;        cosi = cosi1 + cos(decl) * cos(hourangle) * cosi2 + cosi3 * sin(hourangle)
-  
-        ; terms of the cosi equation which do not depend on the inner loop
-        cosi1 = sin(decl) * (sin(latitude) * cosslope - cos(latitude) * sinslope * cosaspect)
-        cosi2 = cos(latitude) * cosslope + sin(latitude) * sinslope * cosaspect
-        cosi3 = cos(decl) * sinslope * sinaspect
-  
-        while hourangle ge sunset do begin
-           ; eq 2:
-           solaralt = asin(sin(latitude) * sin(decl) + cos(latitude) * cos(decl) * cos(hourangle))
-           test = tan(decl) / tan(latitude)
+    writeu, f_coslope, cosslope 
+    writeu, f_sincos, sincos 
+    writeu, f_sinsin, sinsin 
     
-           ; eq 3:
-           if (cos(hourangle) gt test) then                                  $
-             solaraz = asin(cos(decl) * sin(hourangle) / cos(solaralt))      $
-           else if (cos(hourangle) lt test) then                             $
-             solaraz = pi - asin(cos(decl) * sin(hourangle) / cos(solaralt)) $
-           else if (test eq cos(hourangle)) and (hourangle ge 0) then        $
-             solaraz = pi / 2                                                $
-           else if (test eq cos(hourangle)) and (hourangle lt 0) then        $
-             solaraz = -1 * pi / 2
-    
-           if (solaraz ge 0) then                         $
-             solarazdeg = solaraz / deg2rad               $
-           else                                           $
-             solarazdeg = 360 - (abs(solaraz) / deg2rad)
+  endfor
   
-           ; eq 11:
-           m = sqrt(1229 + (614 * sin(solaralt)) ^ 2) - 614 * sin(solaralt)
-           
-           ; eq 15:
-           iso = io * 0.56 * (exp(-0.65 * m) + exp(-0.095 * m))
-    
-           solaraltdeg = solaralt / deg2rad
-    
-           if (solarazdeg le 180) then                    $  ; correct for northern lat.s
-             azi = (180 - solarazdeg)                     $  ;        "
-           else                                           $  ;        "
-             azi = (180 + (360 - solarazdeg))                ;        "
+  envi_setup_head, fname = outcoslope $
+        , data_type = 4 $ ; float
+        , ns = ns, nl = nl $
+        , /write $
+        , inherit = inherit
   
-           envi_doit, 'topo_doit', fid = dem $
-                       , bptr = [2], dims = dims_ut $
-                       , out_bname = ['Hillshade'] $
-                       , azimuth = azi $
-                       , elevation = solaraltdeg $
-                       , pixel_size = mi.ps $
-                       , pos = [0] $
-                       , /in_memory $
-                       , r_fid = shade 
+  envi_setup_head, fname = outsincos $
+        , data_type = 4 $ ; float
+        , ns = ns, nl = nl $
+        , /write $
+        , inherit = inherit
+
+  envi_setup_head, fname = outsinsin $
+        , data_type = 4 $ ; float
+        , ns = ns, nl = nl $
+        , /write $
+        , inherit = inherit
+
+  close, f_coslope
+  close, f_sincos
+  close, f_sinsin
+  free_lun, f_coslope
+  free_lun, f_sincos
+  free_lun, f_sinsin
   
-           envi_file_query, shade, dims = dims_sh, nl = nl_cur
-           sungrid = envi_get_data(fid = shade, dims = dims_sh, pos = [0])
-           envi_file_mng, id = shade, /remove
-  
-           cosi = cosi1 + cos(decl) * cos(hourangle) * cosi2 + cosi3 * sin(hourangle)
-           shaded = bytarr(ns, nl_cur)
-           ix = where(cosi gt 0, count)
-           if count gt 0 then shaded[ix] = 1
-  
-           wattsgrid = iso * cosi * sungrid * shaded * 60 * interval
-           initialgrid[*, s_y:e_y] = wattsgrid + initialgrid[*, s_y:e_y]
-  
-           hourangle = hourangle - time
-        endwhile
-        daynumber++
-      endwhile
-    endfor  ; strips
-    
-    outgrid = initialgrid
-    
-    if n_elements(energy) eq 0 then begin
-      outname = getOutname(demname, postfix = '_rad', ext = '.')
-    endif else begin
-      outname = energy
-    endelse
-    
-    envi_write_envi_file, outgrid, out_name = outname, dims = dims, map_info = mi
+  ; return the names of the intermediate products
+  return, [outcoslope, outsincos, outsinsin]
+
 end
 
 pro swr_stat, swr, asp, tab

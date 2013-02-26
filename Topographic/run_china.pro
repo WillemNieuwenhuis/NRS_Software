@@ -44,18 +44,22 @@ pro run_china_year_250
          ]
   
   for i = 0, n_elements(dems) -1 do begin
+    t1 = systime(/seconds)
+    
     envi_open_file, dems[i], r_fid = dem, /no_realize, /no_interactive_query
   
     if dem eq -1 then begin
       print, 'Could not open ' + dems[i]
       continue
     endif
+    print, 'Starting with: ' + dems[i]
   
     name = getoutname(dems[i], postfix = '_rad', ext = '.dat')
-;    nrs_shortwaverad, dem, 1, 365, 60, output_name = name
-  print,name
+    nrs_shortwaverad, dem, 1, 365, 60, output_name = name
     
     envi_file_mng, id = dem, /remove
+    print, 'Finished: ' + dems[i]
+    print, 'Running time: ' + nrs_sec_to_string(systime(/seconds) - t1, /time, /hours24)
   endfor
   
   envi_batch_exit
