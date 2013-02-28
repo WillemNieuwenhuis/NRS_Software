@@ -64,6 +64,24 @@ pro nrs_calc_class_stddev, stack, class, stdevs = stats, prog_obj = prog_obj, ca
   endfor
 end
 
+;+
+; :description:
+;    Calculate pooled standard deviation. This is calculated for each class.
+;    Multiyear standard deviations are pooled into a single year for each period per year.
+;    The pooling is done by using square root of the sum of squares)
+;
+; :params:
+;    stdevs : in, required
+;      Standard deviations per class per temporal layer (2D matrix: layer X class)
+;    img_per_year : in, required
+;      The number of layers per year
+;
+; :keywords:
+;    poolsd : out
+;      Output pooled standard deviation LUT (nr of records: images per year X number of classes)
+;
+; :author: nieuwenhuis
+;-
 pro nrs_calc_pooled_sd, stdevs, img_per_year, poolsd = poolsd
   sz = size(stdevs, /dim)
   nrlayers = sz[0]

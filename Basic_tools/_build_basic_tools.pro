@@ -1,5 +1,7 @@
 pro _build_basic_tools
-  files = [ 'nrs_basic_tools_define_buttons.pro' $
+  files = [ $
+             'nrs_area_numbering.pro' $
+           , 'nrs_basic_tools_define_buttons.pro' $
            , 'nrs_classify_r2.pro' $
            , 'nrs_classify_r2_gui.pro' $
            , 'nrs_classify_r2_gui_eventcb.pro' $
