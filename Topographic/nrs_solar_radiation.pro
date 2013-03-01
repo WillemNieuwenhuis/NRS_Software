@@ -46,7 +46,7 @@ pro nrs_solar_radiation, dem, start_day, end_day, interval, output_name = energy
   dim_ystep = 1 + nl / nr_strips
   
   intermediate = nrs_solar_prepare_slap_maps(demname, /swap_aspect)
-  if n_elements(intermediate) ne 6 then begin
+  if n_elements(intermediate) ne 3 then begin
     void = error_message('Failed to calculate slope / aspect image', /error)
     return
   endif
@@ -55,7 +55,7 @@ pro nrs_solar_radiation, dem, start_day, end_day, interval, output_name = energy
   envi_open_file, intermediate[1], r_fid = fid_sincos, /no_realize, /no_interactive_query
   envi_open_file, intermediate[2], r_fid = fid_sinsin, /no_realize, /no_interactive_query
   
-  envi_file_query, fid_coslpoe, data_ignore_value = undef
+  envi_file_query, fid_coslope, data_ignore_value = undef
   if undef eq 1.0e-34 then void = temporary(undef)
   doMask = (n_elements(undef) gt 0)
   
@@ -197,16 +197,56 @@ pro nrs_solar_radiation, dem, start_day, end_day, interval, output_name = energy
 
   inherit = envi_set_inheritance(dem, dims, /full)
   
+  dt = size(initialgrid, /type)
   envi_setup_head, fname = energy $
-    , data_type = 4 $ ; float
-    , ns = ns, nl = nl $
-    , data_ignore_value = fill_value $
-    , /write $
-    , inherit = inherit
+        , /write $
+        , data_type = dt $
+        , ns = ns, nl = nl, nb = 1 $
+        , interleave = 0 $
+        , bnames = ['Solar radiation'] $
+        , map_info = mi $
+        , data_ignore_value = fill_value
 
-  
 end
 
+;+
+; :description:
+;    Determine the pixel size in meters for a geographic location, assuming UTM with WGS-84 datum
+;
+; :params:
+;    lat : in, required
+;      The latitude in degrees; expected range [-90, 90] negative values indicating southern hemispere
+;    lon : in, required
+;      The longitude in degrees; expected range [-180, 180] negative values indicating western hemisphere
+;    ps_ll : in, required
+;      The pixel size in degrees as [lon_size, lat_size] 
+;
+; :keywords:
+;    utmx : out, optional
+;    utmy : out, optional
+;      X and Y coordinates used to calculate the pixel size in meters
+;
+; :returns:
+;   The pixel size in meters as [x_size, y_size]
+;
+; :author: nieuwenhuis
+; :history:
+;   march 2013: created
+;-
+function nrs_UTM_pixelsize_from_LL, lat, lon, ps_ll, utmx=utmx, utmy=utmy
+  compile_opt idl2, logical_predicate, hidden
+  
+  zone = (floor((lon + 180) / 6) mod 60) + 1
+  ll_proj = envi_proj_create(/geographic)
+  utm_proj = envi_proj_create(/utm, zone = zone, south = (lat lt 0), datum = 'WGS-84')
+  xx = [lon, lon + ps_ll[0]]
+  yy = [lat, lat + ps_ll[1]]
+  envi_convert_projection_coordinates, xx, yy, ll_proj, utmx, utmy, utm_proj
+  ps = [utmx[1] - utmx[0], utmy[1] - utmy[0]]
+  
+  return, [ps]
+end
+ 
 function nrs_solar_prepare_slap_maps, demname, swap_aspect = swap_aspect
   compile_opt idl2, logical_predicate
   
@@ -218,7 +258,11 @@ function nrs_solar_prepare_slap_maps, demname, swap_aspect = swap_aspect
   
   envi_open_file, demname, r_fid = dem, /no_realize, /no_interactive_query
   envi_file_query, dem, ns = ns, nl = nl, dims = dims, data_ignore_value = undef
-  mi = envi_get_map_info(fid = dem)
+  mi = envi_get_map_info(fid = dem, undefined = csy_undef)
+  if csy_undef then void = temporary(mi)
+  lon = mi.mc[2] + ns / 2 * mi.ps[0]
+  lat = mi.mc[3] + nl / 2 * mi.ps[1]
+  ps_m = nrs_UTM_pixelsize_from_LL(lat, lon, mi.ps)
   
   outname = getOutname(demname, postfix = '_slap', ext = '.dat')
   outcoslope = getOutname(demname, postfix = '_cosslp', ext = '.dat')
@@ -228,14 +272,16 @@ function nrs_solar_prepare_slap_maps, demname, swap_aspect = swap_aspect
   ; calculate slope (in degrees) and aspect
   envi_doit, 'topo_doit', fid = dem $
               , /no_realize $
-              , bptr = [0, 1], dims = dims $
+              , bptr = [0, 1] $
+              , dims = dims $
               , out_name = outname $
               , out_bname = ['Slope', 'Aspect'] $
-              , pixel_size = mi.ps $
+              , pixel_size = ps_m $
               , pos = [0] $
+              ,azi = 45, elev=45, kernel = 3 $
               , r_fid = demslop 
 
-  inherit = envi_set_inheritance(demslop, dims, /full)
+  inherit = envi_set_inheritance(dem, dims, /full)
   if undef eq 1.0e-34 then void = temporary(undef)
   doMask = (n_elements(undef) gt 0)
   
@@ -285,28 +331,31 @@ function nrs_solar_prepare_slap_maps, demname, swap_aspect = swap_aspect
   
   dt = size(cosslope, /type)
   envi_setup_head, fname = outcoslope $
-        , data_type = dt $
-;        , interleave = 0 $
-        , ns = ns, nl = nl, nb = 1 $
-        , data_ignore_value = undef $
         , /write $
-        , inherit = inherit
+        , data_type = dt $
+        , ns = ns, nl = nl, nb = 1 $
+        , interleave = 0 $
+        , bnames = ['cos(slope)'] $
+        , map_info = mi $
+        , data_ignore_value = undef
   
   envi_setup_head, fname = outsincos $
-        , data_type = dt $
-;        , interleave = 0 $
-        , ns = ns, nl = nl, nb = 1 $
-        , data_ignore_value = undef $
         , /write $
-        , inherit = inherit
+        , data_type = dt $
+        , ns = ns, nl = nl, nb = 1 $
+        , interleave = 0 $
+        , bnames = ['sin(slope)*cos(aspect)'] $
+        , map_info = mi $
+        , data_ignore_value = undef
 
   envi_setup_head, fname = outsinsin $
-        , data_type = dt $
-;        , interleave = 0 $
-        , ns = ns, nl = nl, nb = 1 $
-        , data_ignore_value = undef $
         , /write $
-        , inherit = inherit
+        , data_type = dt $
+        , ns = ns, nl = nl, nb = 1 $
+        , interleave = 0 $
+        , bnames = ['sin(slope)*sin(aspect)'] $
+        , map_info = mi $
+        , data_ignore_value = undef
 
   close, f_coslope
   close, f_sincos

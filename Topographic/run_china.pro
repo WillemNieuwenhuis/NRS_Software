@@ -55,7 +55,7 @@ pro run_china_year_250
     print, 'Starting with: ' + dems[i]
   
     name = getoutname(dems[i], postfix = '_rad', ext = '.dat')
-    nrs_shortwaverad, dem, 1, 365, 60, output_name = name
+    nrs_solar_radiation, dem, 1, 365, 60, output_name = name
     
     envi_file_mng, id = dem, /remove
     print, 'Finished: ' + dems[i]
@@ -64,3 +64,16 @@ pro run_china_year_250
   
   envi_batch_exit
 end
+
+pro run_test
+  fn = 'E:\NRS\Fangyuan\twi\yu\dem_mid.dat'
+  envi_open_file, fn, r_fid = dem, /no_realize, /no_interactive_query
+  t1 = systime(/seconds)
+
+  name = getoutname(fn, postfix = '_rad', ext = '.dat')
+  nrs_solar_radiation, dem, 1, 365, 60, output_name = name
+  
+  print, 'Finished: ' + fn
+  print, 'Running time: ' + nrs_sec_to_string(systime(/seconds) - t1, /time, /hours24)
+end
+
