@@ -117,6 +117,10 @@ pro change_detection_v2_handleGo, event
   fld = widget_info(event.top, find_by_uname = 'change_detection_v2_mask')
   widget_control, fld, get_value = pixmask_str
   
+  fld = widget_info(event.top, find_by_uname = 'change_detection_v2_absdiff')
+  abs_diff = widget_info(fld, /button_set)
+  
+  
   ; now check all inputs
   if strlen(strtrim(inputfile)) eq 0 then begin
     void = error_message('Missing NDVI (reference period)', title = 'Change detection error', /error, /noname, traceback = 0)
@@ -132,10 +136,10 @@ pro change_detection_v2_handleGo, event
   endif
   
   ndvi_py = fix(strtrim(ndvilayers[0]))
-  if (ndvi_py lt 10) or (ndvi_py gt 36) then begin
-    void = error_message('Number of NDVI layers expected between 10 and 36', title = 'Change detection error', /error, /noname, traceback = 0)
-    return
-  endif
+;  if (ndvi_py lt 10) or (ndvi_py gt 36) then begin
+;    void = error_message('Number of NDVI layers expected between 10 and 36', title = 'Change detection error', /error, /noname, traceback = 0)
+;    return
+;  endif
   sd_mult = float(strtrim(sd_mult_str[0]))
 
   pixmask = fix(strtrim(pixmask_str[0]))
@@ -239,7 +243,7 @@ pro change_detection_v2_handleGo, event
       endif
       ldata = envi_get_data(fid = ndvi, dims = dims, pos = inp_layer)
   
-      nrs_ndvi_magdata, ldata, cldata, segdata, lut, ndvi_py, lpy, magdata = mag_layer
+      nrs_ndvi_magdata, ldata, cldata, segdata, lut, ndvi_py, lpy, magdata = mag_layer, abs_diff = abs_diff
       
       yearmag[*, lpy] = mag_layer
     endfor

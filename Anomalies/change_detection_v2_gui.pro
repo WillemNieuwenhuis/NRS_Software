@@ -172,10 +172,16 @@ pro change_detection_v2_mainPanel, GROUP_LEADER = wGroup, _EXTRA = _VWBExtra_
               )
               
   void = widget_label(cd_mask_base, value = 'pixels')
-              
-;  change_detection_v2_outputPanel = widget_base(change_detection_v2_contentPanel, /frame, /col)
 
-  change_detection_v2_outputPanel = cw_groupbox(change_detection_v2_contentPanel, group_title = 'Output')              
+  change_detection_v2_absdiff_panel = widget_base(group $
+                , title = 'Absolute differences', /col, /nonexclusive)
+  change_detection_v2_absdiff = widget_button(change_detection_v2_absdiff_panel $
+                , uname = 'change_detection_v2_absdiff'  $
+                , /align_left $
+                , value = 'Absolute differences only' $
+              )
+              
+  change_detection_v2_outputPanel = cw_groupbox(change_detection_v2_inputPanel, group_title = 'Output')              
   change_detection_v2_magnitude = cw_dirfile(change_detection_v2_outputPanel $
                 , title = 'Probability of change map(s)' $
                 , style = 'file' $
@@ -190,6 +196,7 @@ pro change_detection_v2_mainPanel, GROUP_LEADER = wGroup, _EXTRA = _VWBExtra_
   Widget_Control, /REALIZE, change_detection_v2_contentPanel
 
   ; Initialize stuff
+  widget_control, change_detection_v2_absdiff, /set_button
   state.parent = change_detection_v2_contentPanel
   widget_control, change_detection_v2_contentPanel, set_uvalue = state
 

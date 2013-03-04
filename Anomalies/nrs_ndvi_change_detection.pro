@@ -71,7 +71,10 @@ end
 ;
 ; :Author: nieuwenhuis
 ;-
-pro nrs_ndvi_magdata, ldata, cldata, segdata, poolsd, ndvi_py, lpy, magdata = magdata
+pro nrs_ndvi_magdata, ldata, cldata, segdata, poolsd, ndvi_py, lpy, magdata = magdata $
+                    , abs_diff = abs_diff
+  compile_opt idl2, logical_predicate
+  
   magdata[*] = 0.0
   diff = magdata - magdata   ; all zeroes
   clh = histogram(segdata, binsize = 1, omin = cmin, omax = cmax, reverse_indices = ri)
@@ -82,9 +85,11 @@ pro nrs_ndvi_magdata, ldata, cldata, segdata, poolsd, ndvi_py, lpy, magdata = ma
 
       cl = cldata[clx[0]]
       sd = poolsd[cl * ndvi_py + lpy]
-      
+
+      sign = 1
+      if ~keyword_set(abs_diff) then sign = (ldata[clx] gt avg) * 2 - 1
       diff[clx] = abs(ldata[clx] - avg)   ; differences from avg in class
-      magdata[clx] = (diff[clx] - sd) > 0 ; only use magnitude above the avg+sd*mult
+      magdata[clx] = sign * ((diff[clx] - sd) > 0) ; only use magnitude outside the avg+/-sd*mult
     endif
   endfor      
 end
