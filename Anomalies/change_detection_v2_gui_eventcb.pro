@@ -156,6 +156,8 @@ pro change_detection_v2_handleGo, event
     void = error_message('Probability of change output not specified', title = 'Change detection error', /error, /noname, traceback = 0)
     return
   endif
+  
+  nodata = -9999.0
 
   ; open inputs
   envi_open_file, inputfile, r_fid = ndvi, /no_realize, /no_interactive_query
@@ -170,6 +172,7 @@ pro change_detection_v2_handleGo, event
   
   envi_file_query, ndvi, dims = dims, ns = ns, nl = nl, nb = nrlayers 
   mi_ref = envi_get_map_info(fid = ndvi, undefined = undef_csy)
+  if undef_csy then void = temporary(mi_ref)
 
   envi_file_query, ndvi_ref, ns = ns_ref, nl = nl_ref 
   envi_file_query, class, ns = ns_class, nl = nl_class
@@ -258,12 +261,12 @@ pro change_detection_v2_handleGo, event
   if pixmask gt 0 then begin
     ix = where(mask eq 0, count)
     if count gt 0 then begin
-      magdata[ix, *] = 0.0
+      magdata[ix, *] = nodata
     endif
   endif
   magdata = reform(magdata, ns, nl, nryears, /overwrite)
 
-  out_mag = getoutname(magname, postfix = '', ext = '.')  ; remove extension
+  out_mag = getoutname(magname, postfix = '', ext = '.dat')
 
   ; build band names
   nn = indgen(nrlayers)
@@ -272,11 +275,8 @@ pro change_detection_v2_handleGo, event
   bnames = string(bc, format = '("Year ",I02)')
   mnames = string(bc, format = '("Magnitude (year ",I02,")")')
 
-  if undef_csy eq 1 then begin
-    envi_write_envi_file, magdata, out_name = out_mag, bnames = mnames
-  endif else begin
-    envi_write_envi_file, magdata, out_name = out_mag, bnames = mnames, map_info = mi_ref
-  endelse
+  envi_write_envi_file, magdata, out_name = out_mag, bnames = mnames, map_info = mi_ref $
+                      , data_ignore_value = nodata
 
   progressBar -> Destroy
 end
