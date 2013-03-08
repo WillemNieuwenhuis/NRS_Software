@@ -77,7 +77,6 @@
 ;       XSIZE:         The X size of the progress bar itself. By default, 150 pixels.
 ;
 ;       YSIZE:         The Y size of the progress bar itself. By default, 10 pixels.
-
 ;
 ; PROCEDURE:
 ;
@@ -353,7 +352,7 @@ END
 ;
 ; PURPOSE:
 ;
-;       Returns a 1 if a button was selected. Returns 0 othewise.
+;       Returns a 1 if a button was selected. Returns 0 otherwise.
 ;
 ; SYNTAX:
 ;
@@ -913,7 +912,7 @@ FUNCTION PROGRESSBAR::INIT, $
    IF N_Elements(title) EQ 0 THEN title = "Progress Bar"
    IF N_Elements(xsize) EQ 0 THEN self.xsize = 150 ELSE self.xsize = xsize
    IF N_Elements(ysize) EQ 0 THEN self.ysize = 10 ELSE self.ysize = ysize
-   if n_elements(level) eq 0 then level = 0
+   if n_elements(level) eq 0 then self.level = 0
 
    ; Create the widgets for the progress bar.
 
@@ -934,8 +933,8 @@ FUNCTION PROGRESSBAR::INIT, $
 
    ; Center the top-level base if offsets are not used. Othersize, use offsets.
    IF (N_Elements(xoffset) NE 0) OR (N_Elements(yoffset) NE 0) THEN BEGIN
-      IF N_Elements(xoffset) EQ 0 THEN xoffset=0 + level * 25
-      IF N_Elements(yoffset) EQ 0 THEN yoffset=0 + level * 25
+      IF N_Elements(xoffset) EQ 0 THEN xoffset=0 + self.level * 25
+      IF N_Elements(yoffset) EQ 0 THEN yoffset=0 + self.level * 25
       Widget_Control, self.tlb, XOFFSET=xoffset, YOFFSET=yoffset
 
    ENDIF ELSE BEGIN
@@ -949,11 +948,12 @@ FUNCTION PROGRESSBAR::INIT, $
       yHalfSize = geom.Scr_YSize / 2
 
       Widget_Control, self.tlb, $
-                      XOffset = xCenter - xHalfSize + level * 25, $
-                      YOffset = yCenter - yHalfSize + level * 25
+                      XOffset = xCenter - xHalfSize + self.level * 25, $
+                      YOffset = yCenter - yHalfSize + self.level * 25
    ENDELSE
 
    ; Start it up?
+   if n_elements(percent) eq 0 then percent = 0 
    IF Keyword_Set(start) THEN self -> Start, percent
 
    RETURN, 1
@@ -989,6 +989,7 @@ PRO PROGRESSBAR__DEFINE
               b: 0B, $            ; The b value of !P.Color.
               text: "", $         ; The text message to be written over the progress bar.
               title: "", $        ; The title of the top-level base widget.
+              level: 0, $         ; The level of progress if multiple loop are used
               tlb: 0L, $          ; The identifier of the top-level base.
               wid: 0L, $          ; The window index number of the draw widget.
               xsize: 0L, $        ; The XSize of the progress bar.
