@@ -28,6 +28,7 @@ pro nrs_log_line, logfile, line, append = append, header = header
   openw, unit, logfile, /get_lun, append = append
   printf, unit, line
   close, unit
+  free_lun, unit
 end
 
 function nrs_auto_clust_status, logfile

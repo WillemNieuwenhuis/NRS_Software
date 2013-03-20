@@ -369,6 +369,7 @@ pro progress_simple::setproperty, $
    fast_loop=fast_loop, $
    text=text, $
    title=title, $
+   log_file=log_file, $
    xoffset=xoffset, $
    yoffset=yoffset
 
@@ -380,6 +381,7 @@ pro progress_simple::setproperty, $
   if n_elements(color) ne 0 then self.color = color
   if n_elements(text) ne 0 then self.text = text
   if n_elements(title) ne 0 then self.title = title
+  if n_elements(log_file) ne 0 then self.log_file = log_file
 end
 
 ;+
@@ -432,7 +434,9 @@ pro progress_simple::update, percent, text = thetext, title = thetitle
 ;    elap = systime(/seconds) - self.last_time
 ;    s_elap = nrs_sec_to_string(elap, /time, /date)
     s_elap = systime() + string(self.level, format='(" (Level ",i0,")")')
-    print, s_elap + ', ' + msg + string(self.percent, format = '(f0.1,"%")')
+    msg = s_elap + ', ' + msg + string(self.percent, format = '(f0.1,"%")')
+    if n_elements(self.log_file) gt 0 then nrs_log_line, self.log_file, msg, /append $
+    else print, msg 
   endif
 end
 
@@ -473,7 +477,9 @@ end
 ;    title : in
 ;      No function
 ;    level : in
-;      No function
+;      Indicates the level of the indicator (0 = outer level)
+;    log_file : in
+;      Name of the log file
 ;    xoffset : in
 ;      No function
 ;    xsize : in
@@ -497,6 +503,7 @@ function progress_simple::init, $
               text=text, $                 ; the message text to be written over the progress bar.
               title=title, $               ; the title of the top-level base widget.
               level=level, $               ; the level of progress if multiple loop are used, used for initial placement
+              log_file = log_file, $       ; the name of the log file
               xoffset=xoffset, $           ; the x offset of the progress bar.
               xsize=xsize, $               ; the x size of the progress bar.
               yoffset=yoffset, $           ; the y offset of the progress bar.
@@ -550,7 +557,8 @@ pro progress_simple__define
               wid: 0L, $          ; the window index number of the draw widget.
               xsize: 0L, $        ; the xsize of the progress bar.
               ysize: 0L, $        ; the ysize of the progress bar.
-              last_time: 0L $     ; previous time the progress was started 
+              last_time: 0L, $    ; previous time the progress was started 
+              log_file: '' $      ; If specified will case all updates to be redirected to file
             }
 end
 
