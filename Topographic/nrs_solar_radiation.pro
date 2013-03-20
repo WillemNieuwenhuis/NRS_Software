@@ -40,16 +40,23 @@ pro nrs_solar_radiation, dem, start_day, end_day, interval, output_name = energy
   
   envi_convert_file_coordinates, dem, 0.0, 0.0, x_left, y_top, /to_map
   envi_convert_file_coordinates, dem, ns, nl, x_right, y_bot, /to_map
+  lon = (y_top + y_bot) / 2
+  lat = (x_left + x_right) / 2
+  ps_m = nrs_UTM_pixelsize_from_LL(lat, lon, mi.ps)
   
   lat_ext = y_bot - y_top
   nr_strips = ceil(abs(lat_ext))
   dim_ystep = 1 + nl / nr_strips
   
+  logfile = getOutname(demname, postfix = '', ext = '.log')
+  t1 = systime(/seconds)
+  nrs_log_line, logfile, 'Calculation slope/aspect', /append
   intermediate = nrs_solar_prepare_slap_maps(demname, /swap_aspect)
   if n_elements(intermediate) ne 3 then begin
     void = error_message('Failed to calculate slope / aspect image', /error)
     return
   endif
+  nrs_log_line, logfile, 'Slope/aspect ready in: ' + nrs_sec_to_string(systime(/seconds) - t1, /time, /hours24), /append
   
   envi_open_file, intermediate[0], r_fid = fid_coslope, /no_realize, /no_interactive_query
   envi_open_file, intermediate[1], r_fid = fid_sincos, /no_realize, /no_interactive_query
@@ -64,6 +71,8 @@ pro nrs_solar_radiation, dem, start_day, end_day, interval, output_name = energy
   endif else begin
     outname = energy
   endelse
+  t2 = systime(/seconds)
+  nrs_log_line, logfile, 'Starting solar radiation calculation for ' + demname, /append
 
   openw, energy_unit, outname, /get_lun
   
@@ -71,6 +80,8 @@ pro nrs_solar_radiation, dem, start_day, end_day, interval, output_name = energy
   initialgrid = fltarr(ns, dim_ystep)
   mask_ix = []
   cnt_valid = 0
+except_old = !EXCEPT
+!EXCEPT=2
   for strip = 0, nr_strips - 1 do begin
     s_y = strip * dim_ystep
     e_y = min([s_y + dim_ystep - 1, nl - 1])
@@ -100,6 +111,10 @@ pro nrs_solar_radiation, dem, start_day, end_day, interval, output_name = energy
 
     daynumber = start_day
     while daynumber le end_day do begin
+      di = daynumber - start_day
+      dn = end_day - start_day + 1 
+      msg = systime() + string(strip+1, nr_strips, di+1, dn, format = '("; Strip=",i0," of ",i0,"; day=",i0," of ",i0)')
+      nrs_log_line, logfile, msg, /append
       io = 1.367 * (1 + 0.034 * cos(2 * pi * daynumber / 365))  ; eq 7
       decl = 23.45 * deg2rad * sin(2 * pi * (284 + daynumber) / 365) ; eq 4
       
@@ -154,7 +169,7 @@ pro nrs_solar_radiation, dem, start_day, end_day, interval, output_name = energy
                      , out_bname = ['Hillshade'] $
                      , azimuth = azi $
                      , elevation = solaraltdeg $
-                     , pixel_size = mi.ps $
+                     , pixel_size = ps_m $
                      , pos = [0] $
                      , /in_memory $
                      , r_fid = shade 
@@ -187,6 +202,9 @@ pro nrs_solar_radiation, dem, start_day, end_day, interval, output_name = energy
     
     writeu, energy_unit, initialgrid
   endfor  ; strips
+!EXCEPT=except_old
+  nrs_log_line, logfile, 'Finished solar radiation calculation for ' + demname, /append
+  nrs_log_line, logfile, 'Total time: ' + nrs_sec_to_string(systime(/seconds) - t1, /time, /hours24), /append
   
   close, energy_unit
   free_lun, energy_unit
@@ -250,6 +268,17 @@ end
 function nrs_solar_prepare_slap_maps, demname, swap_aspect = swap_aspect
   compile_opt idl2, logical_predicate
   
+  outname = getOutname(demname, postfix = '_slap', ext = '.dat')
+  outcoslope = getOutname(demname, postfix = '_cosslp', ext = '.dat')
+  outsincos = getOutname(demname, postfix = '_cossin', ext = '.dat')
+  outsinsin = getOutname(demname, postfix = '_sinsin', ext = '.dat')
+  
+  ; test if we already have the slope maps
+  fi_out = file_info(outname)
+  fi_cosl = file_info(outcoslope)
+  fi_sc = file_info(outsincos)
+  fi_ss = file_info(outsinsin)
+  
   deg2rad = !dpi / 180
   
   ; swap_aspect = -1  : swap north for south and change from clockwise to counter clockwise
@@ -259,110 +288,113 @@ function nrs_solar_prepare_slap_maps, demname, swap_aspect = swap_aspect
   envi_open_file, demname, r_fid = dem, /no_realize, /no_interactive_query
   envi_file_query, dem, ns = ns, nl = nl, dims = dims, data_ignore_value = undef
   mi = envi_get_map_info(fid = dem, undefined = csy_undef)
-  if csy_undef then void = temporary(mi)
-  lon = mi.mc[2] + ns / 2 * mi.ps[0]
-  lat = mi.mc[3] + nl / 2 * mi.ps[1]
+  
+  envi_convert_file_coordinates, dem, 0.0, 0.0, x_left, y_top, /to_map
+  envi_convert_file_coordinates, dem, ns, nl, x_right, y_bot, /to_map
+  lon = (y_top + y_bot) / 2
+  lat = (x_left + x_right) / 2
   ps_m = nrs_UTM_pixelsize_from_LL(lat, lon, mi.ps)
-  
-  outname = getOutname(demname, postfix = '_slap', ext = '.dat')
-  outcoslope = getOutname(demname, postfix = '_cosslp', ext = '.dat')
-  outsincos = getOutname(demname, postfix = '_cossin', ext = '.dat')
-  outsinsin = getOutname(demname, postfix = '_sinsin', ext = '.dat')
-  
-  ; calculate slope (in degrees) and aspect
-  envi_doit, 'topo_doit', fid = dem $
-              , /no_realize $
-              , bptr = [0, 1] $
-              , dims = dims $
-              , out_name = outname $
-              , out_bname = ['Slope', 'Aspect'] $
-              , pixel_size = ps_m $
-              , pos = [0] $
-              ,azi = 45, elev=45, kernel = 3 $
-              , r_fid = demslop 
 
-  inherit = envi_set_inheritance(dem, dims, /full)
-  if undef eq 1.0e-34 then void = temporary(undef)
-  doMask = (n_elements(undef) gt 0)
-  
-  openw, f_coslope, outcoslope, /get_lun
-  openw, f_sincos, outsincos, /get_lun
-  openw, f_sinsin, outsinsin, /get_lun
+  if fi_out.exists then begin
+    envi_open_file, outname, r_fid = demslop, /no_realize, /no_interactive_query
+  endif else begin
+    ; calculate slope (in degrees) and aspect
+    envi_doit, 'topo_doit', fid = dem $
+                , /no_realize $
+                , bptr = [0, 1] $
+                , dims = dims $
+                , out_name = outname $
+                , out_bname = ['Slope', 'Aspect'] $
+                , pixel_size = ps_m $
+                , pos = [0] $
+                ,azi = 45, elev=45, kernel = 3 $
+                , r_fid = demslop 
+  endelse
 
-  nr_steps = (ns * nl) / 10000000L + 1
-  line_step = nl / nr_steps
-  sl = 0
-  el = line_step - 1
-  mask_ix = []
-  cnt_undef = 0
-  for s = 0, nr_steps - 1 do begin
-    dims = [-1, 0, ns - 1, sl, el]
-    sl = el + 1
-    el = min([nl, el + line_step])
-    if doMask then begin
-      elev = envi_get_data(fid = dem, dims = dims, pos = [0])
-      mask_ix = where(elev eq undef, cnt_undef)
-    endif
-    slope = envi_get_data(fid = demslop, dims = dims, pos = [0]) * deg2rad ; slope to radians
-    aspect = envi_get_data(fid = demslop, dims = dims, pos = [1])
+  if ~(fi_cosl.exists && fi_sc.exists && fi_ss.exists) then begin 
+    inherit = envi_set_inheritance(dem, dims, /full)
+    if undef eq 1.0e-34 then void = temporary(undef)
+    doMask = (n_elements(undef) gt 0)
     
-    ix = where(aspect lt 0, count)
-    if count gt 0 then aspect[ix] = 0.0 ; handle flat spots
-    aspect *= deg2rad
+    openw, f_coslope, outcoslope, /get_lun
+    openw, f_sincos, outsincos, /get_lun
+    openw, f_sinsin, outsinsin, /get_lun
+  
+    nr_steps = (ns * nl) / 10000000L + 1
+    line_step = nl / nr_steps
+    sl = 0
+    el = line_step - 1
+    mask_ix = []
+    cnt_undef = 0
+    for s = 0, nr_steps - 1 do begin
+      dims = [-1, 0, ns - 1, sl, el]
+      sl = el + 1
+      el = min([nl, el + line_step])
+      if doMask then begin
+        elev = envi_get_data(fid = dem, dims = dims, pos = [0])
+        mask_ix = where(elev eq undef, cnt_undef)
+      endif
+      slope = envi_get_data(fid = demslop, dims = dims, pos = [0]) * deg2rad ; slope to radians
+      aspect = envi_get_data(fid = demslop, dims = dims, pos = [1])
+      
+      ix = where(aspect lt 0, count)
+      if count gt 0 then aspect[ix] = 0.0 ; handle flat spots
+      aspect *= deg2rad
+      
+      sinslope = sin(slope)
+      cosslope = cos(slope)
+      sinaspect = sin(aspect)
+      cosaspect = cos(aspect) * swap_aspect
+      sincos = sinslope * cosaspect
+      sinsin = sinslope * sinaspect
+  
+      if doMask && (cnt_undef gt 0) then begin
+        cosslope[mask_ix] = undef
+        sincos[mask_ix] = undef
+        sinsin[mask_ix] = undef
+      endif
+      writeu, f_coslope, cosslope 
+      writeu, f_sincos, sincos 
+      writeu, f_sinsin, sinsin 
+    endfor
     
-    sinslope = sin(slope)
-    cosslope = cos(slope)
-    sinaspect = sin(aspect)
-    cosaspect = cos(aspect) * swap_aspect
-    sincos = sinslope * cosaspect
-    sinsin = sinslope * sinaspect
-
-    if doMask && (cnt_undef gt 0) then begin
-      cosslope[mask_ix] = undef
-      sincos[mask_ix] = undef
-      sinsin[mask_ix] = undef
-    endif
-    writeu, f_coslope, cosslope 
-    writeu, f_sincos, sincos 
-    writeu, f_sinsin, sinsin 
-  endfor
+    envi_file_mng, id = demslop, /remove
+    
+    dt = size(cosslope, /type)
+    envi_setup_head, fname = outcoslope $
+          , /write $
+          , data_type = dt $
+          , ns = ns, nl = nl, nb = 1 $
+          , interleave = 0 $
+          , bnames = ['cos(slope)'] $
+          , map_info = mi $
+          , data_ignore_value = undef
+    
+    envi_setup_head, fname = outsincos $
+          , /write $
+          , data_type = dt $
+          , ns = ns, nl = nl, nb = 1 $
+          , interleave = 0 $
+          , bnames = ['sin(slope)*cos(aspect)'] $
+          , map_info = mi $
+          , data_ignore_value = undef
   
-  envi_file_mng, id = demslop, /remove
+    envi_setup_head, fname = outsinsin $
+          , /write $
+          , data_type = dt $
+          , ns = ns, nl = nl, nb = 1 $
+          , interleave = 0 $
+          , bnames = ['sin(slope)*sin(aspect)'] $
+          , map_info = mi $
+          , data_ignore_value = undef
   
-  dt = size(cosslope, /type)
-  envi_setup_head, fname = outcoslope $
-        , /write $
-        , data_type = dt $
-        , ns = ns, nl = nl, nb = 1 $
-        , interleave = 0 $
-        , bnames = ['cos(slope)'] $
-        , map_info = mi $
-        , data_ignore_value = undef
-  
-  envi_setup_head, fname = outsincos $
-        , /write $
-        , data_type = dt $
-        , ns = ns, nl = nl, nb = 1 $
-        , interleave = 0 $
-        , bnames = ['sin(slope)*cos(aspect)'] $
-        , map_info = mi $
-        , data_ignore_value = undef
-
-  envi_setup_head, fname = outsinsin $
-        , /write $
-        , data_type = dt $
-        , ns = ns, nl = nl, nb = 1 $
-        , interleave = 0 $
-        , bnames = ['sin(slope)*sin(aspect)'] $
-        , map_info = mi $
-        , data_ignore_value = undef
-
-  close, f_coslope
-  close, f_sincos
-  close, f_sinsin
-  free_lun, f_coslope
-  free_lun, f_sincos
-  free_lun, f_sinsin
+    close, f_coslope
+    close, f_sincos
+    close, f_sinsin
+    free_lun, f_coslope
+    free_lun, f_sincos
+    free_lun, f_sinsin
+  endif ; ~(fi_cosl.exists && fi_sc.exists && fi_ss.exists)
   
   ; return the names of the intermediate products
   return, [outcoslope, outsincos, outsinsin]

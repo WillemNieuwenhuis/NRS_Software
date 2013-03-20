@@ -32,15 +32,18 @@ pro run_china_month_1k
 ;  nrs_shortwaverad, dem, 335, 365, 60, output_name = dec ; december
 end
 
-pro run_china_year_250
+pro run_china_year_250, nobatch = nobatch
+  compile_opt idl2, logical_predicate
 
-  envi, /restore_base_save_files
-  envi_batch_init, log_file='E:\NRS\Fangyuan\DEM of China_250m\batch.txt', /no_status_window
+  if ~keyword_set(nobatch) then begin
+    envi, /restore_base_save_files
+    envi_batch_init, log_file='E:\NRS\Fangyuan\DEM of China_250m\batch.txt', /no_status_window
+  endif
   
-  dems = [ 'E:\NRS\Fangyuan\DEM of China_250m\dem_tl.dat' $
-;         , 'E:\NRS\Fangyuan\DEM of China_250m\dem_tr.dat' $
-;         , 'E:\NRS\Fangyuan\DEM of China_250m\dem_bl.dat' $
-;         , 'E:\NRS\Fangyuan\DEM of China_250m\dem_br.dat' $
+  dems = [ 'E:\NRS\Fangyuan\DEM of China_250m\dem_tl_mr.dat' $
+;         , 'E:\NRS\Fangyuan\DEM of China_250m\dem_tr_mr.dat' $
+;         , 'E:\NRS\Fangyuan\DEM of China_250m\dem_bl_mr.dat' $
+;         , 'E:\NRS\Fangyuan\DEM of China_250m\dem_br_mr.dat' $
          ]
   
   for i = 0, n_elements(dems) -1 do begin
@@ -62,7 +65,9 @@ pro run_china_year_250
     print, 'Running time: ' + nrs_sec_to_string(systime(/seconds) - t1, /time, /hours24)
   endfor
   
-  envi_batch_exit
+  if ~keyword_set(nobatch) then begin
+    envi_batch_exit
+  endif
 end
 
 pro run_test
