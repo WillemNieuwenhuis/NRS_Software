@@ -70,7 +70,8 @@ end
 
 ;+
 ; :Description:
-;    Stratify a timeseries along the Y / latitude direction 
+;    Stratify a timeseries along the Y / latitude direction. The matrix returned has
+;    dimensions (X x Y) equal to num_bands x steps.
 ;
 ; :Params:
 ;    image : in, required
