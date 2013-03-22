@@ -40,8 +40,8 @@ pro nrs_solar_radiation, dem, start_day, end_day, interval, output_name = energy
   
   envi_convert_file_coordinates, dem, 0.0, 0.0, x_left, y_top, /to_map
   envi_convert_file_coordinates, dem, ns, nl, x_right, y_bot, /to_map
-  lon = (y_top + y_bot) / 2
-  lat = (x_left + x_right) / 2
+  lat = (y_top + y_bot) / 2
+  lon = (x_left + x_right) / 2
   ps_m = nrs_UTM_pixelsize_from_LL(lat, lon, mi.ps)
   
   lat_ext = y_bot - y_top
@@ -291,8 +291,8 @@ function nrs_solar_prepare_slap_maps, demname, swap_aspect = swap_aspect
   
   envi_convert_file_coordinates, dem, 0.0, 0.0, x_left, y_top, /to_map
   envi_convert_file_coordinates, dem, ns, nl, x_right, y_bot, /to_map
-  lon = (y_top + y_bot) / 2
-  lat = (x_left + x_right) / 2
+  lat = (y_top + y_bot) / 2
+  lon = (x_left + x_right) / 2
   ps_m = nrs_UTM_pixelsize_from_LL(lat, lon, mi.ps)
 
   if fi_out.exists then begin
