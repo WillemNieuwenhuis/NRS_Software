@@ -45,8 +45,8 @@ pro nrs_shortwaverad, dem, start_day, end_day, interval, output_name = energy
   nr_strips = ceil(abs(lat_ext))
   dim_ystep = 1 + nl / nr_strips
   
-  intermediate = nrs_prepare_slap_maps(demname, /swap_aspect)
-  if n_elements(intermediate) ne 6 then begin
+  intermediate = nrs_solar_prepare_slap_maps(demname, /swap_aspect)
+  if n_elements(intermediate) ne 3 then begin
     void = error_message('Failed to calculate slope / aspect image', /error)
     return
   endif
@@ -82,6 +82,7 @@ pro nrs_shortwaverad, dem, start_day, end_day, interval, output_name = energy
 
     daynumber = start_day
     while daynumber le end_day do begin
+print,strip,daynumber    
       io = 1.367 * (1 + 0.034 * cos(2 * pi * daynumber / 365))  ; eq 7
       decl = 23.45 * deg2rad * sin(2 * pi * (284 + daynumber) / 365) ; eq 4
       
@@ -100,9 +101,9 @@ pro nrs_shortwaverad, dem, start_day, end_day, interval, output_name = energy
       ; extract individual terms of the equation to speed up calculations
       ;        cosi = cosi1 + cos(decl) * cos(hourangle) * cosi2 + cosi3 * sin(hourangle)
       ; terms of the cosi equation which do not depend on the inner loop
-      cosi1 = sin(decl) * (sin(latitude) * cosslope - cos(latitude) * sinslope * cosaspect)
-      cosi2 = cos(latitude) * cosslope + sin(latitude) * sinslope * cosaspect
-      cosi3 = cos(decl) * sinslope * sinaspect
+      cosi1 = sin(decl) * (sin(latitude) * cosslope - cos(latitude) * sincos) ;sinslope * cosaspect)
+      cosi2 = cos(latitude) * cosslope + sin(latitude) * sincos ;sinslope * cosaspect
+      cosi3 = cos(decl) * sinsin ; sinslope * sinaspect
 
       while hourangle ge sunset do begin
          ; eq 2:
@@ -196,6 +197,9 @@ function nrs_prepare_slap_maps, demname, swap_aspect = swap_aspect
   outcoslope = getOutname(demname, postfix = '_cosslp', ext = '.dat')
   outsincos = getOutname(demname, postfix = '_cossin', ext = '.dat')
   outsinsin = getOutname(demname, postfix = '_sinsin', ext = '.dat')
+
+  envi_open_file, demname, r_fid = dem, /no_realize, /no_interactive_query
+  mi = envi_get_map_info(fid = dem, undefined = no_csy)
   
   ; calculate slope (in degrees) and aspect
   envi_doit, 'topo_doit', fid = dem $

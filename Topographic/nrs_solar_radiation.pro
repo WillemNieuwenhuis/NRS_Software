@@ -74,6 +74,7 @@ pro nrs_solar_radiation, dem, start_day, end_day, interval, output_name = energy
   t2 = systime(/seconds)
   nrs_log_line, logfile, 'Starting solar radiation calculation for ' + demname, /append
 
+  shade_out = getoutname(demname, postfix = '_shade_temp', ext = '.dat')
   openw, energy_unit, outname, /get_lun
   
   fill_value = doMask ? undef : -9999.0
@@ -111,6 +112,7 @@ except_old = !EXCEPT
 
     daynumber = start_day
     while daynumber le end_day do begin
+print,daynumber    
       di = daynumber - start_day
       dn = end_day - start_day + 1 
       msg = systime() + string(strip+1, nr_strips, di+1, dn, format = '("; Strip=",i0," of ",i0,"; day=",i0," of ",i0)')
@@ -139,20 +141,25 @@ except_old = !EXCEPT
       cosi3 = cos(decl) * sinsin
 
       while hourangle ge sunset do begin
+print,hourangle
+if hourangle lt 0.65 then begin
+  print,'stopping'
+endif
          ; eq 2:
          solaralt = asin(sin(latitude) * sin(decl) + cos(latitude) * cos(decl) * cos(hourangle))
          test = tan(decl) / tan(latitude)
   
          ; eq 3:
-         if (cos(hourangle) gt test) then                                  $
-           solaraz = asin(cos(decl) * sin(hourangle) / cos(solaralt))      $
-         else if (cos(hourangle) lt test) then                             $
-           solaraz = pi - asin(cos(decl) * sin(hourangle) / cos(solaralt)) $
-         else if (test eq cos(hourangle)) and (hourangle ge 0) then        $
-           solaraz = pi / 2                                                $
-         else if (test eq cos(hourangle)) and (hourangle lt 0) then        $
+         if (cos(hourangle) gt test) then begin
+           solaraz = asin(cos(decl) * sin(hourangle) / cos(solaralt))
+         endif else if (cos(hourangle) lt test) then begin
+           solaraz = pi - asin(cos(decl) * sin(hourangle) / cos(solaralt))
+         endif else if (test eq cos(hourangle)) and (hourangle ge 0) then begin
+           solaraz = pi / 2
+         endif else if (test eq cos(hourangle)) and (hourangle lt 0) then begin
            solaraz = -pi / 2
-  
+         endif
+
          ; correct for northern lat.s
          azi = (540 - (solaraz / deg2rad)) mod 360
 

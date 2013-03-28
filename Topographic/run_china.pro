@@ -40,7 +40,9 @@ pro run_china_year_250, nobatch = nobatch
     envi_batch_init, log_file='E:\NRS\Fangyuan\DEM of China_250m\batch.txt', /no_status_window
   endif
   
-  dems = [ 'E:\NRS\Fangyuan\DEM of China_250m\dem_tl_mr.dat' $
+  dems = [ $
+            'E:\NRS\Fangyuan\DEM of China_250m\china_dem_subset.dat' $
+;           'E:\NRS\Fangyuan\DEM of China_250m\dem_tl_mr.dat' $
 ;         , 'E:\NRS\Fangyuan\DEM of China_250m\dem_tr_mr.dat' $
 ;         , 'E:\NRS\Fangyuan\DEM of China_250m\dem_bl_mr.dat' $
 ;         , 'E:\NRS\Fangyuan\DEM of China_250m\dem_br_mr.dat' $
@@ -58,7 +60,8 @@ pro run_china_year_250, nobatch = nobatch
     print, 'Starting with: ' + dems[i]
   
     name = getoutname(dems[i], postfix = '_rad', ext = '.dat')
-    nrs_solar_radiation, dem, 1, 365, 60, output_name = name
+;    nrs_solar_radiation, dem, 1, 365, 60, output_name = name  ; new version
+    nrs_shortwaverad, dem, 1, 365, 60, output_name = name ; old version
     
     envi_file_mng, id = dem, /remove
     print, 'Finished: ' + dems[i]
