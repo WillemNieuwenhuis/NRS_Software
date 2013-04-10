@@ -60,7 +60,8 @@ pro nrs_stratify_gui, event
             matrix:         ptr_new(), $   ; stratification matrix
             mat_steps:      long(0), $     ; number of steps in Y direction
             fname:          string(''), $  ; name of listfile / datafile used to create stratification
-            header:         string(''), $
+            header:         string(''), $  ; comma separated list of fields names
+            tracks:         string(''), $  ; comma separated list of track files
             start_year:     long(0), $     ; year of the (first) stack
             end_year:       long(0), $     ; year of the (last) stack
             line_data:      ptr_new(), $   ; the track data for the graphs
@@ -85,7 +86,7 @@ pro nrs_stratify_gui, event
 
   ; constants
   label_width = 100
-  label_wide_width = 150
+  label_wide_width = 175
   text_width =  60
   text_small_width = 10
   num_width =   15
@@ -281,6 +282,21 @@ pro nrs_stratify_gui, event
   ; output panel
   nrs_stratify_output_group = cw_groupbox(inputPanel, group_title = 'Output')
 
+  nrs_stratify_output_sv_panel = widget_base(nrs_stratify_output_group, /row)
+  
+  nrs_stratify_output_sv = widget_label(nrs_stratify_output_sv_panel $
+                , uname = 'nrs_stratify_output_sv' $
+                , value = 'Stratification values for observations' $
+                , xsize = label_wide_width $
+              )
+
+  nrs_stratify_sv_button = widget_button(nrs_stratify_output_sv_panel $
+                , uname = 'nrs_stratify_sv_button' $
+                , value = 'Save' $
+                , tooltip = 'Save stratification values for observations' $
+                , event_pro = 'nrs_stratify_sv_tables' $
+    )
+
   nrs_stratify_output_strat_panel = widget_base(nrs_stratify_output_group, /row)
   
   nrs_stratify_output_image = cw_dirfile(nrs_stratify_output_strat_panel $
@@ -301,11 +317,11 @@ pro nrs_stratify_gui, event
   nrs_stratify_output_pict_panel = widget_base(nrs_stratify_output_group, /row)
   
   nrs_stratify_output_JPG = cw_dirfile(nrs_stratify_output_pict_panel $
+                , uname = 'nrs_stratify_output_JPG' $
                 , title = 'Picture name' $
                 , style = 'file' $
                 , xsize = text_width $
                 , xtitlesize = label_width $
-                , uname = 'nrs_stratify_output_JPG' $
               )
 
   nrs_stratify_savepicturebutton = widget_button(nrs_stratify_output_pict_panel $

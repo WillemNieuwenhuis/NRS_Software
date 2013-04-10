@@ -199,14 +199,16 @@ pro nrs_stratify_display_track, event
   nrs_get_dt_indices, jd, period = 'day', julian_out = jo
   nrs_get_dt_indices, jo, period = per_str, indices = ind, ri = ri, /clip
 
+  nrdays = jd[1] - jd[0] + 1
   nrrec = n_elements(line_data[0, *])
   dt = long(reform(julday(1, 1, line_data[0, *]) + line_data[1, *] - 1, nrrec))  ; julian days from table
   list_match, dt, jo, index, rev_ind
-  bix = ri[rev_ind] + 1 ; data table positions in table for current data set
+;  bix = ri[rev_ind] + 1 ; data table positions in table for current data set
+  bix = rev_ind
   
   if rev_ind[0] eq -1 then return
   
-  newdat = fltarr(field_count - 2, nb)
+  newdat = fltarr(field_count - 2, nrdays)
   newdat[*, bix] = line_data[2 : -1, *]
   colnames = strsplit(header, ',;\t', /extract)
   
@@ -216,11 +218,13 @@ pro nrs_stratify_display_track, event
     if ptr_valid(state.line_data) then begin
       ld_ar = *(state.line_data)
       fields = strsplit(state.header, ',;\t', /extract)
+      fns = strsplit(state.tracks, ',;\t', /extract)
     endif
     ld_ar = [ld_ar, newdat] ; append the new data
 
     state.line_data = ptr_new(ld_ar, /no_copy)
     state.header = strjoin([fields, colnames[2 : -1]], ',')
+    state.tracks = strjoin([state.tracks, table], ',')
      
     state.line_colix++
     if state.line_colix ge 250 then state.line_colix = 239
@@ -228,6 +232,7 @@ pro nrs_stratify_display_track, event
     if ptr_valid(state.line_data) then ptr_free, state.line_data
     state.line_data = ptr_new(newdat, /no_copy)
     state.header = strjoin(colnames[2 : -1], ',')
+    state.tracks = table
     
     state.line_colix = 240
   endelse
@@ -242,6 +247,66 @@ pro nrs_stratify_display_track, event
   widget_control, event.top, set_uvalue = state
 
   nrs_stratify_draw_graph, event
+end
+
+pro nrs_stratify_sv_tables, event
+  compile_opt idl2, logical_predicate
+
+  widget_control, event.top, get_uvalue = state
+  
+  if ~ptr_valid(state.matrix) then return
+  
+  matrix = *(state.matrix)
+  sz = size(matrix, /dim)
+  
+  tracks = strsplit(state.tracks, ',', count = count, /extract)
+  if count le 0 then return
+  
+  x_min = state.x_min
+  x_max = state.x_max
+  y_min = state.dem_min
+  y_max = state.dem_max
+
+  sy = state.start_year
+  ey = state.end_year
+  nryears = ey - sy + 1
+  nb = x_max - x_min + 1
+
+  jd = [julday(1, 1, sy), julday(12, 31, ey)]
+  per = nrs_get_period_from_range(jd[0], jd[1], nb, per_str = per_str)
+  nrs_get_dt_indices, jd, period = 'day', julian_out = jo
+  nrs_get_dt_indices, jo, period = per_str, indices = ind, ri = ri, /clip
+
+  for fn = 0, n_elements(tracks) - 1 do begin
+    table = tracks[fn]
+    line_data = nrs_read_table(table, col_count = field_count, header = header, valid = valid)
+    if valid eq 0 then continue
+
+    nrrec = n_elements(line_data[0, *])
+    dt = long(reform(julday(1, 1, line_data[0, *]) + line_data[1, *] - 1, nrrec))  ; julian days from table
+    list_match, dt, jo, index, rev_ind
+    ix = ri[rev_ind] + 1 ; data table positions in table for current data set
+  
+    if rev_ind[0] eq -1 then continue
+
+    newdat = line_data[2 : -1, *]
+    iy = round((sz[1] - 1) * (newdat - y_min) / (y_max - y_min))
+    ixx = transpose(ix)
+    ix = []
+    obs_hdr = ''
+    for i = 1, field_count - 2 do begin
+      ix = [ix, ixx]
+      obs_hdr += string(i, format = '(",val", i0)')
+    endfor 
+    obs_val = matrix[ix, iy]
+    outdata = [line_data, obs_val]
+    outheader = strsplit(header + obs_hdr, ',', /extract)
+    
+    tbl_out = getOutname(table, postfix = '_val', ext = '.csv')
+    write_csv, tbl_out, outdata, header = outheader
+  endfor
+  
+  ans = dialog_message('Finished saving tables')
 end
 
 pro nrs_stratify_SavePicture, event
@@ -429,6 +494,7 @@ pro nrs_stratify_draw_graph, event
   mtx = congrid(mtx, draw_width + 1, draw_dem_height + 1)
 
   ; Start the actual drawing:
+  device, decomposed = 0  ; we are using LUT colors
   erase, 255  ; white
 
   reserved_colors = state.reserved_colors
@@ -440,12 +506,17 @@ pro nrs_stratify_draw_graph, event
   ; draw the stratification
   tv, mtx, margin_left, margin_bottom, /order, /normal
 
-  month_start = julday(indgen(nryears * 12) mod 12 + 1, 15, indgen(nryears * 12) / 12 + sy)
-  xticks = month_start - julday(1, 1, sy)  
-
-  dummy = label_date(date_format='%m')
   x_min = state.x_min
   x_max = state.x_max
+  sy = state.start_year
+  ey = state.end_year
+  nryears = ey - sy + 1
+  nrdays = julday(1, 1, ey + 1) - julday(1, 1, sy)
+  nb = (x_max - x_min) / nryears
+  month_start = julday(indgen(nryears * 12) mod 12 + 1, 15, indgen(nryears * 12) / 12 + sy)
+  xticks = month_start - julday(1, 1, sy) ; x-axis is day based
+
+  dummy = label_date(date_format='%m')
   ; plot the bottom X-axis (to define the ranges)
   plot, freq $
     , background = 255 $ ; white
@@ -482,12 +553,13 @@ pro nrs_stratify_draw_graph, event
     , /normal
 
   ; Top X-axis
-  sy = state.start_year
-  ey = state.end_year
-  nryears = ey - sy + 1
-  nb = (x_max - x_min) / nryears
   ticks = indgen(nryears) * nb + nb / 2
   xtickname = string(indgen(ey - sy + 1) + sy, format = '(i0)')
+  if nryears eq 1 then begin
+    ticks = [1, ticks, nb + 1]
+    xtickname = replicate(' ', 3)
+    xtickname[1] = string(indgen(ey - sy + 1) + sy, format = '(i0)')
+  endif
   axis, margin_left, margin_bottom + margin_height $
     , xrange = [x_min, x_max] + 1 $
     , xticks = n_elements(ticks) - 1 $
@@ -559,44 +631,6 @@ pro nrs_stratify_draw_graph, event
       
     endfor
   endif
-
-;  ; draw the labels
-;  field_color = 254
-;  if field_count gt 0 then begin
-;    for tc = 0, field_count - 1 do begin
-;      x_off = -0.015
-;      y_off = 0.025
-;      if tc eq 0 then begin
-;        x_off *= -1.0
-;        y_off *= -1.0
-;      endif
-;      line_color = field_color - tc
-;      x_as = line_data[0, *]
-;      y_as = line_data[tc + 1, *]
-;      labels = line_data[(tc + 1) + field_count, *]
-;      for index = 0, n_elements(x_as) - 1 do begin
-;        factor = 1.0
-;        if index gt 19 then begin ; past middle of summer
-;          factor = -1.0
-;        endif
-;        if (factor * x_off) lt 0 then factor *= 1.2
-;        x = x_as[index]
-;        y = y_as[index]
-;        label = labels[index]
-;        if finite(label) eq 1 then begin
-;          x = margin_left + (1.0 * (x - 1) / 35) * margin_width
-;          y = margin_bottom + ((y - new_min) / (new_max - new_min)) * margin_height
-;          str = string(round(label), format = '(i-0)')
-;          xyouts, x + x_off * factor, y + y_off, str $
-;            , font = 1 $
-;            , charsize = character_size * 0.9 $
-;            , charthick = character_thick $
-;            , color = line_color $
-;            , /normal
-;        endif
-;      end
-;    endfor
-;  endif
 
   ; plot the legend for the species graph(s)
   leg_steps = 10
