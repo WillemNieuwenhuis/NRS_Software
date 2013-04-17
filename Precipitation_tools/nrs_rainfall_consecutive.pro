@@ -61,21 +61,38 @@ pro nrs_rainfall_consecutive, inname, calcdry = dry, calcwet = wet $
   for line = 0, nl - 1 do begin
     if nrs_update_progress(prog_obj, line, nl, cancelled = cancelled) then return
     
-    slice = envi_get_slice(fid = fid, line = line, xs = 0, xe = ns - 1, pos = pos, /bip)
+    slice = envi_get_slice(fid = fid, line = line, xs = 0, xe = ns - 1, pos = pos, /bil)
     
     dry = slice lt dry_limit
     for s = 0, ns - 1 do begin
-      res = label_region([0, dry[*, s], 0])
-      h = histogram(res)
-      out_data[s, line, 0] = n_elements(h) gt 1 ? max(h[1:-1]) : h[0]
+      cnt_l = 0
+      i = 1
+      max_l = -1
+      while i lt nb do begin
+        if dry[s, i] eq 1 then ++cnt_l else begin
+          max_l = max([cnt_l, max_l])
+          cnt_l = 0
+        endelse 
+        ++i
+      endwhile
+      out_data[s, line, 0] = max_l
     endfor
 
     wet = slice ge dry_limit
     for s = 0, ns - 1 do begin
-      res = label_region([0, wet[*, s], 0])
-      h = histogram(res)
-;      out_data[s, line, 1] = max(h[1:-1])
+      cnt_l = 0
+      i = 1
+      max_l = -1
+      while i lt nb do begin
+        if wet[s, i] eq 1 then ++cnt_l else begin
+          max_l = max([cnt_l, max_l])
+          cnt_l = 0
+        endelse 
+        ++i
+      endwhile
+      out_data[s, line, 1] = max_l
     endfor
+    
     if line eq 0 then begin
       t2 = systime(1)
       print,'estimated time left: ' + nrs_sec_to_string((t2-t1) * nl)
@@ -83,49 +100,7 @@ pro nrs_rainfall_consecutive, inname, calcdry = dry, calcwet = wet $
   endfor
   
   inherit = envi_set_inheritance(fid, dims, /full)
-  envi_write_envi_file, out_data, out_name = outname, inherit = inherit
+  envi_write_envi_file, out_data, out_name = outname, inherit = inherit, bnames = ['dry', 'wet']
   print, 'Total running time: ' + nrs_sec_to_string((systime(1)-t1))
   
 end
-
-pro work_test
-  compile_opt idl2, hidden
-  
-  slice = [[0,0,0,1],[1,0,1,1],[1,0,0,1],[1,1,0,1],[0,1,0,0]]
-  print, working(slice)
-
-  slice = 1 - slice
-  print, working(slice)
-  
-  slice = randomu(13,15,17)
-  print, working(slice)
-end
-
-function working, inslice, dry_limit=dry_limit
-  compile_opt idl2, hidden
-  
-  slice = transpose(inslice)
-  
-  if n_elements(dry_limit) eq 0 then dry_limit = 0.8
-  ns = (size(slice, /dim))[0]
-  nb = (size(slice, /dim))[1]
-  nsw = ns + 2
-  
-  mul = rebin(transpose(indgen(nb) + 1), ns, nb)
-  
-  work = fltarr(nsw, nb)
-
-  dry = slice lt dry_limit
-  work[1 : nsw - 2, *] = dry * mul
-  work = reform(work, nsw * nb, /overwrite)
-  ix = where(work[1:*] ne work, cnt) + 1
-  if cnt gt 0 then begin
-    ix = reform(ix, 2, cnt / 2, /overwrite)
-    diff = ix[1, *] - ix[0, *]
-    mx = fltarr(nsw, nb)
-    mx[ix[0, *]] = diff
-    out_data = fix(max(mx, dim = 1))
-    return, out_data
-  endif
-  return,[]
-end  
