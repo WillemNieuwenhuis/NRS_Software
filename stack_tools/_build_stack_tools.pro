@@ -8,6 +8,9 @@ pro _build_stack_tools
            , 'nrs_stack_gui_eventCB.pro' $
            , 'nrs_stack_aggregation_gui.pro' $
            , 'nrs_stack_aggregation_gui_eventcb.pro' $
+           , 'nrs_stack_quartiles.pro' $
+           , 'nrs_stack_quartiles_gui.pro' $
+           , 'nrs_stack_quartiles_gui_eventcb.pro' $
            , 'nrs_bias_removal.pro' $
            , 'nrs_bias_removal_gui.pro' $
            , 'nrs_bias_removal_gui_eventCB.pro' $
