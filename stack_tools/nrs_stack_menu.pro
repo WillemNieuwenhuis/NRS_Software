@@ -15,6 +15,10 @@ pro nrs_stack_tools_define_buttons, buttonInfo
     uvalue = 'Stack statistics', event_pro = 'nrs_stack_statistics_gui', $
     ref_value = 'Stack', position = 'last', /separator
 
+  envi_define_menu_button, buttonInfo, value = 'Stack quartiles', $
+    uvalue = 'Stack quartiles', event_pro = 'nrs_stack_quartiles_gui', $
+    ref_value = 'Stack', position = 'last', /separator
+
   envi_define_menu_button, buttonInfo, value = 'Aggregate stack', $
     uvalue = 'Aggregate stack', event_pro = 'nrs_aggregate_gui', $
     ref_value = 'Stack', position = 'last'
