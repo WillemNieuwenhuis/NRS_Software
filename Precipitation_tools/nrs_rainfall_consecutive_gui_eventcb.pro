@@ -67,7 +67,10 @@ pro nrs_rainfall_handleOK, event
   nrs_rainfall_consecutive, infile $
                        , outname = outfile $
                        , /calcdry $
+                       , /calcwet $
+                       , /calchighwet $
                        , dry_limit = drylimit $
+                       , high_limit = 20 $
 ;                       , start_date, end_date $
                        , prog_obj = progressBar, cancelled = cancelled
 

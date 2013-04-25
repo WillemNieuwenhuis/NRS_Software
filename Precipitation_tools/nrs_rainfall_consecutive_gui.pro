@@ -55,6 +55,7 @@ pro nrs_rainfall_gui, event
                 , labelalign = 1 $
                 , labelsize = label_width $
                 , xsize = text_small_width $
+                , value = 1 $
                 , unittext = 'mm' $
               )
               
