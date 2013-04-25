@@ -435,8 +435,11 @@ pro progress_simple::update, percent, text = thetext, title = thetitle
 ;    s_elap = nrs_sec_to_string(elap, /time, /date)
     s_elap = systime() + string(self.level, format='(" (Level ",i0,")")')
     msg = s_elap + ', ' + msg + string(self.percent, format = '(f0.1,"%")')
-    if n_elements(self.log_file) gt 0 then nrs_log_line, self.log_file, msg, /append $
-    else print, msg 
+    if n_elements(self.log_file) gt 0 then begin
+      unit = self.log_unit
+      nrs_log_line, self.log_file, msg, /append, use_unit = unit
+      if unit gt 0 then self.log_unit = unit
+    endif    else print, msg 
   endif
 end
 
@@ -558,7 +561,8 @@ pro progress_simple__define
               xsize: 0L, $        ; the xsize of the progress bar.
               ysize: 0L, $        ; the ysize of the progress bar.
               last_time: 0L, $    ; previous time the progress was started 
-              log_file: '' $      ; If specified will case all updates to be redirected to file
+              log_file: '', $     ; If specified will case all updates to be redirected to file
+              log_unit: -1 $      ; handle to logfile if logfile is specified
             }
 end
 
