@@ -304,6 +304,10 @@ pro nrs_get_dt_indices, julian, interval = interval, period = period $
                       , num_period = period_out
   compile_opt idl2, logical_predicate
 
+  docrop = keyword_set(crop)
+  doclip = ~docrop and keyword_set(clip)
+  docrop = docrop or ~doclip
+
   caldat, julian, mm, md, my, mh, mmn, ms
 
   nb = n_elements(julian)
@@ -347,9 +351,17 @@ pro nrs_get_dt_indices, julian, interval = interval, period = period $
                 end
       'month' : begin
                   period_out = 12
+                  if docrop and (ed gt 1) then month_cnt++
+                    dar = intarr(month_cnt) + 1
+                  dar = intarr(month_cnt) + 1
                   mar = 1 + (indgen(month_cnt) + (sm - 1)) mod 12
                   yar = sy + (indgen(month_cnt) + (sm - 1)) / 12
-                  jul_out = julday(mar, 1, yar)
+                  if docrop and (ed gt 1) then begin
+                    dar[[0, month_cnt - 1]] = [sd, ed]
+                    mar[[0, month_cnt - 1]] = [sm, em]
+                    yar[[0, month_cnt - 1]] = [sy, ey]
+                  endif 
+                  jul_out = julday(mar, dar, yar)
                 end
 ;      '3-month' : begin
 ;                  mar = 1 + (indgen(month_cnt) + (sm - 1)) mod 12

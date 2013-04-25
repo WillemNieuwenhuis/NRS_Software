@@ -72,6 +72,19 @@ pro nrs_timed_aggregation_gui, event
                 , value = 'Input period: --' $
               )
   
+  nrs_timed_aggregation_param_group = cw_groupbox(nrs_timed_aggregation_mainPanel, group_title = 'Parameters')              
+  
+  nrs_timed_aggregation_indices_panel = widget_base(nrs_timed_aggregation_param_group, /row)
+  nrs_timed_aggregation_indices_label = widget_label(nrs_timed_aggregation_indices_panel $
+                , value = 'Aggregation function' $
+                , xsize = label_width $
+              )
+
+  nrs_timed_aggregation_indices_combo = widget_combobox(nrs_timed_aggregation_indices_panel $
+                , uname = 'nrs_timed_aggregation_indices_combo' $
+                , value = ['Sum', 'Mean', 'Minumum', 'Maximum', 'Median'] $ ;, 'Standard deviation', 'Mode'] $
+              )
+
   nrs_timed_aggregation_aggr_panel = widget_base(nrs_timed_aggregation_mainPanel, /row)
   nrs_timed_aggregation_aggr_label = widget_label(nrs_timed_aggregation_aggr_panel $
                 , value = 'Output date interval' $
@@ -80,16 +93,6 @@ pro nrs_timed_aggregation_gui, event
   nrs_timed_aggregation_aggr_combo = widget_combobox(nrs_timed_aggregation_aggr_panel $
                 , uname = 'nrs_timed_aggregation_aggr_combo' $
                 , value = ['Day', '8-Day', '10-Day', '16-Day', 'Month', 'Year'] $
-              )
-
-  nrs_timed_aggregation_indices_panel = widget_base(nrs_timed_aggregation_mainPanel, /row)
-  nrs_timed_aggregation_indices_label = widget_label(nrs_timed_aggregation_indices_panel $
-                , value = 'Aggregation function' $
-                , xsize = label_width $
-              )
-  nrs_timed_aggregation_indices_combo = widget_combobox(nrs_timed_aggregation_indices_panel $
-                , uname = 'nrs_timed_aggregation_indices_combo' $
-                , value = ['Sum', 'Mean', 'Minumum', 'Maximum', 'Median'] $ ;, 'Standard deviation', 'Mode'] $
               )
 
   nrs_timed_aggregation_output_panel = widget_base(nrs_timed_aggregation_contentPanel, /frame, /col)

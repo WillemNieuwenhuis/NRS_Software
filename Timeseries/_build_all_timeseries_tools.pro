@@ -5,7 +5,7 @@ pro _build_all_timeseries_tools
            , 'nrs_harmonic_gui_eventcb.pro' $
            , 'nrs_harmonic_inv_gui.pro' $
            , 'nrs_harmonic_inv_gui_eventcb.pro' $
-           , 'nrs_harmonic_analysis_menu.pro' $
+           , 'nrs_timeseries_menu.pro' $
            , 'nrs_period_stat.pro' $
            , 'nrs_timed_aggregation.pro' $
            , 'nrs_timed_aggregation_gui.pro' $
