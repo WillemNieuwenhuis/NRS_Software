@@ -30,15 +30,26 @@ pro nrs_timed_aggregation_handle_input, event
     return
   endif
 
-;  per_len = [1, 8, 10, 16, 30, 365]
-;  per_str = ['day', '8-day', '10-day', '16-day', 'month', 'year']
-;  input_period = (ed - sd + 1) / (nb - 1)   ; in days
-;  diff = abs(per_len - input_period)
-;  mn = min(diff, mn_ix)
-;  input_period = per_str[mn_ix]
   per = nrs_get_period_from_range(sd, ed, nb, per_str = input_period)
 
   widget_control, val_fld, set_value = 'Input period: ' + input_period
+end
+
+pro nrs_timed_aggregation_toggle_levels, event
+  compile_opt idl2, logical_predicate
+  
+  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_aggregation_lvl1_button')
+  isOn1 = widget_info(val_fld, /button_set)
+  
+  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_aggregation_lvl2_button')
+  isOn2 = widget_info(val_fld, /button_set)
+  widget_control, val_fld, sensitiv = isOn1
+  
+  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_aggregation_level1_combo')
+  widget_control, val_fld, sensitiv = isOn1
+  
+  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_aggregation_level2_combo')
+  widget_control, val_fld, sensitiv = (isOn1 && isOn2)
 end
 
 pro nrs_timed_aggregation_handleOK, event
@@ -63,6 +74,18 @@ pro nrs_timed_aggregation_handleOK, event
   val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_aggregation_indices_combo')
   aggr_func = widget_info(val_fld, /combobox_gettext)
   
+  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_aggregation_lvl1_button')
+  isOn1 = widget_info(val_fld, /button_set)
+  
+  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_aggregation_lvl2_button')
+  isOn2 = widget_info(val_fld, /button_set)
+
+  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_aggregation_level1_combo')
+  isOn1 = widget_info(val_fld, /button_set)
+  
+  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_aggregation_level2_combo')
+  isOn2 = widget_info(val_fld, /button_set)
+
   if strlen(ref) eq 0 then begin
     void = error_message('Input timeseries not specified!', traceback = 0, /error)
     return

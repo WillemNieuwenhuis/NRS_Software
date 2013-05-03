@@ -159,12 +159,18 @@ pro nrs_match_arrays, target, source, index = index, ri = ri
   se = n_elements(source)
   te = n_elements(target)
   index = lonarr(se)
-  for si = 0, se - 1 do begin
-    while ti lt te && source[si] gt target[ti] do begin
-      ti++
-    endwhile
-    index[si] = ti lt te ? ti : -1
-  endfor
+  if te eq 2 then begin
+    ; special case
+    index[0 : se/2] = 0
+    index[se/2 + 1 : -1] = 1
+  endif else begin
+    for si = 0, se - 1 do begin
+      while ti lt te && source[si] gt target[ti] do begin
+        ti++
+      endwhile
+      index[si] = ti lt te ? ti : -1
+    endfor
+  endelse
   
   if arg_present(ri) then begin
     ri = lonarr(te)
@@ -280,6 +286,9 @@ end
 ;    start_year_index : out
 ;      Index of the first occurrence of 1 jan in the list of output dates;
 ;      is -1 if 1 jan is not in the dates
+;    offset : out
+;      Indicate the distance to the first date in the first complete period
+;      from the start date of the range
 ;    num_period : out
 ;      Output number of periods per year
 ;    crop : in
@@ -301,6 +310,7 @@ pro nrs_get_dt_indices, julian, interval = interval, period = period $
                       , indices = indices $
                       , ri = ri $
                       , start_year_index = start_year_index $
+                      , offset = offset $
                       , num_period = period_out
   compile_opt idl2, logical_predicate
 
@@ -352,7 +362,6 @@ pro nrs_get_dt_indices, julian, interval = interval, period = period $
       'month' : begin
                   period_out = 12
                   if docrop and (ed gt 1) then month_cnt++
-                    dar = intarr(month_cnt) + 1
                   dar = intarr(month_cnt) + 1
                   mar = 1 + (indgen(month_cnt) + (sm - 1)) mod 12
                   yar = sy + (indgen(month_cnt) + (sm - 1)) / 12
@@ -370,6 +379,7 @@ pro nrs_get_dt_indices, julian, interval = interval, period = period $
 ;                end
       'year'  : begin
                   period_out = 1
+                  if docrop and (ed gt 1) then year_cnt++
                   jul_out = julday(1, 1, sy + indgen(year_cnt))
                   jul_out[[0,year_cnt - 1]] = julian[[0, nb - 1]]
                 end
@@ -381,6 +391,10 @@ pro nrs_get_dt_indices, julian, interval = interval, period = period $
   y2 = where(julday(1, 1, sy + 1) eq jul_out, cnt2)
   if cnt1 gt 0 then start_year_index = y1[0] $
   else if cnt2 gt 0 then start_year_index = y2[0]
+  
+  if arg_present(offset) then begin
+    offset = jul_out[1] - julian[0]
+  endif
   
   if arg_present(ri) then $
     nrs_match_arrays, julian, jul_out, index = indices, ri = ri $

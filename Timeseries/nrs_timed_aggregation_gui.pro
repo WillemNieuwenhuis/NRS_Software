@@ -74,6 +74,42 @@ pro nrs_timed_aggregation_gui, event
   
   nrs_timed_aggregation_param_group = cw_groupbox(nrs_timed_aggregation_mainPanel, group_title = 'Parameters')              
   
+  dummy = widget_label(nrs_timed_aggregation_param_group, value = 'Grouping', /align_left)
+  nrs_timed_aggregation_grouping = widget_base(nrs_timed_aggregation_param_group, /col)
+  
+  nrs_timed_aggregation_lvl1_panel = widget_base(nrs_timed_aggregation_grouping, /row)
+  
+  nrs_timed_aggregation_level1 = widget_base(nrs_timed_aggregation_lvl1_panel, /row, /nonexclusive)
+  nrs_timed_aggregation_lvl1_button = widget_button(nrs_timed_aggregation_level1 $
+                , uname = 'nrs_timed_aggregation_lvl1_button' $
+                , value = 'Level 1' $
+                , xsize = label_width $
+                , event_pro = 'nrs_timed_aggregation_toggle_levels' $
+;                , sensitiv = 0 $
+              )
+
+  nrs_timed_aggregation_level1_combo = widget_combobox(nrs_timed_aggregation_lvl1_panel $
+                , uname = 'nrs_timed_aggregation_level1_combo' $
+                , value = ['Day', '8-Day', '10-Day', '16-Day', 'Month', 'Year'] $
+                , sensitiv = 0 $
+              )
+
+  nrs_timed_aggregation_lvl2_panel = widget_base(nrs_timed_aggregation_grouping, /row)
+  nrs_timed_aggregation_level2 = widget_base(nrs_timed_aggregation_lvl2_panel, /row, /nonexclusive)
+  nrs_timed_aggregation_lvl2_button = widget_button(nrs_timed_aggregation_level2 $
+                , uname = 'nrs_timed_aggregation_lvl2_button' $
+                , value = 'Level 2' $
+                , xsize = label_width $
+                , event_pro = 'nrs_timed_aggregation_toggle_levels' $
+                , sensitiv = 0 $
+              )
+
+  nrs_timed_aggregation_level2_combo = widget_combobox(nrs_timed_aggregation_lvl2_panel $
+                , uname = 'nrs_timed_aggregation_level2_combo' $
+                , value = ['Day', '8-Day', '10-Day', '16-Day', 'Month', 'Year'] $
+                , sensitiv = 0 $
+              )
+
   nrs_timed_aggregation_indices_panel = widget_base(nrs_timed_aggregation_param_group, /row)
   nrs_timed_aggregation_indices_label = widget_label(nrs_timed_aggregation_indices_panel $
                 , value = 'Aggregation function' $
@@ -83,16 +119,6 @@ pro nrs_timed_aggregation_gui, event
   nrs_timed_aggregation_indices_combo = widget_combobox(nrs_timed_aggregation_indices_panel $
                 , uname = 'nrs_timed_aggregation_indices_combo' $
                 , value = ['Sum', 'Mean', 'Minumum', 'Maximum', 'Median'] $ ;, 'Standard deviation', 'Mode'] $
-              )
-
-  nrs_timed_aggregation_aggr_panel = widget_base(nrs_timed_aggregation_mainPanel, /row)
-  nrs_timed_aggregation_aggr_label = widget_label(nrs_timed_aggregation_aggr_panel $
-                , value = 'Output date interval' $
-                , xsize = label_width $
-              )
-  nrs_timed_aggregation_aggr_combo = widget_combobox(nrs_timed_aggregation_aggr_panel $
-                , uname = 'nrs_timed_aggregation_aggr_combo' $
-                , value = ['Day', '8-Day', '10-Day', '16-Day', 'Month', 'Year'] $
               )
 
   nrs_timed_aggregation_output_panel = widget_base(nrs_timed_aggregation_contentPanel, /frame, /col)
@@ -111,6 +137,7 @@ pro nrs_timed_aggregation_gui, event
   widget_control, /realize, nrs_timed_aggregation_contentpanel
 
   ; Initialize stuff
+  
 
   ; start the form
   XManager, 'nrs_timed_aggregation_gui', nrs_timed_aggregation_contentPanel, /no_block
