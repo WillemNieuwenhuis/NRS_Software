@@ -23,7 +23,9 @@ pro _auto_build, files, sav_name, logfile = logfile, no_lib = no_lib
   if n_elements(logfile) gt 0 && strlen(strtrim(logfile, 2)) gt 0 then begin
     openw, unit, logfile, /get_lun, /append
     printf, unit, systime()
-    if rout_cnt gt 0 then $
+    if rout_cnt eq 1 then $
+      printf, unit , urout, usrc, for = '(a,",",a)
+    if rout_cnt gt 1 then $
       printf, unit ,[transpose(urout),transpose(usrc)], for = '(a,",",a)
     printf, unit
     printf, unit, sav_cmd
