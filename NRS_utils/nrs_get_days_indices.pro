@@ -184,6 +184,18 @@ pro nrs_match_arrays, target, source, index = index, ri = ri
   endif
 end
 
+;+
+; :description:
+;    Describe the procedure.
+;
+; :params:
+;    sy
+;    ey
+;    nb
+;
+; :author: nieuwenhuis
+; :obsolete:
+;-
 function nrs_map_date, sy, ey, nb
   jd = [julday(1, 1, sy), julday(12, 31, ey)]
   per = nrs_get_period_from_range(jd[0], jd[1], nb, per_str = per_str)
@@ -321,6 +333,7 @@ pro nrs_get_dt_indices, julian, interval = interval, period = period $
   caldat, julian, mm, md, my, mh, mmn, ms
 
   nb = n_elements(julian)
+  in_period = (julian[-1] - julian[0]) / nb 
   
   sy = my[0]
   sm = mm[0]

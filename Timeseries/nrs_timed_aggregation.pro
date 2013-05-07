@@ -1,42 +1,88 @@
-function nrs_get_cross_index, sd, ed, per, input_period, aggr_interval, aggr_interval2
+function nrs_get_interval_mapping, int1, jd1, int2, jd2
   compile_opt idl2, logical_predicate
+  
+  all_intervals = ['day', '8-day', '10-day', '16-day', 'month', 'year']
+  all_indays = [1, 8, 10, 16, 31, 365]
+  ix1 = where(strlowcase(int1) eq all_intervals, cnt1)
+  ix2 = where(strlowcase(int2) eq all_intervals, cnt1)
+  
+  num_per = fix(round(all_indays[ix2] / all_indays[ix1]))
+  nrs_get_dt_indices, [jd2 - all_indays[ix2], jd2], period = int2, julian = jt
+  jd_off = jd1 - jt[-2] ; offset of smallest period in larger period
+
+  return, { num_per : num_per $
+          , off_per : jd_off $
+          , ind_per : fix(jd_off / all_indays[ix1]) $
+          }
+end
+
+function nrs_get_cross_index, sd, ed, per, input_period, aggr_interval, aggr_interval2, bnames = bnames
+  compile_opt idl2, logical_predicate
+  
+  level2 = n_elements(aggr_interval2) gt 0
+  level1 = ~level2 && (n_elements(aggr_interval) gt 0)
   
   ; get the indices for the input image stack
   nrs_get_dt_indices, [sd, ed], period = input_period $
                       , julian_out = jul_in, indices = ind_in
-                      
+
   ; get the indices for the output image stack
   ; shortest period first
-  nrs_get_dt_indices, jul_in, period = aggr_interval $
+  if n_elements(aggr_interval) gt 0 then $
+    nrs_get_dt_indices, jul_in, period = aggr_interval $
                       , julian_out = jul_out $
                       , indices = indices, start_year_index = syi, num_period = num_periods
 
   ; second period, if any
-  nrs_get_dt_indices, jul_in, period = aggr_interval2 $
+  if n_elements(aggr_interval2) gt 0 then $
+    nrs_get_dt_indices, jul_in, period = aggr_interval2 $
                       , julian_out = jo_lvl2 $
                       , indices = ind_lvl2, start_year_index = syi_lvl2, num_period = num_lvl2
 
-  ; Always calculate year indices
-  nrs_get_dt_indices, jul_in, period = 'year' $
-                      , julian_out = jul_yy $
-                      , indices = ind_yy
+  ; for one level
+  if level1 then begin
+    p_ar = ptrarr(num_periods)
+    offset = jul_out[1] - sd
+    st_p = syi lt 0 ? 0 : num_periods - syi
+    for p = 0, num_periods - 1 do begin
+      arr = []
+      six = p
+      while six lt n_elements(indices) - 1 do begin
+        arr = [arr, indgen(indices[six + 1] - indices[six]) + indices[six]]
+        six += num_periods
+      endwhile
+      pix = (st_p + p) mod num_periods
+      if ptr_valid(p_ar[pix]) then ptr_free, p_ar[pix]
+      p_ar[pix] = ptr_new(arr)
+    endfor
+    
+    if num_periods eq 12 then form = '("Month: ",i02)' $
+    else form = '("Period: ",i02)'
+    bnames = string(indgen(num_periods) + 1, format = form)
+    
+  endif
 
-  ;
-  p_ar = ptrarr(num_periods)
-  offset = jul_out[1] - sd
-  pix = syi lt 0 ? 0 : num_periods - syi
-  for p = 0, num_periods - 1 do begin
-    arr = []
-    six = p
-    while six lt n_elements(indices) - 1 do begin
-      arr = [arr, indgen(indices[six + 1] - indices[six]) + indices[six]]
-      six += num_periods
-    endwhile
-    ppix = (pix + p) mod num_periods
-    if ptr_valid(p_ar[ppix]) then ptr_free, p_ar[ppix]
-    p_ar[ppix] = ptr_new(arr)
-  endfor
-  
+  ; for 2 levels
+  if level2 then begin
+    cnt_per = n_elements(indices) - 1
+    if indices[cnt_per-1] eq indices[cnt_per-2] then cnt_per--
+    p_ar = ptrarr(cnt_per)
+    for p = 0, cnt_per - 1 do begin
+      ps = indices[p]
+      pe = indices[p + 1]
+      arr = indgen(pe - ps) + ps
+      if ptr_valid(p_ar[p]) then ptr_free, p_ar[p]
+      p_ar[p] = ptr_new(arr)
+    endfor
+
+    caldat, jul_out, mm, dd, yy
+    st_p = syi lt 0 ? 0 : num_periods - syi
+    bn = ((indgen(n_elements(yy)) + st_p) mod num_periods) + 1
+    if num_periods eq 12 then form = '("Month.Year: ",i03,".",i04)' $
+    else form = '("Period.Year: ",i03,".",i04)'
+    bnames = string([transpose(bn), transpose(yy)], format = form)
+  endif
+
   return, p_ar
 end
 
@@ -95,7 +141,8 @@ pro nrs_timed_aggregation, image $
   if fid eq -1 then return
   
   envi_file_query, fid, ns = ns, nl = nl, nb = nb, data_type = dt, dims = dims, data_ignore_value = undef
-
+  per = nrs_get_period_from_range(sd, ed, nb, per_str = input_period)
+  
   ; parameter checking
   sd = nrs_str2julian(start_date)
   ed = nrs_str2julian(end_date)
@@ -134,6 +181,11 @@ pro nrs_timed_aggregation, image $
       endif 
     endif
     
+    ix_input = where(all_intervals eq input_period)
+    if ix_input ge inter_ix then begin
+      ans = dialog_message('Nothing to do: output period smaller than input period (use interpolation)', title = 'Information', /Information)
+      return
+    endif
   endif
   
   all_functions = ['mean', 'sum', 'minimum', 'maximum', 'median']
@@ -148,8 +200,6 @@ pro nrs_timed_aggregation, image $
   cancelled = 0
   nrs_set_progress_property, prog_obj, /start, title = 'Timeseries aggregation'
 
-  per = nrs_get_period_from_range(sd, ed, nb, per_str = input_period)
-  
   ; get the indices for the input image stack
   nrs_get_dt_indices, [sd, ed], period = input_period $
                       , julian_out = jul_in, indices = ind_in
@@ -269,4 +319,9 @@ pro nrs_timed_aggregation, image $
 
   close, unit
   free_lun, unit  ; close assoc
+end
+
+pro nrs_t1
+  compile_opt idl2, logical_predicate
+
 end
