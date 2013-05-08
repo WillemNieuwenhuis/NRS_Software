@@ -31,7 +31,7 @@ function nrs_get_cross_index, sd, ed, per, input_period, aggr_interval, aggr_int
   if n_elements(aggr_interval) gt 0 then $
     nrs_get_dt_indices, jul_in, period = aggr_interval $
                       , julian_out = jul_out $
-                      , indices = indices, start_year_index = syi, num_period = num_periods
+                      , indices = indices, start_year_index = syi, num_period = npy
 
   ; second period, if any
   if n_elements(aggr_interval2) gt 0 then $
@@ -41,9 +41,9 @@ function nrs_get_cross_index, sd, ed, per, input_period, aggr_interval, aggr_int
 
   ; for one level
   if level1 then begin
+    num_periods = npy
     p_ar = ptrarr(num_periods)
-    offset = jul_out[1] - sd
-    st_p = syi lt 0 ? 0 : num_periods - syi
+    st_p = syi le 0 ? 0 : npy - syi
     for p = 0, num_periods - 1 do begin
       arr = []
       six = p
@@ -55,19 +55,22 @@ function nrs_get_cross_index, sd, ed, per, input_period, aggr_interval, aggr_int
       if ptr_valid(p_ar[pix]) then ptr_free, p_ar[pix]
       p_ar[pix] = ptr_new(arr)
     endfor
-    
-    if num_periods eq 12 then form = '("Month: ",i02)' $
+
+    sy = 1
+    if npy eq 1 then begin
+      caldat, sd, m, d, sy
+      form = '("Year: ",i04)'
+    endif else if npy eq 12 then form = '("Month: ",i02)' $
     else form = '("Period: ",i02)'
-    bnames = string(indgen(num_periods) + 1, format = form)
-    
+    bnames = string(indgen(num_periods) + sy, format = form)
   endif
 
-  ; for 2 levels
+  ; for 2 levels; only year is expected
   if level2 then begin
-    cnt_per = n_elements(indices) - 1
-    if indices[cnt_per-1] eq indices[cnt_per-2] then cnt_per--
-    p_ar = ptrarr(cnt_per)
-    for p = 0, cnt_per - 1 do begin
+    num_periods = n_elements(indices) - 1
+    if indices[num_periods-1] eq indices[num_periods-2] then num_periods--
+    p_ar = ptrarr(num_periods)
+    for p = 0, num_periods - 1 do begin
       ps = indices[p]
       pe = indices[p + 1]
       arr = indgen(pe - ps) + ps
@@ -140,9 +143,6 @@ pro nrs_timed_aggregation, image $
   envi_open_file, image, r_fid = fid, /no_realize, /no_interactive_query
   if fid eq -1 then return
   
-  envi_file_query, fid, ns = ns, nl = nl, nb = nb, data_type = dt, dims = dims, data_ignore_value = undef
-  per = nrs_get_period_from_range(sd, ed, nb, per_str = input_period)
-  
   ; parameter checking
   sd = nrs_str2julian(start_date)
   ed = nrs_str2julian(end_date)
@@ -151,6 +151,9 @@ pro nrs_timed_aggregation, image $
     return
   endif
 
+  envi_file_query, fid, ns = ns, nl = nl, nb = nb, data_type = dt, dims = dims, data_ignore_value = undef
+  per = nrs_get_period_from_range(sd, ed, nb, per_str = input_period)
+  
   nr_levels = 0
   if n_elements(aggr_interval) gt 0 then nr_levels++
   if n_elements(aggr_interval2) gt 0 then nr_levels++
@@ -200,50 +203,20 @@ pro nrs_timed_aggregation, image $
   cancelled = 0
   nrs_set_progress_property, prog_obj, /start, title = 'Timeseries aggregation'
 
-  ; get the indices for the input image stack
-  nrs_get_dt_indices, [sd, ed], period = input_period $
-                      , julian_out = jul_in, indices = ind_in
-                      
-  ; get the indices for the output image stack
-  ; shortest period first
-  nrs_get_dt_indices, jul_in, period = aggr_interval $
-                      , julian_out = jul_out $
-                      , indices = indices, start_year_index = syi, num_period = num_periods
-
-  ; second period, if any
-  nrs_get_dt_indices, jul_in, period = aggr_interval2 $
-                      , julian_out = jo_lvl2 $
-                      , indices = ind_lvl2, start_year_index = syi_lvl2, num_period = num_lvl2
-
-  ; Always calculate year indices
-  nrs_get_dt_indices, jul_in, period = 'year' $
-                      , julian_out = jul_yy $
-                      , indices = ind_yy
-
   case nr_levels of
     0 : begin
           nb_out = 1
           bnames = [aggr_func]
         end
     1 : begin
-          cr_ix = nrs_get_cross_index(sd, ed, per, input_period, aggr_interval, aggr_interval2)
-          caldat, jul_out, mm, dd, yy
-          nb_out = min([n_elements(jul_out) - 1, num_periods])
+          cr_ix = nrs_get_cross_index(sd, ed, per, input_period, aggr_interval, bnames = bnames)
+          nb_out = n_elements(cr_ix)
           aggr = fltarr(ns, nb_out)
-          
-          start = min((num_periods - syi + indgen(nb_out)) mod num_periods)
-          bn = reform(1 + (indgen(nb_out) + start) mod num_periods, 1, nb_out)
-          bnames = aggr_interval + string(bn, format = '(" ",i02)')
-          
         end  
     2 : begin
-          ; find boundaries of larger period in shorter periods
-          nrs_match_arrays, jul_out, jo_lvl2, index = bounds
-          nb_out = n_elements(jul_out) - 1
+          cr_ix = nrs_get_cross_index(sd, ed, per, input_period, aggr_interval, aggr_interval2, bnames = bnames)
+          nb_out = n_elements(cr_ix)
           aggr = fltarr(ns, nb_out)
-          
-          start = num_periods - syi
-          bn = reform(1 + (indgen(nb_out) + start) mod num_periods, 1, nb_out)
         end
   endcase
 
@@ -254,7 +227,7 @@ pro nrs_timed_aggregation, image $
       if nrs_update_progress(prog_obj, l, nl, cancelled = cancelled) then return
   
     data = envi_get_slice(fid = fid, line = l, xs = 0, xe = ns - 1, /bil)
-    case nr_levels of
+    switch nr_levels of
       0 : begin
             dim = size(data, /n_dim)
             case func_ix of
@@ -264,27 +237,13 @@ pro nrs_timed_aggregation, image $
               3 : aggr = max(data, dimension = dim)
               4 : aggr = median(data, dimension = dim)
             endcase
+            break
           end
-      1 : begin
-            
-            for t = 0, n_elements(indices) - 2 do begin
-;              for r = 0, n_elements(h_1) - 1 do begin
-;                accu = data[*, indices[t] : indices[t + 1] - 1]
-                
-;              dim = size(accu, /n_dim)
-;              case func_ix of
-;                0 : aggr[*, t] = mean(accu, dimension = dim)
-;                1 : aggr[*, t] = total(accu, dim)
-;                2 : aggr[*, t] = min(accu, dimension = dim)
-;                3 : aggr[*, t] = max(accu, dimension = dim)
-;                4 : aggr[*, t] = median(accu, dimension = dim)
-;              endcase
-            endfor
-          end
+      1 :
       2 : begin
-            ; TODO: rearrange indices to align with output
-            for t = 0, n_elements(indices) - 2 do begin
-              accu = data[*, indices[t] : indices[t + 1] - 1]
+            for t = 0, n_elements(cr_ix) - 1 do begin
+              ix = *(cr_ix[t])
+              accu = data[*, ix]
               dim = size(accu, /n_dim)
               case func_ix of
                 0 : aggr[*, t] = mean(accu, dimension = dim)
@@ -293,18 +252,19 @@ pro nrs_timed_aggregation, image $
                 3 : aggr[*, t] = max(accu, dimension = dim)
                 4 : aggr[*, t] = median(accu, dimension = dim)
               endcase
+              
             endfor
           end
-    endcase
+    endswitch
     
     writeu, unit, aggr
   endfor
-
-  ; Now determine band names
-  bn = reform(1 + (indgen(nb_out) + syi) mod num_periods, 1, nb_out)
-  caldat, jul_out, mm, dd, yy
-  yy = reform(yy, 1, nb_out, /overwrite)
-  bnames = string([bn, yy], format = '("Period.year ",i02, ".", i04)')
+  
+  if nr_levels gt 0 then begin
+    for t = 0, n_elements(cr_ix) - 1 do begin
+      ptr_free, cr_ix[t]
+    endfor
+  endif
 
   meta = envi_set_inheritance(fid, dims, /full)
   
@@ -318,7 +278,7 @@ pro nrs_timed_aggregation, image $
           , data_ignore_value = undef
 
   close, unit
-  free_lun, unit  ; close assoc
+  free_lun, unit  ; close output file
 end
 
 pro nrs_t1

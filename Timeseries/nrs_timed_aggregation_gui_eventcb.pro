@@ -7,7 +7,7 @@ pro nrs_timed_aggregation_handle_input, event
   target_str = strtrim(target)
   if strlen(target_str) eq 0 then return
 
-  basename = getOutname(target_str, postfix = '_taggr', ext = '.')
+  basename = getOutname(target_str, postfix = '_taggr', ext = '.dat')
   val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_aggregation_outputFile')
   widget_control, val_fld, set_value = basename
   
@@ -68,9 +68,6 @@ pro nrs_timed_aggregation_handleOK, event
   val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_aggregation_end_date')
   widget_control, val_fld, get_value = end_date
   
-  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_aggregation_aggr_combo')
-  aggr_interval = widget_info(val_fld, /combobox_gettext)
-  
   val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_aggregation_indices_combo')
   aggr_func = widget_info(val_fld, /combobox_gettext)
   
@@ -80,11 +77,15 @@ pro nrs_timed_aggregation_handleOK, event
   val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_aggregation_lvl2_button')
   isOn2 = widget_info(val_fld, /button_set)
 
-  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_aggregation_level1_combo')
-  isOn1 = widget_info(val_fld, /button_set)
+  if isOn1 then begin
+    val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_aggregation_level1_combo')
+    aggr_interval = widget_info(val_fld, /combobox_gettext)
+  endif
   
-  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_aggregation_level2_combo')
-  isOn2 = widget_info(val_fld, /button_set)
+  if isOn2 then begin
+    val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_aggregation_level2_combo')
+    aggr_interval2 = widget_info(val_fld, /combobox_gettext)
+  endif
 
   if strlen(ref) eq 0 then begin
     void = error_message('Input timeseries not specified!', traceback = 0, /error)
@@ -105,7 +106,9 @@ pro nrs_timed_aggregation_handleOK, event
   
   nrs_timed_aggregation, ref $
                    , start_date, end_date $
-                   , aggr_interval, aggr_func $
+                   , aggr_func $
+                   , aggr_level1 = aggr_interval $
+                   , aggr_level2 = aggr_interval2 $
                    , outname = outname $
                    , prog_obj = progressBar, cancelled = cancelled
 

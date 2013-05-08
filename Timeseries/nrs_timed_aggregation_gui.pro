@@ -106,7 +106,7 @@ pro nrs_timed_aggregation_gui, event
 
   nrs_timed_aggregation_level2_combo = widget_combobox(nrs_timed_aggregation_lvl2_panel $
                 , uname = 'nrs_timed_aggregation_level2_combo' $
-                , value = ['Day', '8-Day', '10-Day', '16-Day', 'Month', 'Year'] $
+                , value = ['Year'] $
                 , sensitiv = 0 $
               )
 
