@@ -1,55 +1,120 @@
-; The event handler
-PRO gui_prompt_event, event
-	widget_control, event.id, GET_VALUE=userEntry, GET_UVALUE=pReturnValue
-	*pReturnValue = userEntry
-	widget_control, event.top, /DESTROY
-END
+pro nrs_average_spectrum_gui_extensions_init
+  compile_opt idl2
+  
+  e = envi(/current)
+  if e eq !NULL then return
+  
+  e.AddExtension, 'Average spectrum', 'nrs_average_spectrum_gui', PATH='Spectral'
+end
 
-; The widget creation code
-FUNCTION gui_prompt, promptText, $
-		TITLE=windowTitle, VALIDATE_TYPE=datatype, XSIZE=nCharacters, $
-		XOFFSET=xoffset, YOFFSET=yoffset, _EXTRA=_extra
-	if n_elements(promptText) eq 0 then return, ''
-	; Optional keyword for validating user entries. The values are based
-	; on IDL type ID's as seen in table in Online Help for SIZE function.
-	if keyword_set(datatype) then begin
-	    switch datatype of
-	    1:    ; Integer types
-	    2:
-	    3:
-	    12:
-	    13:
-	    14:
-	    15: begin
-	        validateLong = 1
-	        break
-	    end
-	    4:    ; floating-point types
-	    5: begin
-	        validateReal = 1
-	        break
-	    end
-	    else: returnValue = ''    ; default type is /STRING
-	    endswitch
-	endif
-	if n_elements(windowTitle) eq 0 then winTitle = 'Entry Form'
-	device, GET_SCREEN_SIZE=displayDims
-	; By default, center the prompt (approximately) on the display
-	if n_elements(xoffset) eq 0 then xoffset = displayDims[0] / 2
-	if n_elements(yoffset) eq 0 then yoffset = displayDims[1] / 2
-	; By default, set the entry textbox width to 20
-	if n_elements(nCharacters) eq 0 then nCharacters = 20
-	tlb = widget_base(TITLE=windowTitle, XOFFSET=xoffset, YOFFSET=yoffset)
-	pReturnValue = ptr_new(/ALLOCATE_HEAP)
-	wPromptBox = cw_field(tlb, TITLE=promptText, FLOATING=validateReal, $
-	    LONG=validateLong, UVALUE=pReturnValue, $
-	    /RETURN_EVENTS, XSIZE=nCharacters, _EXTRA=_extra)
-	widget_control, tlb, /REALIZE
-	xmanager, 'gui_prompt', tlb
-	if n_elements(*pReturnValue) eq 0 $
-	    then returnValue='' $
-	else $
-	    returnValue = strtrim(*pReturnValue, 2)
-	ptr_free, pReturnValue
-	return, returnValue
-END
+pro nrs_average_spectrum_gui_event, event
+  compile_opt idl2
+  
+  wTarget = (widget_info(Event.id,/NAME) eq 'TREE' ?  widget_info(Event.id, /tree_root) : event.id)
+  wWidget =  Event.top
+
+  case wTarget of
+    Widget_Info(wWidget, FIND_BY_UNAME='nrs_average_spectrum_gobutton'): begin
+      if( Tag_Names(Event, /STRUCTURE_NAME) eq 'WIDGET_BUTTON' )then $
+        nrs_average_spectrum_handleOK, Event
+    end
+    Widget_Info(wWidget, FIND_BY_UNAME='nrs_average_spectrum_cancelbutton'): begin
+      if( Tag_Names(Event, /STRUCTURE_NAME) eq 'WIDGET_BUTTON' )then $
+        widget_control, event.top, /destroy
+    end
+    else:
+    endcase
+
+end
+
+pro nrs_average_spectrum_gui, event
+  compile_opt idl2
+  
+  label_width = 100
+  label_wide_width = 150
+  text_width =  60
+  text_small_width = 5
+  num_width =   15
+
+  nrs_average_spectrum_contentPanel = widget_base(uname = 'nrs_average_spectrum_contentPanel'  $
+    , /col  $
+    , tab_mode = 1 $
+    , TITLE = 'Average spectrum')
+
+  nrs_average_spectrum_mainPanel = widget_base(nrs_average_spectrum_contentPanel, /frame, /col)
+
+  nrs_average_spectrum_image_folder = cw_dirfile(nrs_average_spectrum_mainPanel $
+                , title = 'Input image folder' $
+                , style = 'directory' $
+                , xsize = text_width $
+                , xtitlesize = label_width $
+                , uname = 'nrs_average_spectrum_image_folder' $
+              )
+
+  nrs_average_spectrum_shape_folder = cw_dirfile(nrs_average_spectrum_mainPanel $
+                , title = 'Input shape folder' $
+                , style = 'directory' $
+                , xsize = text_width $
+                , xtitlesize = label_width $
+                , uname = 'nrs_average_spectrum_shape_folder' $
+              )
+
+  nrs_average_spectrum_kernel_panel = widget_base(nrs_average_spectrum_mainPanel, /row)
+  nrs_average_spectrum_kernel_label = widget_label(nrs_average_spectrum_kernel_panel $
+                , value = 'Kernel size' $
+                , xsize = label_width $
+              )
+  nrs_average_spectrum_kernel_combo = widget_combobox(nrs_average_spectrum_kernel_panel $
+                , uname = 'nrs_average_spectrum_kernel_combo' $
+                , value = ['3', '5', '7'] $
+              )
+
+  nrs_average_spectrum_toggle_panel = widget_base(nrs_average_spectrum_mainPanel $
+                , title = 'Use majority threshold' $
+                , /col $
+                , /nonexclusive $
+              )
+
+  nrs_average_spectrum_toggle = widget_button(nrs_average_spectrum_toggle_panel $
+                , uname = 'nrs_average_spectrum_toggle'  $
+                , /align_left $
+                , value = 'Use majority threshold' $
+                , event_pro = 'nrs_handle_average_spectrum_toggle' $
+              )
+
+  nrs_average_spectrum_threshold_panel = widget_base(nrs_average_spectrum_mainPanel $
+                , uname = 'nrs_average_spectrum_threshold_panel' $
+                , /row $
+                , sensitiv = 0 $
+              )
+  nrs_average_spectrum_threshold = fsc_inputfield(nrs_average_spectrum_threshold_panel $
+                , uname = 'nrs_average_spectrum_threshold' $
+                , title = 'Threshold' $
+                , labelalign = 1 $
+                , labelsize = label_width $
+                , xsize = text_small_width $
+                , /integer $
+                , value = '0' $ 
+                , unittext = ' (%)' $
+              )
+
+  nrs_average_spectrum_output_panel = widget_base(nrs_average_spectrum_contentPanel, /frame, /col)
+  nrs_average_spectrum_outputFile = cw_dirfile(nrs_average_spectrum_output_panel, uname = 'nrs_average_spectrum_outputFile' $
+        , style = 'file' $
+        , title = 'Output table' $
+        , xsize = text_width $
+        , xtitlesize = label_width $
+        )
+
+  nrs_gui_createButtonPanel, nrs_average_spectrum_contentPanel $
+                , ok_uname = 'nrs_average_spectrum_gobutton', ok_value = 'Go!', ok_tooltip = 'Calculate average spectra' $
+                , cancel_uname = 'nrs_average_spectrum_cancelbutton', cancel_value = 'Done', cancel_tooltip = 'Cancel the operation'
+
+  ; Make sure we create the form
+  widget_control, /realize, nrs_average_spectrum_contentpanel
+
+  ; Initialize stuff
+  widget_control, nrs_average_spectrum_kernel_combo, set_combobox_select = 2 
+
+  XManager, 'nrs_average_spectrum_gui', nrs_average_spectrum_contentPanel, /no_block
+end
