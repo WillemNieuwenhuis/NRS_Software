@@ -185,7 +185,7 @@ pro nrs_timed_aggregation, image $
     endif
     
     ix_input = where(all_intervals eq input_period)
-    if ix_input ge inter_ix then begin
+    if ix_input gt inter_ix then begin
       ans = dialog_message('Nothing to do: output period smaller than input period (use interpolation)', title = 'Information', /Information)
       return
     endif

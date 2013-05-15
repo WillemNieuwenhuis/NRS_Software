@@ -11,16 +11,12 @@ pro nrs_timeseries_define_buttons, buttonInfo
     uvalue = 'Harmonic composition', event_pro = 'nrs_harmonic_inv_gui', $
     ref_value = 'Timeseries', position = 'last'
 
-  envi_define_menu_button, buttonInfo, value = 'Timed aggregation', $
+  envi_define_menu_button, buttonInfo, value = 'Aggregation by time', $
     uvalue = 'Timed aggregation', event_pro = 'nrs_timed_aggregation_gui', $
     ref_value = 'Timeseries', position = 'last'
 
   envi_define_menu_button, buttonInfo, value = 'Time interpolation', $
     uvalue = 'Time interpolation', event_pro = 'nrs_time_interpol_gui', $
     ref_value = 'Timeseries', position = 'last'
-
-;  envi_define_menu_button, buttonInfo, value = 'Grouped statistics', $
-;    uvalue = 'Grouped statistics', event_pro = 'nrs_periodstat_gui', $
-;    ref_value = 'Timeseries', position = 'last'
 
 end
