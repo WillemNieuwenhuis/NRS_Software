@@ -29,6 +29,18 @@ pro nrs_average_spectrum_handleOK, event
 	threshold = isOn ? float(thresh[0]) / 100 : 0
 	folder_img = strtrim(folder_img[0], 2)
   folder_shp = strtrim(folder_shp[0], 2)
+  
+  hymaps = nrs_find_images(folder_img, '.*', ext = '*', /exclude_hdr)
+  if n_elements(hymaps) eq 0 then begin
+    void = error_message('No images found, select another folder', traceback = 0, /error)
+    return
+  endif
+  
+  shapes = nrs_find_images(folder_shp, '.*', ext = 'shp')
+  if n_elements(shapes) eq 0 then begin
+    void = error_message('No shapefiles found, select another folder', traceback = 0, /error)
+    return
+  endif
 
 	; calculate the spectrum
 	nrs_average_spectrum, shapes, hymaps, output, threshold
