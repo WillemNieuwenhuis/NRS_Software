@@ -5,7 +5,7 @@ pro _build_all_utils
            , 'cgcentertlb.pro' $
            , 'cgrootname.pro' $
            , 'getprimaryscreensize.pro' $
-           , 'closeallresources.pro' $
+;           , 'closeallresources.pro' $
            , 'cw_dirfile.pro' $
            , 'cw_field_ex.pro' $
            , 'cw_groupbox.pro' $
