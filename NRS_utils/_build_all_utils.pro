@@ -33,6 +33,7 @@ pro _build_all_utils
            , 'nrs_nice_numbers.pro' $
            , 'nrs_parse_modis_name.pro' $
            , 'nrs_read_listfile.pro' $
+           , 'nrs_read_table.pro' $
            , 'nrs_sec_to_string.pro' $
            , 'nrs_shapefile_utils.pro' $
            , 'nrs_update_progress.pro' $

@@ -11,8 +11,12 @@ pro nrs_ndvi_tools_define_buttons, buttonInfo
     uvalue = 'Drought index', event_pro = 'nrs_drought_gui', $
     ref_value = 'NDVI', position = 'last'
 
-  envi_define_menu_button, buttonInfo, value = 'RPD', $
+  envi_define_menu_button, buttonInfo, value = 'RPD (GWI)', $
     uvalue = 'RPD', event_pro = 'nrs_rpd_gui', $
+    ref_value = 'NDVI', position = 'last'
+
+  envi_define_menu_button, buttonInfo, value = 'GWI Threshold', $
+    uvalue = 'GWI Threshold', event_pro = 'nrs_rpd_perc_gui', $
     ref_value = 'NDVI', position = 'last'
 
   envi_define_menu_button, buttonInfo, value = 'Winter NDVI', $

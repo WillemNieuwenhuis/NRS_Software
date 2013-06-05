@@ -7,6 +7,9 @@ pro _build_all_ndvi_tools
            , 'nrs_rpd.pro' $
            , 'nrs_rpd_gui.pro' $
            , 'nrs_rpd_gui_eventcb.pro' $
+           , 'nrs_rpd_perc_gui.pro' $
+           , 'nrs_rpd_perc_gui_eventcb.pro' $
+           , 'nrs_rpd_at_location.pro' $
            , 'nrs_winter_ndvi_beck.pro' $
            , 'nrs_winter_ndvi_gui.pro' $
            , 'nrs_winter_ndvi_gui_eventcb.pro' $
