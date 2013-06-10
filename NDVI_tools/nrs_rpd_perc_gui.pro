@@ -1,4 +1,6 @@
 pro nrs_rpd_perc_gui_event, event
+  compile_opt idl2
+
   wTarget = (widget_info(Event.id,/NAME) eq 'TREE' ?  widget_info(Event.id, /tree_root) : event.id)
   wWidget =  Event.top
 
@@ -17,6 +19,8 @@ pro nrs_rpd_perc_gui_event, event
 end
 
 pro nrs_rpd_perc_gui, event
+  compile_opt idl2
+
   label_width = 110
   label_wide_width = 150
   text_width =  60
@@ -56,6 +60,32 @@ pro nrs_rpd_perc_gui, event
                 , /integer $
                 , unittext = ' %' $
                 , xsize = text_small_width $
+              )
+
+  nrs_rpd_perc_window_base = widget_base(nrs_rpd_perc_mainPanel, /nonexclusive, uname = 'nrs_rpd_perc_window_base')
+  nrs_rpd_perc_window_button = widget_button(nrs_rpd_perc_window_base $
+                , uname = 'nrs_rpd_perc_window_button' $
+                , value = 'Use window' $
+                , event_pro = 'nrs_rpd_perc_toggle_window' $
+              )
+
+  nrs_rpd_perc_wbase = widget_base(nrs_rpd_perc_mainPanel, /col, xpad = 10, sensitiv = 0 $
+                , uname = 'nrs_rpd_perc_wbase' $
+              )
+  nrs_rpd_perc_window = fsc_inputfield(nrs_rpd_perc_wbase $
+                , uname = 'nrs_rpd_perc_window' $
+                , title = 'Windows side' $
+                , labelalign = 1 $
+                , labelsize = label_width $
+                , value = '3' $
+                , /integer $
+                , xsize = text_small_width $
+              )
+
+  nrs_rpd_perc_valid_base = widget_base(nrs_rpd_perc_mainPanel, /nonexclusive, uname = 'nrs_rpd_perc_valid_base')
+  nrs_rpd_perc_valid_button = widget_button(nrs_rpd_perc_valid_base $
+                , uname = 'nrs_rpd_perc_valid_button' $
+                , value = 'Exclude winter' $
               )
 
   nrs_rpd_perc_output_panel = widget_base(nrs_rpd_perc_contentPanel, /frame, /col)

@@ -26,8 +26,7 @@
 ;      The size of the square area around the image location to aggregate
 ;      profiles
 ;    winter_corr : in, optional
-;      If set check if the values in the winter time (northern hemisphere) are higher
-;      than summer values; if so the profile for the tested location is skipped.
+;      If set remove the values in the winter time (northern hemisphere) from the calculation.
 ;    cancelled : out
 ;      indicate error or user abort if set
 ;    prog_obj : in
@@ -88,21 +87,23 @@ pro nrs_rpd_at_location, image, table, perc = perc $
   
   out_data = make_array(3, nrrec, type = size(line_data, /type))
   out_data[0:1,*] = line_data
-  if use_window then begin
-    if winter_corr then begin
-      leap = (nb eq 366)
-      yy = 2007 + leap  ; 2007: can be any non-leap year
-      sd = julday(1, 1, yy)
-      ed = julday(12, 31, yy)
-      dpp = nrs_get_period_from_range(sd, ed, nb)
-      sum_s = (julday(3, 1, yy) - sd) / dpp + 1
-      sum_e = (julday(11, 1, yy) - sd) / dpp - 1
-      summer = intarr(nb)
-      summer[sum_s : sum_e] = 1
+  if winter_corr then begin
+    leap = (nb eq 366)
+    yy = 2007 + leap  ; 2007: can be any non-leap year
+    sd = julday(1, 1, yy)
+    ed = julday(12, 31, yy)
+    dpp = nrs_get_period_from_range(sd, ed, nb)
+    sum_s = (julday(3, 1, yy) - sd) / dpp + 1
+    sum_e = (julday(11, 1, yy) - sd) / dpp - 1
+    summer = intarr(nb)
+    summer[sum_s : sum_e] = 1
+    if use_window then begin
       summer = rebin(summer, nb, window, window)
       summer = transpose(summer)
-      winter = 1 - summer
     endif
+    winter = where(summer eq 0)
+  endif
+  if use_window then begin
     cube = make_array(window, window, nb)
     for p = 0, nrrec - 1 do begin
       w2 = window / 2
@@ -111,18 +112,18 @@ pro nrs_rpd_at_location, image, table, perc = perc $
                 , xs = pixelX[p] - w2, xe = pixelX[p] + w2)
       endfor
       if winter_corr then begin
-        sum_max = max(cube*summer, dim = 3)
-        win_max = max(cube*winter, dim = 3)
-        mask = sum_max lt win_max
-        cube[mask, *] = 0
-        profile = mean(mean(cube, dim = 1), dim = 1)
+        cube[winter, *] = 0
       endif
+      profile = mean(mean(cube, dim = 1), dim = 1)
       zp = where(profile ge perc, cnt_zp)
       out_data[2, p] = cnt_zp eq 0 ? -1 : zp[0] + 1
     endfor
   endif else begin
     for p = 0, nrrec - 1 do begin
       profile = envi_get_slice(fid = fid, pos = pos, line = pixelY[p], xs = pixelX[p], xe = pixelX[p])
+      if winter_corr then begin
+        profile[winter] = 0
+      endif
       zp = where(profile ge perc, cnt_zp)
       out_data[2, p] = cnt_zp eq 0 ? -1 : zp[0] + 1 
     endfor
@@ -134,7 +135,7 @@ pro nrs_rpd_at_location, image, table, perc = perc $
   if n_elements(out_name) eq 0 then $
     out_name = getOutname(table, postfix = '_gwi', ext = '.csv')
   
-  format = '(f13.7,",",f13.7,",",i03)'
+  format = '(f13.7,",",f13.7,",",i-3)'
   openw, unit, out_name, /get_lun
   printf, unit, out_header
   for r = 0, nrrec - 1 do begin
