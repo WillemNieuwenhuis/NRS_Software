@@ -111,19 +111,15 @@ pro nrs_rpd_at_location, image, table, perc = perc $
         cube[*, w + w2, *] = envi_get_slice(fid = fid, pos = pos, line = pixelY[p] $
                 , xs = pixelX[p] - w2, xe = pixelX[p] + w2)
       endfor
-      if winter_corr then begin
-        cube[winter, *] = 0
-      endif
-      profile = mean(mean(cube, dim = 1), dim = 1)
+      if winter_corr then cube[winter] = 0
+      profile = mean(mean(cube, dim = 1, /nan), dim = 1, /nan)
       zp = where(profile ge perc, cnt_zp)
       out_data[2, p] = cnt_zp eq 0 ? -1 : zp[0] + 1
     endfor
   endif else begin
     for p = 0, nrrec - 1 do begin
       profile = envi_get_slice(fid = fid, pos = pos, line = pixelY[p], xs = pixelX[p], xe = pixelX[p])
-      if winter_corr then begin
-        profile[winter] = 0
-      endif
+      if winter_corr then profile[winter] = 0
       zp = where(profile ge perc, cnt_zp)
       out_data[2, p] = cnt_zp eq 0 ? -1 : zp[0] + 1 
     endfor
