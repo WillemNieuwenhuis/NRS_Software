@@ -63,7 +63,7 @@ pro nrs_water_index_ratio, image, water_index, outname = outname $
   envi_setup_head, fname = outname $
         , data_type = out_type $
         , ns = ns, nl = nl, nb = 1 $
-        , bnames = [water_index] $
+        , bnames = [strupcase(water_index)] $
         , interleave = 1 $  ; 1 == BIL
         , /write $
         , inherit = inherit

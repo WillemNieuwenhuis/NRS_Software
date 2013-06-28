@@ -7,4 +7,8 @@ pro nrs_water_index_define_buttons, buttonInfo
     uvalue = 'Water index', event_pro = 'nrs_water_index_gui', $
     ref_value = 'Water indices', position = 'last'
 
+  envi_define_menu_button, buttoninfo, value = 'Batch water index', $
+    uvalue = 'Batch water index', event_pro = 'nrs_water_index_batch_gui', $
+    ref_value = 'Water indices', position = 'last'
+
 end

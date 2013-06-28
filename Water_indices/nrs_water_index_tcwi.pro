@@ -55,7 +55,7 @@ pro nrs_water_index_TCWI, image, outname = outname $
   envi_setup_head, fname = outname $
         , data_type = out_type $
         , ns = ns, nl = nl, nb = 1 $
-        , bnames = ['twci'] $
+        , bnames = ['TWCI'] $
         , interleave = 1 $  ; 1 == BIL
         , /write $
         , inherit = inherit
