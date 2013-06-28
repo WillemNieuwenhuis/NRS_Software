@@ -14,6 +14,9 @@ pro _build_basic_tools
            , 'nrs_import_netcdf_eventCB.pro' $
            , 'nrs_import_netcdf_gui.pro' $
            , 'nrs_netcdf.pro' $
+           , 'nrs_statistics_batch.pro' $
+           , 'nrs_statistics_batch_gui.pro' $
+           , 'nrs_statistics_batch_gui_eventcb.pro' $
           ]
   _auto_build, files, 'bin' + path_sep() + 'nrs_basic_tools.sav', logfile = 'bin' + path_sep() + 'nrs_basic_tools.log'
 end

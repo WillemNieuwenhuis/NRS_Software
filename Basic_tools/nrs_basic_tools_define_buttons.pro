@@ -15,4 +15,8 @@ pro nrs_basic_tools_define_buttons, buttonInfo
     uvalue = 'Import netCDF', event_pro = 'nrs_import_netcdf_gui', $
     ref_value = 'NRS', position = 'first'
 
+  envi_define_menu_button, buttoninfo, value = 'Spatial statistics (batch)', $
+    uvalue = 'Spatial statistics (batch)', event_pro = 'nrs_statistics_batch_gui', $
+    ref_value = 'NRS', position = 'first'
+
 end
