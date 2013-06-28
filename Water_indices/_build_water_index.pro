@@ -7,7 +7,9 @@ pro _build_water_index
            , 'nrs_water_index_gui.pro' $ 
            , 'nrs_water_index_gui_eventcb.pro' $
            , 'nrs_water_index_menu.pro' $
-           
+           , 'nrs_water_index_batch.pro' $
+           , 'nrs_water_index_batch_gui.pro' $
+           , 'nrs_water_index_batch_gui_eventcb.pro' $
           ]
   _auto_build, files, 'bin' + path_sep() + 'nrs_water_index.sav', logfile = 'bin' + path_sep() + 'nrs_water_index.log'
 end
