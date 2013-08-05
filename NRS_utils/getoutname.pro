@@ -25,9 +25,10 @@
 ;   Willem Nieuwenhuis
 ; 
 ; :History:
-;   <li>june 2011: Added prefix keyword
-;   <li>july 2010: Added basename and ext keywords
-;   <li>november 2009: created
+;   Change history::
+;     june 2011: WN, Added prefix keyword
+;     july 2010: WN, Added basename and ext keywords
+;     november 2009: WN, created
 ;-
 function getOutname, pattern, basename = basename, prefix = prefix, postfix = postfix, ext = new_ext
   if n_elements(prefix) eq 0 then prefix = ''
