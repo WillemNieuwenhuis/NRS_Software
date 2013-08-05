@@ -41,7 +41,9 @@ pro run_china_year_250, nobatch = nobatch
   endif
   
   dems = [ $
-            'E:\NRS\Fangyuan\DEM of China_250m\china_dem_subset.dat' $
+;            'E:\NRS\Fangyuan\sol250\China_DEM_mr.dat' $
+            'E:\NRS\Fangyuan\soltest2\subsub.dat' $
+;            'E:\NRS\Fangyuan\solartest\china_dem_subset.dat' $
 ;           'E:\NRS\Fangyuan\DEM of China_250m\dem_tl_mr.dat' $
 ;         , 'E:\NRS\Fangyuan\DEM of China_250m\dem_tr_mr.dat' $
 ;         , 'E:\NRS\Fangyuan\DEM of China_250m\dem_bl_mr.dat' $
@@ -59,9 +61,12 @@ pro run_china_year_250, nobatch = nobatch
     endif
     print, 'Starting with: ' + dems[i]
   
-    name = getoutname(dems[i], postfix = '_rad', ext = '.dat')
-;    nrs_solar_radiation, dem, 1, 365, 60, output_name = name  ; new version
-    nrs_shortwaverad, dem, 1, 365, 60, output_name = name ; old version
+    name = getoutname(dems[i], postfix = '_jan', ext = '.dat')
+    nrs_solar_radiation, dem, 1, 31, 60, output_name = name
+;    name = getoutname(dems[i], postfix = '_feb', ext = '.dat')
+;    nrs_solar_radiation, dem, 32, 60, 60, output_name = name
+;    name = getoutname(dems[i], postfix = '_mar', ext = '.dat')
+;    nrs_solar_radiation, dem, 61, 91, 60, output_name = name
     
     envi_file_mng, id = dem, /remove
     print, 'Finished: ' + dems[i]
