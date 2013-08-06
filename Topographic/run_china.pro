@@ -41,8 +41,8 @@ pro run_china_year_250, nobatch = nobatch
   endif
   
   dems = [ $
-;            'E:\NRS\Fangyuan\sol250\China_DEM_mr.dat' $
-            'E:\NRS\Fangyuan\soltest2\subsub.dat' $
+            'E:\NRS\Fangyuan\sol250\China_DEM_mr.dat' $
+;            'E:\NRS\Fangyuan\soltest2\subsub.dat' $
 ;            'E:\NRS\Fangyuan\solartest\china_dem_subset.dat' $
 ;           'E:\NRS\Fangyuan\DEM of China_250m\dem_tl_mr.dat' $
 ;         , 'E:\NRS\Fangyuan\DEM of China_250m\dem_tr_mr.dat' $
@@ -61,12 +61,30 @@ pro run_china_year_250, nobatch = nobatch
     endif
     print, 'Starting with: ' + dems[i]
   
-    name = getoutname(dems[i], postfix = '_jan', ext = '.dat')
-    nrs_solar_radiation, dem, 1, 31, 60, output_name = name
-;    name = getoutname(dems[i], postfix = '_feb', ext = '.dat')
-;    nrs_solar_radiation, dem, 32, 60, 60, output_name = name
-;    name = getoutname(dems[i], postfix = '_mar', ext = '.dat')
-;    nrs_solar_radiation, dem, 61, 91, 60, output_name = name
+;    name = getoutname(dems[i], postfix = '_jan', ext = '.dat')
+;    nrs_solar_radiation, dem, 1, 31, 60, output_name = name
+    name = getoutname(dems[i], postfix = '_feb', ext = '.dat')
+    nrs_solar_radiation, dem, 32, 59, 60, output_name = name
+    name = getoutname(dems[i], postfix = '_mar', ext = '.dat')
+    nrs_solar_radiation, dem, 60, 90, 60, output_name = name
+    name = getoutname(dems[i], postfix = '_apr', ext = '.dat')
+    nrs_solar_radiation, dem, 91, 120, 60, output_name = name
+    name = getoutname(dems[i], postfix = '_may', ext = '.dat')
+    nrs_solar_radiation, dem, 121, 151, 60, output_name = name
+    name = getoutname(dems[i], postfix = '_jun', ext = '.dat')
+    nrs_solar_radiation, dem, 152, 181, 60, output_name = name
+    name = getoutname(dems[i], postfix = '_jul', ext = '.dat')
+    nrs_solar_radiation, dem, 182, 212, 60, output_name = name
+    name = getoutname(dems[i], postfix = '_aug', ext = '.dat')
+    nrs_solar_radiation, dem, 213, 243, 60, output_name = name
+    name = getoutname(dems[i], postfix = '_sep', ext = '.dat')
+    nrs_solar_radiation, dem, 244, 273, 60, output_name = name
+    name = getoutname(dems[i], postfix = '_oct', ext = '.dat')
+    nrs_solar_radiation, dem, 274, 304, 60, output_name = name
+    name = getoutname(dems[i], postfix = '_nov', ext = '.dat')
+    nrs_solar_radiation, dem, 305, 334, 60, output_name = name
+    name = getoutname(dems[i], postfix = '_dec', ext = '.dat')
+    nrs_solar_radiation, dem, 335, 365, 60, output_name = name
     
     envi_file_mng, id = dem, /remove
     print, 'Finished: ' + dems[i]

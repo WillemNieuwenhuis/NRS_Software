@@ -193,16 +193,13 @@ print, msg
     endwhile
     
     ; mask negative values (typically on boundary with undefined values)
-    mask_ix = where(initialgrid lt 0, cnt_neg)
-    if cnt_neg gt 0 then begin
-      initialgrid[mask_ix] = fill_value
-    endif
+    initialgrid = initialgrid > 0
     
-    ; mask undefined values
-    mask_ix = where(cosslope eq undef, cnt_valid)
-    if cnt_valid gt 0 then begin
-      initialgrid[mask_ix] = fill_value
-    endif
+;    ; mask undefined values
+;    mask_ix = where(cosslope eq undef, cnt_valid)
+;    if cnt_valid gt 0 then begin
+;      initialgrid[mask_ix] = fill_value
+;    endif
     
     writeu, energy_unit, initialgrid
   endfor  ; strips
