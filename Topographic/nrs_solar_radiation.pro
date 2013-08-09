@@ -194,12 +194,6 @@ pro nrs_solar_radiation, dem, start_day, end_day, interval, output_name = energy
     ; mask negative values (typically on boundary with undefined values)
     initialgrid = initialgrid > 0
     
-;    ; mask undefined values
-;    mask_ix = where(cosslope eq undef, cnt_valid)
-;    if cnt_valid gt 0 then begin
-;      initialgrid[mask_ix] = fill_value
-;    endif
-    
     writeu, energy_unit, initialgrid
   endfor  ; strips
   nrs_log_line, logfile, 'Finished solar radiation calculation for ' + demname, /append

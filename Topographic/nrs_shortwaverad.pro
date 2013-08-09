@@ -12,7 +12,7 @@
 ;    end_day : in, required
 ;      End day (in julian days)
 ;    interval : in, required
-;      Time interval in minutes
+;      Time interval in minutes (time)
 ;
 ; :Keywords:
 ;   output_name : in, optional
@@ -29,7 +29,7 @@ pro nrs_shortwaverad, dem, start_day, end_day, interval, output_name = energy
   
   pi = !dpi
   deg2rad = pi / 180
-  time = interval * 2 * pi / (24 * 60) ; convert minutes into radians
+  time = interval * 2 * pi / (24 * 60) ; convert minutes (time) into radians
 
   envi_file_query, dem, dims = dims, ns = ns, nl = nl, fname = demname
   mi = envi_get_map_info(fid = dem, undefined = no_csy)
@@ -46,7 +46,7 @@ pro nrs_shortwaverad, dem, start_day, end_day, interval, output_name = energy
   dim_ystep = 1 + nl / nr_strips
   
   intermediate = nrs_solar_prepare_slap_maps(demname, /swap_aspect)
-  if n_elements(intermediate) ne 3 then begin
+  if n_elements(intermediate) ne 4 then begin
     void = error_message('Failed to calculate slope / aspect image', /error)
     return
   endif
@@ -177,12 +177,20 @@ print,strip,daynumber
 
   inherit = envi_set_inheritance(dem, dims, /full)
   
-  envi_setup_head, fname = energy $
-    , data_type = 4 $ ; float
-    , ns = ns, nl = nl $
-    , /write $
-    , inherit = inherit
+;  envi_setup_head, fname = energy $
+;    , data_type = 4 $ ; float
+;    , ns = ns, nl = nl, nb = 1 $
+;    , /write $
+;    , inherit = inherit
 
+    envi_setup_head, fname = energy $
+        , /write $
+        , data_type = 5 $
+        , ns = ns, nl = nl, nb = 1 $
+        , interleave = 0 $
+        , bnames = ['Solar radiation'] $
+        , map_info = mi ;$
+;        , data_ignore_value = fill_value
   
 end
 
@@ -227,7 +235,7 @@ function nrs_prepare_slap_maps, demname, swap_aspect = swap_aspect
     sl = el + 1
     el = min([nl, el + line_step])
     slope = envi_get_data(fid = demslop, dims = dims, pos = [0]) * deg2rad ; slope to radians
-    aspect = envi_get_data(fid = demslop, dims = dims, pos = [1])
+    aspect = envi_get_data(fid = demslop, dims = dims, pos = [1]) * deg2rad ; slope to radians
     
     ix = where(aspect lt 0, count)
     if count gt 0 then aspect[ix] = 0.0 ; handle flat spots
