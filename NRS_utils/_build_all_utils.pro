@@ -29,7 +29,7 @@ pro _build_all_utils
            , 'nrs_lin_regress.pro' $
            , 'nrs_load_lcb.pro' $
            , 'nrs_logging.pro' $
-           , 'nrs_minmax_from_datatype' $
+           , 'nrs_minmax_from_datatype.pro' $
            , 'nrs_nice_numbers.pro' $
            , 'nrs_parse_modis_name.pro' $
            , 'nrs_read_csv.pro' $
