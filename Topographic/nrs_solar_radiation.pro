@@ -124,7 +124,6 @@ pro nrs_solar_radiation, dem, start_day, end_day, interval, output_name = energy
       di = daynumber - start_day
       dn = end_day - start_day + 1 
       msg = systime() + string(strip+1, nr_strips, di+1, dn, format = '("; Strip=",i0," of ",i0,"; day=",i0," of ",i0)')
-print, msg
       nrs_log_line, logfile, msg, /append
       io = 1.367 * (1 + 0.034 * cos(2 * pi * daynumber / 365))  ; eq 7
       decl = 23.45 * deg2rad * sin(2 * pi * (284 + daynumber) / 365) ; eq 4
@@ -226,6 +225,7 @@ print, msg
         , map_info = mi $
         , data_ignore_value = fill_value
 
+  print, 'Solar radiation calculation ready'
 end
 
 ;+
