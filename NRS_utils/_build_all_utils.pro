@@ -5,7 +5,6 @@ pro _build_all_utils
            , 'cgcentertlb.pro' $
            , 'cgrootname.pro' $
            , 'getprimaryscreensize.pro' $
-;           , 'closeallresources.pro' $
            , 'cw_dirfile.pro' $
            , 'cw_field_ex.pro' $
            , 'cw_groupbox.pro' $
@@ -30,6 +29,7 @@ pro _build_all_utils
            , 'nrs_lin_regress.pro' $
            , 'nrs_load_lcb.pro' $
            , 'nrs_logging.pro' $
+           , 'nrs_minmax_from_datatype' $
            , 'nrs_nice_numbers.pro' $
            , 'nrs_parse_modis_name.pro' $
            , 'nrs_read_csv.pro' $
