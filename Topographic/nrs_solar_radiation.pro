@@ -1,8 +1,8 @@
 ;+
 ; :Description:
 ;   Calculation of (short wave) solar radiation
-;   The resulting units for radiation are kJ/m^2/timeperiod
-;   To convert to MJ/m^2/day, divide by 1000 * no. of days.
+;   The resulting default units for radiation are kJ/m^2/timeperiod; this
+;   can be adjusted with the MJ and avg keywords
 ;
 ; :Params:
 ;    dem : in, required
@@ -18,6 +18,10 @@
 ;   output_name : in, optional
 ;     Specify the output name. If not specified the output name will be the
 ;     input name + '_rad' without extension
+;   MJ : in, optional
+;     If specified and > 0 recalculates the energy to MJ instead of to KJ
+;   avg : in, optional
+;     If specified and > 0 recalculates the energy to a daily average over the entire period
 ;     
 ; :References:
 ;   Kumar, L., A. K. Skidmore, et al. (1997). "Modelling topographic variation in solar radiation in a GIS environment." International Journal of Geographical Information Science 11(5): 475-497.
@@ -28,13 +32,19 @@
 ;     july 2013: WN, improved performance, by calculating hillshade directly
 ;     feb 2013: WN, created
 ;-
-pro nrs_solar_radiation, dem, start_day, end_day, interval, output_name = energy
+pro nrs_solar_radiation, dem, start_day, end_day, interval, output_name = energy, MJ = MJ, avg = avg
   compile_opt idl2, logical_predicate
   
   pi = !dpi
   deg2rad = pi / 180
   time = interval * 2 * pi / (24 * 60) ; convert minutes (time) into radians
 
+  MJ = keyword_set(MJ)
+  avg = keyword_set(avg)
+  do_factor = MJ && avg
+  factor = MJ ? 1000D : 1
+  factor *= avg ? end_day - start_day + 1 : 1
+  
   envi_file_query, dem, dims = dims, ns = ns, nl = nl, fname = demname
   mi = envi_get_map_info(fid = dem, undefined = no_csy)
   if mi.proj.type ne 1 then begin
@@ -47,10 +57,6 @@ pro nrs_solar_radiation, dem, start_day, end_day, interval, output_name = energy
   lat = (y_top + y_bot) / 2
   lon = (x_left + x_right) / 2
   ps_m = nrs_UTM_pixelsize_from_LL(lat, lon, mi.ps)
-  
-  lat_ext = y_bot - y_top
-  nr_strips = ceil(abs(lat_ext))
-  dim_ystep = 1 + nl / nr_strips
   
   logfile = getOutname(demname, postfix = '', ext = '.log')
   t1 = systime(/seconds)
@@ -83,21 +89,14 @@ pro nrs_solar_radiation, dem, start_day, end_day, interval, output_name = energy
   openw, energy_unit, outname, /get_lun
   
   fill_value = doMask ? undef : -9999.0
-  initialgrid = fltarr(ns, dim_ystep)
+  initialgrid = fltarr(ns, 1)
   mask_ix = []
   cnt_valid = 0
-  for strip = 0, nr_strips - 1 do begin
-    s_y = strip * dim_ystep
-    e_y = min([s_y + dim_ystep - 1, nl - 1])
-    if (e_y - s_y + 1) ne dim_ystep then begin
-      initialgrid = fltarr(ns, e_y - s_y + 1, /nozero) ; special case: last part can be smaller
-    endif
+  for line = 0, nl - 1 do begin
     initialgrid[*] = 0.0
-    dims_ut = [-1, 0, ns - 1, s_y, e_y]
-    nl_cur = e_y - s_y + 1
-    nl_center = (e_y + s_y) / 2
+    dims_ut = [-1, 0, ns - 1, line, line]
 
-    envi_convert_file_coordinates, dem, ns / 2, nl_center, londeg, latdeg, /to_map
+    envi_convert_file_coordinates, dem, ns / 2, line, londeg, latdeg, /to_map
     latitude = latdeg * deg2rad
 
     cosslope = envi_get_data(fid = fid_coslope, dims = dims_ut, pos = [0])
@@ -106,7 +105,7 @@ pro nrs_solar_radiation, dem, start_day, end_day, interval, output_name = energy
     slope =  envi_get_data(fid = fid_slope, dims = dims_ut, pos = [0]) * deg2rad
     aspect =  envi_get_data(fid = fid_slope, dims = dims_ut, pos = [1]) * deg2rad
     
-    nr_elem = ns * nl_cur
+    nr_elem = ns
     if doMask then begin
       mask_ix = where(cosslope ne undef, cnt_valid)
       if cnt_valid gt 0 then begin
@@ -119,12 +118,12 @@ pro nrs_solar_radiation, dem, start_day, end_day, interval, output_name = energy
       endif
     endif
 
+    msg = systime() + string(line+1, nl, format = '("; Line=",i0," of ",i0)')
+    nrs_log_line, logfile, msg, /append
     daynumber = start_day
     while daynumber le end_day do begin
       di = daynumber - start_day
-      dn = end_day - start_day + 1 
-      msg = systime() + string(strip+1, nr_strips, di+1, dn, format = '("; Strip=",i0," of ",i0,"; day=",i0," of ",i0)')
-      nrs_log_line, logfile, msg, /append
+      dn = end_day - start_day + 1
       io = 1.367 * (1 + 0.034 * cos(2 * pi * daynumber / 365))  ; eq 7
       decl = 23.45 * deg2rad * sin(2 * pi * (284 + daynumber) / 365) ; eq 4
       
@@ -141,9 +140,6 @@ pro nrs_solar_radiation, dem, start_day, end_day, interval, output_name = energy
       ; ensure calculations are at half the time interval
       hourangle = sunrise - (time / 2)
       
-      ; extract individual terms of the equation to speed up calculations
-      ;        cosi = cosi1 + cos(decl) * cos(hourangle) * cosi2 + cosi3 * sin(hourangle)
-      ; terms of the cosi equation which do not depend on the inner loop
       cosi1 = sin(decl) * (sin(latitude) * cosslope - cos(latitude) * sincos)
       cosi2 = cos(latitude) * cosslope + sin(latitude) * sincos
       cosi3 = cos(decl) * sinsin
@@ -164,7 +160,7 @@ pro nrs_solar_radiation, dem, start_day, end_day, interval, output_name = energy
            sol_zenith = -pi / 2
          endif
 
-         ; correct for northern lat.s
+         ; correct for northern latitudes
          azi = (540 - (sol_zenith / deg2rad)) mod 360
 
          ; eq 11:
@@ -193,6 +189,8 @@ pro nrs_solar_radiation, dem, start_day, end_day, interval, output_name = energy
     
     ; mask negative values (typically on boundary with undefined values)
     initialgrid = initialgrid > 0
+    
+    if do_factor then initialgrid /= factor
     
     writeu, energy_unit, initialgrid
   endfor  ; strips
@@ -319,7 +317,7 @@ function nrs_solar_prepare_slap_maps, demname, swap_aspect = swap_aspect
     nr_steps = (ns * nl) / 10000000L + 1  ; 10 M values
     line_step = nl / nr_steps + 1
     sl = 0
-    el = line_step - 1
+    el = min([line_step - 1, nl - 1])
     mask_ix = []
     cnt_undef = 0
     for s = 0, nr_steps - 1 do begin
