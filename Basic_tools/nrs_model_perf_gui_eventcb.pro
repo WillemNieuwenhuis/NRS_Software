@@ -8,7 +8,7 @@ pro nrs_model_perf_handle_input, event
   envi_open_file, obs, r_fid = fid, /no_realize, /no_interactive_query
   envi_file_query, fid, nb = nb
   
-  ext = nb gt 1 ? '.' : '.txt'
+  ext = nb gt 1 ? '.dat' : '.txt'
   basename = getOutname(obs, postfix = '_mper', ext = ext)
   val_fld = widget_info(event.top, find_by_uname = 'nrs_model_perf_outputFile')
   widget_control, val_fld, set_value = basename

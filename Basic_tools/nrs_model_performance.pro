@@ -84,7 +84,7 @@ pro nrs_model_performance, observed, predicted, outname = outname $
   endif
   do_rix = fix(total(do_arr, /cum)) - 1
   
-  ext = doSpectral ? '.' :'.txt'
+  ext = doSpectral ? '.dat' :'.txt'
   if n_elements(outname) eq 0 then outname = getOutname(observed, postfix = '_mper', ext = ext)
   if doSpectral then begin
     ; per pixel
