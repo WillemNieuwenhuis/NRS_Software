@@ -1,4 +1,4 @@
-pro nrs_rainfall_gui_extensions_init
+pro nrs_classify_spi_gui_extensions_init
   compile_opt idl2
   
   e = envi(/current)

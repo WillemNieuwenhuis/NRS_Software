@@ -1215,24 +1215,25 @@ pro nrs_stratify_calculate, event
 
 end
 
-function nrs_read_table, table, col_count = field_count, header = header, valid = valid 
-  compile_opt idl2, logical_predicate
-  
-  valid = 0
-  if strlen(table) eq 0 then return, []
-  
-  valid = 1
-  ht_data = read_ascii(table $
-    , header = header $
-    , delimiter = ',' $
-    , data_start = 1 $
-    , record_start = 0, count = count)
-
-  field_count = n_elements(ht_data.(0)) / count
-  header = header
-
-  return, ht_data.(0)
-end
+; moved to nrs_utils
+;function nrs_read_table, table, col_count = field_count, header = header, valid = valid 
+;  compile_opt idl2, logical_predicate
+;  
+;  valid = 0
+;  if strlen(table) eq 0 then return, []
+;  
+;  valid = 1
+;  ht_data = read_ascii(table $
+;    , header = header $
+;    , delimiter = ',' $
+;    , data_start = 1 $
+;    , record_start = 0, count = count)
+;
+;  field_count = n_elements(ht_data.(0)) / count
+;  header = header
+;
+;  return, ht_data.(0)
+;end
 
 function nrs_get_bw_lut
   compile_opt idl2, logical_predicate

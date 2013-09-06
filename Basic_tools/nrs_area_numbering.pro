@@ -56,7 +56,6 @@ end
 pro nrs_area_numbering_data, data, areas = areas, undef = iUNDEF, prog_obj = prog_obj, cancelled = cancelled
   compile_opt idl2, logical_predicate
 
-  doProgress = n_elements(prog_obj) gt 0
   cancelled = 0
   
   l = 0L                ; current line
@@ -71,28 +70,24 @@ pro nrs_area_numbering_data, data, areas = areas, undef = iUNDEF, prog_obj = pro
   nl = sz[1]
   temp_data = lonarr(ns, nl)
   
-  iPrevArnLine = lonarr(ns + 2)
-  iArnLine = lonarr(ns + 2) + iUNDEF ; set to undef == -1
+  iPrevArnLine = lonarr(ns)
+  iArnLine = lonarr(ns) + iUNDEF ; set to undef == -1
   ArnToBeReplacedWith = [0]
-  ArnRawAtt = [iUNDEF]
 
-  iCurrLine = lonarr(ns + 2)
-  iPrevLine = lonarr(ns + 2) + iUNDEF ; set to undef == -1
+  iCurrLine = lonarr(ns)
+  iPrevLine = lonarr(ns) + iUNDEF ; set to undef == -1
   for l = 0L, nl - 1 do begin
     if nrs_update_progress(prog_obj, l, nl, cancelled = cancelled) then return
     
-    iCurrLine[1 : ns] = data[*, l]
-    iCurrLine[0] = iUNDEF;
-    iCurrLine[ns + 1] = iUNDEF;
-    iValue = iCurrLine[1];
+    iCurrLine[*] = data[*, l]
+    iValue = iCurrLine[0];
     iCount = 1;
-    for iLastColPlus1 = 2, ns do begin
+    for iLastColPlus1 = 1, ns - 1 do begin
       if iValue eq iCurrLine[iLastColPlus1] then begin
         iCount++;
       endif else begin
-        iTempArn = iAreaNumber(iValue, iArn, iLastColPlus1, iCount, iPrevLine, iPrevArnLine, ArnToBeReplacedWith, ArnRawAtt)
-
-        for i = iLastColPlus1 - iCount, iLastColPlus1 do begin
+        iTempArn = iAreaNumber(iValue, iArn, iLastColPlus1, iCount, iPrevLine, iPrevArnLine, ArnToBeReplacedWith)
+        for i = iLastColPlus1 - iCount, iLastColPlus1 - 1 do begin
           iArnLine[i] = iTempArn
         endfor
         
@@ -101,42 +96,26 @@ pro nrs_area_numbering_data, data, areas = areas, undef = iUNDEF, prog_obj = pro
       endelse
     endfor
     
-    iTempArn = iAreaNumber(iValue, iArn, iLastColPlus1, iCount, iPrevLine, iPrevArnLine, ArnToBeReplacedWith, ArnRawAtt)
-    
-    for i = iLastColPlus1 - iCount, iLastColPlus1 do begin
+    iTempArn = iAreaNumber(iValue, iArn, iLastColPlus1, iCount, iPrevLine, iPrevArnLine, ArnToBeReplacedWith)
+    for i = iLastColPlus1 - iCount, iLastColPlus1 - 1 do begin
       iArnLine[i] = iTempArn
     endfor
     
-    temp_data[*, l] = iArnLine[1 : ns]
+    temp_data[*, l] = iArnLine
 
     iPrevLine = iCurrLine
     iPrevArnLine = iArnLine
-    iPrevArnLine[0] = iUNDEF;
-    iPrevArnLine[ns + 1] = iUNDEF;
   endfor
 
+  iu = where(temp_data eq iUNDEF, cu)
   ; Merge phase: final areanumbering
-  areas = lonarr(ns, nl)
-  iFinalArn = 1L
-  for iTempArn = 1L, iArn - 1 do begin
-    if ArnToBeReplacedWith[iTempArn] eq 0 then begin
-      ArnToBeReplacedWith[iTempArn] = iFinalArn++;   // add new areanumbering value
-    endif else begin
-      ArnToBeReplacedWith[iTempArn] = ArnToBeReplacedWith[ArnToBeReplacedWith[iTempArn]]; // take final areanumbering
-    endelse
-  endfor
+  ix = where(ArnToBeReplacedWith ne 0, cnt)
+  replace_lut = lindgen(iArn + 1)
+  if cnt gt 0 then replace_lut[ix] = replace_lut[ArnToBeReplacedWith[ix]]
 
   ; renumber
-  for l = 0L, nl - 1 do begin
-    iArnLine = temp_data[*, l]
-    for i = 0L, ns - 1 do begin
-      if iArnLine[i] ne iUNDEF then begin
-        iArnLine[i] = ArnToBeReplacedWith[iArnLine[i]]
-        iAreaNum = iArnLine[i]
-      endif
-    endfor
-    areas[*, l] = iArnLine
-  endfor
+  areas = replace_lut[temp_data]
+  if cu gt 0 then areas[iu] = iUNDEF
 end
 
 ;+
@@ -159,13 +138,10 @@ end
 ;    ArnToBeReplacedWith : in, out
 ;      Array handling translation to areas that are candidates to be merged
 ;      with earlier found areas 
-;    ArnRawAtt : in, out
-;      Unused for now
-;
 ;
 ; :Author: nieuwenhuis
 ;-
-function iAreaNumber, iValue, iArn, iLastColPlus1, iCount, iPrevLine, iPrevArnLine, ArnToBeReplacedWith, ArnRawAtt
+function iAreaNumber, iValue, iArn, iLastColPlus1, iCount, iPrevLine, iPrevArnLine, ArnToBeReplacedWith
   compile_opt idl2, logical_predicate
   
   ; iTempArnChange = temporary store of the areanumbering to change
@@ -177,7 +153,6 @@ function iAreaNumber, iValue, iArn, iLastColPlus1, iCount, iPrevLine, iPrevArnLi
   iSta = iLastColPlus1 - iCount ; start of current segment
   iEnd = iLastColPlus1 - 1      ; end of current segment
   iTempArn = 0                  ; temporary arenumbering of the current segment
-  j = iSta                      ; current col of the segment
   for j = iSta, iEnd do begin
     if iValue eq iPrevLine[j] then begin
       if iTempArn eq 0 then begin   ; take area number
@@ -228,7 +203,6 @@ function iAreaNumber, iValue, iArn, iLastColPlus1, iCount, iPrevLine, iPrevArnLi
   if iTempArn eq 0 then begin ; no connection found: create new number
     iTempArn = ++iArn
     ArnToBeReplacedWith = [ArnToBeReplacedWith, 0]
-    ArnRawAtt = [ArnRawAtt, iValue]
   endif
   return, iTempArn
 end

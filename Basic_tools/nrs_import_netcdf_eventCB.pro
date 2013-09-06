@@ -23,7 +23,7 @@ pro nrs_import_netcdf_handleOK, event
       if nrs_update_progress(progressBar, f, nr_files) then return
 
       fname = outfolder + path_sep() + file_basename(files[f])
-      outname = getOutname(fname[0], postfix = '_imp', ext = '.')
+      outname = getOutname(fname[0], postfix = '_imp', ext = '.dat')
       nrs_nc_get_data, files[f], out_name = outname $
                      , prog_obj = prog_obj, cancelled = cancelled
       nr_cancelled += cancelled
