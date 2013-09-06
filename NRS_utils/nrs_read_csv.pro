@@ -5,7 +5,6 @@
 
 ;----------------------------------------------------------------------------
 function read_csv_fieldnames, fieldCount
-
   compile_opt idl2, hidden
   
   digits_str = STRTRIM(STRING(STRLEN(STRTRIM(STRING(fieldCount),2))),2)
@@ -18,14 +17,14 @@ end
 ;----------------------------------------------------------------------------
 ;+
 ; :Description:
-;    The READ_CSV function reads data from a "comma-separated value"
+;    The nrs_read_csv function reads data from a "comma-separated value"
 ;    (comma-delimited) text file into an IDL structure variable.
 ;
 ;    This routine handles CSV files consisting of an optional line of column
 ;    headers, followed by columnar data, with commas separating each field.
 ;    Each row is assumed to be a new record.
 ;    
-;    The READ_CSV routine will automatically return each column (or field)
+;    The read_csv routine will automatically return each column (or field)
 ;    in the correct IDL variable type using the following rules:
 ;    
 ;       * Long - All data within that column consists of integers,
@@ -41,7 +40,7 @@ end
 ;    distribution. 
 ;
 ; :Syntax:
-;    Result = READ_CSV( Filename
+;    Result = read_csv( Filename
 ;      [, COUNT=variable] [, HEADER=variable] [, MISSING_VALUE=value]
 ;      [, NUM_RECORDS=value] [, RECORD_START=value]
 ;      )

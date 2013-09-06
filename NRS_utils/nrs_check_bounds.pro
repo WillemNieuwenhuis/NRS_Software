@@ -13,7 +13,7 @@
 ;     number of samples in the image
 ; :Returns:
 ; - 1 if the pixel is within the image
-; - -1, if the pixel lies outside of the image
+; - 0, if the pixel lies outside of the image
 ;-
 function nrs_check_bounds, x, y, lines, columns
   if (x ge 0) and (x lt columns) and $

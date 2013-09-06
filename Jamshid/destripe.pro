@@ -1,45 +1,65 @@
-; Author: Willem Nieuwenhuis, march 2009
-; Destripe a band
-; Algorithm [1]:
-;		val_new[i,j,k] = (val_old[i,j,k] - mu[j,k]) * sig[k] / sig[j, k] + mu[k]
+;+
 ;
-; Algorithm [2]:
-;		val_new[i,j,k] = (val_old[i,j,k] - mu[j,k]) * sig[m] / sig[j, k] + mu[m]
+; :Description:
+;   Destripe a band.
+;   <pre>
+;     Algorithm [1]::
+;		    val_new[i,j,k] = (val_old[i,j,k] - mu[j,k]) * sig[k] / sig[j, k] + mu[k]
 ;
-; Algorithm [3]:
-;		val_new[i,j,k] = (val_old[i,j,k] - mu[j,k]) * sig[c] / sig[j, k] + mu[c]
+;     Algorithm [2]::
+;		    val_new[i,j,k] = (val_old[i,j,k] - mu[j,k]) * sig[m] / sig[j, k] + mu[m]
 ;
-; where:
-;	i = row
-;	j = column
-;	k = band
-;	mu[j, k], sig[j, k] = mean and std of all original values in column j in band k
-;	mu[k],    sig[k]    = mean and std of all original values in band k
-;	mu[m],    sig[m]    = mean and std of all original values in all bands
-;	mu[c],    sig[c]    = mean and std of all original values in band c (for [3])
+;     Algorithm [3]::
+;		    val_new[i,j,k] = (val_old[i,j,k] - mu[j,k]) * sig[c] / sig[j, k] + mu[c]
 ;
-; Remove striping by applying [1], [2] or [3]
-; The keywords 'm' and 'sd' are set (both are needed) to the mean/stddev of the data
-; as described by the algorithms:
-;	[1]	mean/stddev of the band to be destriped
-;	[2]	mean/stddev of the entire image
-;	[3]	mean/stddev of the selected neighbor band
+;     where:
+;	      i = row
+;	      j = column
+;	      k = band
+;	      mu[j, k], sig[j, k] = mean and std of all original values in column j in band k
+;	      mu[k],    sig[k]    = mean and std of all original values in band k
+;	      mu[m],    sig[m]    = mean and std of all original values in all bands
+;	      mu[c],    sig[c]    = mean and std of all original values in band c (for [3])
+;  </pre>
+;   Remove striping by applying [1], [2] or [3]
+;   
+;   The keywords 'm' and 'sd' are set (both are needed) to the mean/stddev of the data
+;   as described by the algorithms:
+;	    [1]	mean/stddev of the band to be destriped
+;	    [2]	mean/stddev of the entire image
+;	    [3]	mean/stddev of the selected neighbor band
 ;
-; Parameters:
-;	band:		The band data to correct
-;	b:			Band number in the image
-;	bi:			The band counter indicating the number of bands having been handled
-;	nl:			The number of lines
-;	ns:			The number of samples
-;	band_stat:	Storage for the calculated mean and standard deviation information (band/image)
-;	col_stats:	Storage for the calculated mean and standard deviation information (columns)
+; :Params:
+;	  band: in
+;	    The band data to correct
+;	  b: in
+;	    Band number in the image
+;	  bi: in
+;	    The band counter indicating the number of bands having been handled
+;	  nl: in
+;	    The number of lines
+;	  ns: in
+;	    The number of samples
 ;
-; Keywords:
-;	m:			The mean of the image/(neigbor)band
-;	sd:			The standard deviation of the image/(neigbor)band
+; :Keywords:
+;	  m: out
+;	    The mean of the image/(neigbor)band
+;	  sd: out
+;	    The standard deviation of the image/(neigbor)band
+;   band_stat: out
+;     Storage for the calculated mean and standard deviation information (band/image)
+;   col_stats: out
+;     Storage for the calculated mean and standard deviation information (columns)
 ;
-; Return:
-;	The band after destriping, or 0 (zero) if the mean / stddev are not set
+; :Returns:
+;	  The band after destriping, or 0 (zero) if the mean / stddev are not set
+;
+; :Author:
+;   Willem Nieuwenhuis
+; :History:
+;   Change history::
+;     Created: March 2009
+;-
 function destripe_band, band, b, bi, nl, ns, m = m_in, sd = sd_in, band_stat = bs, col_stats = cs
 	; check input keywords
 	cnt = 0

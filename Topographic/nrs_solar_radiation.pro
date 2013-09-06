@@ -1,8 +1,11 @@
 ;+
 ; :Description:
-;   Calculation of (short wave) solar radiation
+;   Calculation of (short wave) solar radiation based on Kumar et al.
+;   The algorithm is modified in that it uses the actual latitude of the pixel.
 ;   The resulting default units for radiation are kJ/m^2/timeperiod; this
 ;   can be adjusted with the MJ and avg keywords
+;   
+;   The procedure accept input images with geographical coordinates only at this time.
 ;
 ; :Params:
 ;    dem : in, required
@@ -192,7 +195,7 @@ pro nrs_solar_radiation, dem, start_day, end_day, interval, output_name = energy
     
     if do_factor then initialgrid /= factor
     
-    writeu, energy_unit, initialgrid
+    writeu, energy_unit, float(initialgrid)
   endfor  ; strips
   nrs_log_line, logfile, 'Finished solar radiation calculation for ' + demname, /append
   nrs_log_line, logfile, 'Total time: ' + nrs_sec_to_string(systime(/seconds) - t1, /time, /hours24), /append
@@ -394,28 +397,28 @@ function nrs_solar_prepare_slap_maps, demname, swap_aspect = swap_aspect
 
 end
 
-pro swr_stat, swr, asp, tab
-  envi_file_query, swr, dims=dims, ns=ns, nl=nl
-  swr_data = envi_get_data(fid=swr, dims=dims, pos=[0])
-  aspec = envi_get_data(fid=asp,dims=dims,pos=[0])
-  n_ix = where(aspec eq 1 or aspec eq 8,n_cnt)
-  e_ix = where(aspec eq 2 or aspec eq 3,n_cnt)
-  s_ix = where(aspec eq 4 or aspec eq 5,n_cnt)
-  w_ix = where(aspec eq 6 or aspec eq 7,n_cnt)
-  
-  n_m = moment(swr_data[n_ix])
-  e_m = moment(swr_data[e_ix])
-  s_m = moment(swr_data[s_ix])
-  w_m = moment(swr_data[w_ix])
-  all = reform([n_m, e_m, s_m, w_m],4,4)
-  
-  write_csv, 'E:\NRS\Jiang Yanbing\Solar radiation model\swr.csv' $
-           , header=['dir','mean', 'var','skew','kurtosis'] $
-           , ['north','east','south','west'] $
-           , all[0,*] $
-           , all[1,*] $
-           , all[2,*] $
-           , all[3,*]
-  
-end
+;pro swr_stat, swr, asp, tab
+;  envi_file_query, swr, dims=dims, ns=ns, nl=nl
+;  swr_data = envi_get_data(fid=swr, dims=dims, pos=[0])
+;  aspec = envi_get_data(fid=asp,dims=dims,pos=[0])
+;  n_ix = where(aspec eq 1 or aspec eq 8,n_cnt)
+;  e_ix = where(aspec eq 2 or aspec eq 3,n_cnt)
+;  s_ix = where(aspec eq 4 or aspec eq 5,n_cnt)
+;  w_ix = where(aspec eq 6 or aspec eq 7,n_cnt)
+;  
+;  n_m = moment(swr_data[n_ix])
+;  e_m = moment(swr_data[e_ix])
+;  s_m = moment(swr_data[s_ix])
+;  w_m = moment(swr_data[w_ix])
+;  all = reform([n_m, e_m, s_m, w_m],4,4)
+;  
+;  write_csv, 'E:\NRS\Jiang Yanbing\Solar radiation model\swr.csv' $
+;           , header=['dir','mean', 'var','skew','kurtosis'] $
+;           , ['north','east','south','west'] $
+;           , all[0,*] $
+;           , all[1,*] $
+;           , all[2,*] $
+;           , all[3,*]
+;  
+;end
 
