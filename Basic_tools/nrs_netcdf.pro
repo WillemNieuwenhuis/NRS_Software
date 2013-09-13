@@ -353,7 +353,7 @@ end
 ;
 ; :Author: nieuwenhuis
 ;-
-pro nrs_nc_get_data, filename, out_name = outname $
+pro nrs_nc_get_data, filename, out_name = output_name $
                    , prog_obj = prog_obj, cancelled = cancelled
   compile_opt idl2, logical_predicate
   
@@ -412,7 +412,7 @@ pro nrs_nc_get_data, filename, out_name = outname $
     nodata_set = n_elements(nodata) gt 0
 
     postfix = '_' + var.name
-    if n_elements(outname) eq 0 then output_name = getOutname(filename, postfix = postfix, ext = '.dat')
+    if n_elements(output_name) eq 0 then output_name = getOutname(filename, postfix = postfix, ext = '.dat')
   
     dt = var.data_type
     if n_elements(scale_factor) gt 0 then dt = size(scale_factor, /type) $
@@ -591,7 +591,7 @@ function nrs_get_dt_from_units, timar, time_units, julian = julian, interval = i
         endswitch
       endif
       jd = julday(month, day, year, hour, minute, second)
-      julian = (timar * interval) / 86400D + jd
+      julian = (double(interval) * timar) / 86400D + jd
       
       return, 1
     endif else if parts[1] eq 'as' then begin

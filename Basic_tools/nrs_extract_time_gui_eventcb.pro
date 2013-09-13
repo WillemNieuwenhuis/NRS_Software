@@ -5,7 +5,7 @@ pro nrs_extract_time_handle_points, event
   incsv = strtrim(incsv, 2)
   if strlen(incsv) eq 0 then return
   
-  outname = getOutname(incsv, ext = '.csv')
+  outname = getOutname(incsv, postfix = '_ebt', ext = '.csv')
 
   fld = widget_info(event.top, find_by_uname = 'nrs_extract_time_outputFile')
   widget_control, fld, set_value = outname
@@ -86,7 +86,6 @@ pro nrs_extract_time_handleOK, event
                         , ysize = 15, title = 'Extract value by time' $
                         , /fast_loop $
                         )
-  progressBar->Start
 
   nrs_extract_by_time, incsv, infile, outname = outfile $
                    , start, finish $

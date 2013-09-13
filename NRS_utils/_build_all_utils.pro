@@ -32,6 +32,7 @@ pro _build_all_utils
            , 'nrs_minmax_from_datatype.pro' $
            , 'nrs_nice_numbers.pro' $
            , 'nrs_parse_modis_name.pro' $
+           , 'nrs_percentiles.pro' $ 
            , 'nrs_read_csv.pro' $
            , 'nrs_read_listfile.pro' $
            , 'nrs_read_table.pro' $
