@@ -7,6 +7,14 @@ pro nrs_precipitation_tools_define_buttons, buttonInfo
     uvalue = 'Climate indices', /menu, $
     ref_value = 'Precipitation', position = 'last'
 
+  envi_define_menu_button, buttoninfo, value = 'Determine historical 95th percentile', $
+    uvalue = 'Determine historical 95th percentile', event_pro = 'nrs_climind_perc_gui', $
+    ref_value = 'Climate indices', position = 'last'
+
+  envi_define_menu_button, buttoninfo, value = 'Annual total wet day precipitation', $
+    uvalue = 'Annual total wet day precipitation', event_pro = 'nrs_climind_r95p_gui', $
+    ref_value = 'Climate indices', position = 'last', /sep
+
   envi_define_menu_button, buttoninfo, value = 'Maximum 5-day precipitation', $
     uvalue = 'Maximum 5-day precipitation', event_pro = 'nrs_climind_rx5day_gui', $
     ref_value = 'Climate indices', position = 'last'

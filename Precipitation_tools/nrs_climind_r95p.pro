@@ -1,46 +1,23 @@
-;+
-; :description:
-;    Count the number of days per year where the precipitation is higher than a 
-;    use specified limit (by default 10 mm).
-;    The image is assumed to contain a timeseries with daily precipitation values in mm.
-;
-; :params:
-;    inname : in, required
-;      Name of the input time series
-;    startday : in
-;      The start date (as julian day, not doy!)
-;    endday : in
-;      The end date (as julian day)
-;
-; :keywords:
-;    outname : in
-;      The name of the output
-;    limit : in, default 10 (mm)
-;      The limit for counting the number of days
-;    prog_obj : in, optional
-;      Progressbar object to indicate progress of the calculation
-;    cancelled : in, optional
-;      If a progressbar is used, signals that the user stopped the calculation
-;
-; :author: nieuwenhuis
-;-
-pro nrs_climind_rnn, inname $
+pro nrs_climind_r95p, inname $
+           , perc_image $
            , outname = outname $
            , startday, endday $
-           , limit = limit $
            , prog_obj = prog_obj, cancelled = cancelled
   compile_opt idl2, logical_predicate
-
+  
   cancelled = 1
 
-  if n_elements(limit) gt 0 then limit = fix(limit) else limit = 10 ; unit is 'mm'
-  if limit le 0 then begin
-    void = error_message('Negative limits are not allowed')
+  envi_open_file, inname, r_fid = fid, /no_realize, /no_interactive_query
+  if fid eq -1 then begin
+    void = error_message('Could not open input timeseries')
     return
   endif
   
-  envi_open_file, inname, r_fid = fid, /no_realize, /no_interactive_query
-  if fid eq -1 then return
+  envi_open_file, perc_image, r_fid = fid_p, /no_realize, /no_interactive_query
+  if fid_p eq -1 then begin
+    void = error_message('Could not open percentile image')
+    return
+  endif
   
   envi_file_query, fid, ns = ns, nl = nl, nb = nb, dims = dims, data_ignore_value = undef
   mi = envi_get_map_info(fid = fid, undefined = csy_undef)
@@ -49,11 +26,10 @@ pro nrs_climind_rnn, inname $
   nrs_set_progress_property, prog_obj, /start, title = 'Climate indices'
 
   if (n_elements(outname) eq 0) || (strlen(strtrim(outname, 2)) eq 0) then begin
-    postfix = string(limit, '("_",i02)')
-    outname = getOutname(inname, postfix = postfix, ext = '.dat')
+    outname = getOutname(inname, postfix = '_r95p', ext = '.dat')
   endif
 
-  if ~((n_elements(undef) gt 0) && (undef ne 1e34)) then undef = -9999
+;  if ~((n_elements(undef) gt 0) && (undef ne 1e34)) then undef = -9999
    
   caldat, [startday, endday], mm, dd, yy
   sy = yy[0]
@@ -67,6 +43,8 @@ pro nrs_climind_rnn, inname $
   endif
 
   cancelled = 0
+  
+  limit = 1.0 ; in mm (only deal with wet days)
 
   openw, unit, outname, /get_lun
   
@@ -82,13 +60,21 @@ pro nrs_climind_rnn, inname $
     
     slice = envi_get_slice(fid = fid, line = line, xs = 0, xe = ns - 1, pos = pos, /bil)
     
-    high = slice ge limit
+    p95 = envi_get_slice(fid = fid_p, line = line, xs = 0, xe = ns - 1, pos = [0], /bil)
+    q95 = rebin(p95, ns, nb)  ; same size as slice
     
-    for y = 0, nr_years - 1 do begin
-      ps = jm[y]
-      pe = jm[y + 1] - 1
-      out_data[*, y] = total(high[*, ps : pe], 2, /preserve_type) 
-    endfor
+    ix = where(slice lt limit, cnt)
+    if cnt eq sl_tot then out_data[*] = 0.0 $
+    else begin
+      data = (slice gt q95) * slice
+      data[ix] = 0 ; exclude dry days, by setting precipitation on those days to zero
+      
+      for y = 0, nr_years - 1 do begin
+        ps = jm[y]
+        pe = jm[y + 1] - 1
+        out_data[*, y] = total(data[*, ps : pe], 2) 
+      endfor
+    endelse
     
     writeu, unit, out_data
   endfor
@@ -108,4 +94,3 @@ pro nrs_climind_rnn, inname $
   close, unit
   free_lun, unit  ; close output file
 end
-

@@ -4,7 +4,7 @@ pro nrs_climind_ptot_gui_extensions_init
   e = envi(/current)
   if e eq !NULL then return
   
-  e.AddExtension, 'Count wet days by limit', 'nrs_climind_ptot_gui', PATH='Precipitation'
+  e.AddExtension, 'Count wet days by limit', 'nrs_climind_ptot_gui', PATH='Climate indices'
 end
 
 pro nrs_climind_ptot_gui_event, event

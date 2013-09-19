@@ -4,7 +4,7 @@ pro nrs_climind_rx5day_gui_extensions_init
   e = envi(/current)
   if e eq !NULL then return
   
-  e.AddExtension, 'Maximum consecutive 5-day precipitation', 'nrs_climind_rx5day_gui', PATH='Precipitation'
+  e.AddExtension, 'Maximum consecutive 5-day precipitation', 'nrs_climind_rx5day_gui', PATH='Climate indices'
 end
 
 pro nrs_climind_rx5day_gui_event, event

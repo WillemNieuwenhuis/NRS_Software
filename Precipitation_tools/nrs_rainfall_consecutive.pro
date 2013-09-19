@@ -72,7 +72,7 @@ pro nrs_rainfall_consecutive, inname, calcdry = dry, calcwet = wet, calchighwet 
   mi = envi_get_map_info(fid = fid, undefined = csy_undef)
   if csy_undef eq 1 then delvar, mi
   
-  nrs_set_progress_property, prog_obj, /start, title = 'Precipitation indices'
+  nrs_set_progress_property, prog_obj, /start, title = 'Climate indices'
 
   if (n_elements(outname) eq 0) || (strlen(strtrim(outname, 2)) eq 0) then begin
     outname = getOutname(inname, postfix = '_prix', ext = '.dat')
