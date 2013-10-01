@@ -1,4 +1,4 @@
-pro nrs_rainfall_count, data_in, data_ndx, ns, line, nb, out_data = out_data
+pro nrs_climind_cdd_count, data_in, data_ndx, ns, line, nb, out_data = out_data
   compile_opt idl2, logical_predicate
   
   for s = 0, ns - 1 do begin
@@ -49,7 +49,7 @@ end
 ;
 ; :author: nieuwenhuis
 ;-
-pro nrs_rainfall_consecutive, inname, calcdry = dry, calcwet = wet, calchighwet = high_wet $
+pro nrs_climind_cdd, inname, calcdry = dry, calcwet = wet, calchighwet = high_wet $
            , outname = outname $
            , dry_limit = dry_limit, high_limit = high_limit $
            , prog_obj = prog_obj, cancelled = cancelled
@@ -104,17 +104,17 @@ pro nrs_rainfall_consecutive, inname, calcdry = dry, calcwet = wet, calchighwet 
     
     if do_dry then begin
       dry = slice lt dry_limit
-      nrs_rainfall_count, dry, dry_ndx, ns, line, nb, out_data = out_data
+      nrs_climind_cdd_count, dry, dry_ndx, ns, line, nb, out_data = out_data
     endif
 
     if do_wet then begin
       wet = slice ge dry_limit
-      nrs_rainfall_count, wet, wet_ndx, ns, line, nb, out_data = out_data
+      nrs_climind_cdd_count, wet, wet_ndx, ns, line, nb, out_data = out_data
     endif
     
     if do_high then begin
       high = slice ge high_limit
-      nrs_rainfall_count, high, high_ndx, ns, line, nb, out_data = out_data
+      nrs_climind_cdd_count, high, high_ndx, ns, line, nb, out_data = out_data
     endif
     
     if line eq 0 then begin

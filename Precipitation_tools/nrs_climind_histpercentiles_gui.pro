@@ -51,7 +51,7 @@ pro nrs_climind_perc_gui, event
   nrs_climind_perc_base = widget_base(nrs_climind_perc_mainPanel, /nonexclusive, uname = 'nrs_climind_perc_base')
   nrs_climind_perc_button = widget_button(nrs_climind_perc_base $
                 , uname = 'nrs_climind_perc_button' $
-                , value = 'Use Zhang''s method' $
+                , value = 'Use out-of-base estimation' $
               )
 
   nrs_climind_perc_output_panel = widget_base(nrs_climind_perc_contentPanel, /frame, /col)
