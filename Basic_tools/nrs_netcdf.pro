@@ -618,10 +618,9 @@ end
 ;    The folder where the netCDF file are located
 ;
 ; :History:
-;   september 2011 :
-;     First version
-;   februari 2012 :
-;     Generalized the import; it will now determine the data variable by itself
+;   code changes::
+;     september 2011 : First version
+;     februari 2012 : Generalized the import; it will now determine the data variable by itself
 ;
 ; :Author: nieuwenhuis
 ;-

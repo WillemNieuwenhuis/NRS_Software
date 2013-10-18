@@ -3,6 +3,9 @@
 ;    Get the extension of a filename. The extension is the
 ;    part of the filename after the last '.' in the filename
 ;
+; :returns:
+;   The file extension including the '.'
+;   
 ; :Params:
 ;    name : in
 ;      Filename

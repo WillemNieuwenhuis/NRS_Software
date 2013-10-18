@@ -1,15 +1,19 @@
 ;+
 ; :Description:
-;    Read the lines from a text file into a string array
+;    Read the lines from a text file into a string array. The file is closed after the read.
 ;
 ; :Params:
 ;    filename : in, required
 ;      Input text file
 ;
+; :Keywords:
+;    lines : in, optional
+;      if set only read the first "lines" lines from the file
+;
 ; :Author: nieuwenhuis
 ; :History: Nov 28, 2012
 ;-
-function nrs_read_listfile, filename
+function nrs_read_listfile, filename, lines = lines
   if n_elements(filename) eq 0 then return, []
   
   openr, unit, filename, /get_lun, error = err
@@ -17,8 +21,10 @@ function nrs_read_listfile, filename
     ans = error_message('Error opening list file: ' + filename, /errror)
     return, []
   endif
-  
-  lst = strarr(file_lines(filename))
+ 
+  nr_lines = file_lines(filename)
+  if n_elements(lines) gt 0 then nr_lines = min([lines, nr_lines])
+  lst = strarr(nr_lines)
   readf, unit, lst
   close, unit
   free_lun, unit
