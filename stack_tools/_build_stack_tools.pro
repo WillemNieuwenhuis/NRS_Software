@@ -4,6 +4,7 @@ pro _build_stack_tools
            , 'nrs_unstack_image.pro' $
            , 'nrs_unstack_gui.pro' $
            , 'nrs_unstack_gui_eventCB.pro' $
+           , 'nrs_stack_image.pro' $
            , 'nrs_stack_gui.pro' $
            , 'nrs_stack_gui_eventCB.pro' $
            , 'nrs_stack_aggregation_gui.pro' $

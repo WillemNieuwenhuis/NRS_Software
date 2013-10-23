@@ -20,9 +20,11 @@ pro _build_all_utils
            , 'nrs_calc_seq.pro' $
            , 'nrs_check_bounds.pro' $
            , 'nrs_dbf_utils.pro' $
+           , 'nrs_find_7zip.pro' $
            , 'nrs_find_images.pro' $
            , 'nrs_generate_coordmap.pro' $
            , 'nrs_get_days_indices.pro' $
+           , 'nrs_get_temporary_dir.pro' $
            , 'nrs_gui_createbuttonpanel.pro' $
            , 'nrs_IDL_type_to_string.pro' $
            , 'nrs_julian_day_functions.pro' $
@@ -38,7 +40,9 @@ pro _build_all_utils
            , 'nrs_read_table.pro' $
            , 'nrs_sec_to_string.pro' $
            , 'nrs_shapefile_utils.pro' $
+           , 'nrs_unzip.pro' $
            , 'nrs_update_progress.pro' $
+           , 'nrs_write_listfile.pro' $
            , 'pickcolorname.pro' $
            , 'progressbar__define.pro' $
            , 'read_ini_file.pro' $

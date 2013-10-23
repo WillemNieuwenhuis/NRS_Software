@@ -11,7 +11,10 @@
 ;      if set only read the first "lines" lines from the file
 ;
 ; :Author: nieuwenhuis
-; :History: Nov 28, 2012
+; :History:
+;   Changes::
+;     28 Nov 2012: nieuwenhuis, created
+;     18 Oct 2013: nieuwenhuis, added lines keyword
 ;-
 function nrs_read_listfile, filename, lines = lines
   if n_elements(filename) eq 0 then return, []

@@ -52,7 +52,6 @@ function nrs_find_images, folder, pattern, extension = ext $
 
   if file_count le 0 then return, []
   
-  if ~case_sens then raw_files = strlowcase(raw_files)
   ; filter out non-image files
   include = intarr(file_count)
   for i = 0, file_count - 1 do begin
@@ -60,7 +59,7 @@ function nrs_find_images, folder, pattern, extension = ext $
       if strlowcase(nrs_get_file_extension(raw_files[i])) eq '.hdr' then continue
     endif
     for p = 0, pat_count - 1 do begin
-      if stregex(raw_files[i], patlist[p]) ge 0 then begin
+      if stregex(raw_files[i], patlist[p], fold_case = ~case_sens) ge 0 then begin
         include[i] = 1
         break
       endif

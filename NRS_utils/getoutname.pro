@@ -45,5 +45,8 @@ function getOutname, pattern, basename = basename, prefix = prefix, postfix = po
   endif
   if keyword_set(new_ext) then ext = strtrim(new_ext)
   
-  return, path + path_sep() + prefix + name + postfix + ext
+  result = prefix + name + postfix + ext
+  if path ne '.' then result = path + path_sep() + result
+   
+  return, result 
 end
