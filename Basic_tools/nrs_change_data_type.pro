@@ -1,16 +1,3 @@
-function nrs_determine_limits, datatype
-  compile_opt idl2
-  
-  case datatype of
-    1 : return, [0, 255]
-    2 : return, [-32768, 32767]
-    3 : return, [-2147483647L, -2147483647L]
-    4 : return, [-1.0e38, 1.0e38]
-    5 : return, [-1.0e308, 1.0e308]
-  else: return, [0, -1]
-  endcase
-end
-
 pro nrs_change_data_type, image, outname = outname, out_type = out_type, out_div = div $
                 , prog_obj = prog_obj, cancelled = cancelled
   compile_opt idl2, logical_predicate
@@ -33,7 +20,7 @@ pro nrs_change_data_type, image, outname = outname, out_type = out_type, out_div
   
   in_block = make_array(block_size, type = dt, /nozero)
   out_block = make_array(block_size, type = out_type, /nozero)
-  limits = nrs_determine_limits(out_type)
+  limits = nrs_minmax_from_datatype(out_type)
 
   for e = 0, nr_elem - 1 do begin
     if nrs_update_progress(prog_obj, e, nr_elem, cancelled = cancelled) then begin
@@ -55,6 +42,7 @@ pro nrs_change_data_type, image, outname = outname, out_type = out_type, out_div
   envi_setup_head, fname = outname $
         , data_type = out_type $
         , ns = ns, nl = nl, nb = nb $
+        , interleave = interleave $
         , /write $
         , inherit = inherit
   

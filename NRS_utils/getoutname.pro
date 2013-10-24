@@ -26,9 +26,9 @@
 ; 
 ; :History:
 ;   Change history::
-;     june 2011: WN, Added prefix keyword
-;     july 2010: WN, Added basename and ext keywords
 ;     november 2009: WN, created
+;     july 2010: WN, Added basename and ext keywords
+;     june 2011: WN, Added prefix keyword
 ;-
 function getOutname, pattern, basename = basename, prefix = prefix, postfix = postfix, ext = new_ext
   if n_elements(prefix) eq 0 then prefix = ''

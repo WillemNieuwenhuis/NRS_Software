@@ -8,7 +8,7 @@ pro nrs_scale_offset_handle_input, event
   val_fld = widget_info(event.top, find_by_uname = 'nrs_scale_offset_outputFile')
   widget_control, val_fld, get_value = outname
   if strlen(strtrim(outname, 2)) eq 0 then begin
-    outname = getOutname(input, ext = '.', postfix = '_offsca')
+    outname = getOutname(input, ext = '.dat', postfix = '_offsca')
     widget_control, val_fld, set_value = outname
   endif
 end
@@ -27,6 +27,9 @@ pro nrs_scale_offset_handleOK, event
   val_fld = widget_info(event.top, find_by_uname = 'nrs_scale_offset_offset')
   widget_control, val_fld, get_value = offset_str
   
+  val_fld = widget_info(event.top, find_by_uname = 'nrs_scale_offset_datatype_combo')
+  dt_str = widget_info(val_fld, /combobox_gettext)
+  
   val_fld = widget_info(event.top, find_by_uname = 'nrs_scale_offset_outputFile')
   widget_control, val_fld, get_value = outname
   outname = strtrim(outname, 2)
@@ -43,17 +46,21 @@ pro nrs_scale_offset_handleOK, event
   
   scale = float(scale_str[0])
   offset = float(offset_str[0])
+  dtar = ['', 'byte', 'int', 'long', 'float', 'double']
+  data_type = where(strtrim(dt_str, 2) eq dtar, cnt)
+  data_type = cnt eq 0 ? 0 : data_type
   
     ; initialise tranquilizer
-  progressBar = Obj_New("PROGRESSBAR", background = 'white', color = 'green' $
+  prog_obj = Obj_New("PROGRESSBAR", background = 'white', color = 'green' $
                         , ysize = 15, title = "Apply scale and offset" $
                         , /fast_loop $
                         )
   
   nrs_scale_offset, input, outname = outname $
                     , scale = scale, offset = offset, off_before_scale = offset_before_scale $
+                    , data_type = data_type[0] $
                     , prog_obj = prog_obj, cancelled = cancelled
 
-  progressBar -> Destroy
+  prog_obj -> Destroy
 end
 

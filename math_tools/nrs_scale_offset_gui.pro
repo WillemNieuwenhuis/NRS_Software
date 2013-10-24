@@ -67,6 +67,19 @@ pro nrs_scale_offset_gui, event
               )
 
   nrs_scale_offset_output_panel = widget_base(nrs_scale_offset_contentPanel, /frame, /col)
+  nrs_scale_offset_datatype_panel = widget_base(nrs_scale_offset_output_panel $
+                , /row $
+                , uname = 'nrs_scale_offset_datatype_panel' $
+              )
+  nrs_scale_offset_datatype_label = widget_label(nrs_scale_offset_datatype_panel $
+                , xsize = label_width $
+                , value = 'Output data type' $
+              )
+  nrs_scale_offset_datatype_combo = widget_combobox(nrs_scale_offset_datatype_panel $
+                , uname = 'nrs_scale_offset_datatype_combo' $
+                , value = ['<same as input>', 'byte', 'int', 'long', 'float', 'double'] $
+              )
+  
   nrs_scale_offset_outputFile = cw_dirfile(nrs_scale_offset_output_panel, uname = 'nrs_scale_offset_outputFile' $
         , style = 'file' $
         , title = 'Output image' $

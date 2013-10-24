@@ -88,7 +88,7 @@ pro nrs_akima_spline, x, y $
   do_calc = keyword_set(calc_limit)
   lim_not_ok = (n_elements(upper_lim) eq 0) || n_elements(lower_lim eq 0)
   if !lim_not_ok then lim_not_ok = (upper_lim lt lower_lim)
-  if do_calc || lim_not_ok) then lower_lim = min(x, max = upper_lim)
+  if do_calc || lim_not_ok then lower_lim = min(x, max = upper_lim)
   xstep = (upper_lim - lower_lim) / interval;
     
   nr_points = n_elements(x)
