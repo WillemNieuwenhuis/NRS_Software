@@ -380,7 +380,7 @@ pro nrs_nc_get_data, filename, out_name = output_name $
       nrs_get_days_indices, julian, dmbands = dmbands, dybands = dybands, doy = doy
       dmbands = fix(total(dmbands, /cum)) - 1
       dybands = fix(total(dybands, /cum)) - 1
-      caldat, julian, mm, dd, yy
+      caldat, julian, mm, dd, yy, hh, mn, ss
     endif
   
     ; now spatial extent
@@ -420,14 +420,6 @@ pro nrs_nc_get_data, filename, out_name = output_name $
   
     ; open the output for writing
     openw, unit, output_name, /get_lun
-    out_data = assoc(unit, make_array(ns, nl, type = dt))  ; bsq
-  
-    catch, stat
-    if stat ne 0 then begin
-      nrs_assoc_cleanup, unit, output_name, prog_obj
-      cancelled = 1
-      return
-    endif
 
     buf = make_array(ns, nl, type = dt)
     var_cnt = [ns, nl]
@@ -479,7 +471,7 @@ pro nrs_nc_get_data, filename, out_name = output_name $
         band = buf
       endif
       
-      out_data[b] = band   ; write to disk
+      writeu, unit, band   ; write to disk
     endfor  ; b 
       
     ; build band names
@@ -488,7 +480,12 @@ pro nrs_nc_get_data, filename, out_name = output_name $
       if (interval ge 28 * 86400D) and (interval le 31 * 86400D) then begin
         bnames = 'Year.month ' + string(yy, format = '(I04)') + '.' + string(mm, format = '(I02)')
       end else begin
-        bnames = 'Year.day ' + string(yy, format = '(I04)') + '.' + string(doy, format = '(I03)')
+        if interval ge 86400D then begin
+          bnames = 'Year.day ' + string(yy, format = '(I04)') + '.' + string(doy, format = '(I03)')
+        endif else begin
+          bnames = 'Year.day ' + string(yy, format = '(I04)') + '.' + string(doy, format = '(I03)') $
+                               + string(hh, format = '("; ",I02)')+ string(mn, format = '(":",I02)')+ string(ss, format = '(":",I02)')
+        endelse
       endelse
     endif
 
@@ -503,7 +500,7 @@ pro nrs_nc_get_data, filename, out_name = output_name $
             , data_ignore_value = nodata
   
     close, unit
-    free_lun, unit  ; close assoc
+    free_lun, unit
 
   endfor ; v
   

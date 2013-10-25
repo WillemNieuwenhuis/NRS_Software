@@ -1,3 +1,10 @@
+pro nrs_import_netcdf_gui_extensions_init
+  compile_opt IDL2
+  
+  e = ENVI(/CURRENT)
+  e.AddExtension, 'Import netCDF files', 'nrs_import_netcdf_gui', PATH='Basic tools'
+end
+
 pro nrs_import_netcdf_gui_event, event
   wTarget = (widget_info(Event.id,/NAME) eq 'TREE' ?  widget_info(Event.id, /tree_root) : event.id)
   wWidget =  Event.top
@@ -38,6 +45,15 @@ pro nrs_import_netcdf_gui, event
                 , xsize = text_width $
                 , xtitlesize = label_width $
                 , uname = 'nrs_import_netcdf_input_folder' $
+              )
+
+  nrs_import_netcdf_mask = fsc_inputfield(nrs_import_netcdf_mainPanel $
+                , uname = 'nrs_import_netcdf_mask' $
+                , title = 'File mask' $
+                , labelalign = 1 $
+                , labelsize = label_width $
+                , value = '*.nc' $
+                , xsize = text_small_width $
               )
 
   nrs_import_netcdf_outputPanel = widget_base(nrs_import_netcdf_contentPanel, /col, /frame)              
