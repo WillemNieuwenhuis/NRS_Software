@@ -24,3 +24,22 @@ pro nrs_ndvi_tools_define_buttons, buttonInfo
     ref_value = 'NDVI', position = 'last'
 
 end
+
+; Also add as ENVI 5 extensions
+pro nrs_ndvi_tools_extensions_init
+  compile_opt idl2
+  
+  e = ENVI(/CURRENT)
+  e.AddExtension, 'Normalize indices', 'nrs_normalize_gui', PATH='NRS/NDVI tools'
+  e.AddExtension, 'Drought index', 'nrs_normalize_gui', PATH='NRS/NDVI tools'
+  e.AddExtension, 'RPD (GWI)', 'nrs_rpd_gui', PATH='NRS/NDVI tools'
+  e.AddExtension, 'GWI Threshold', 'nrs_rpd_perc_gui', PATH='NRS/NDVI tools'
+  e.AddExtension, 'Winter NDVI', 'nrs_winter_ndvi_gui', PATH='NRS/NDVI tools'
+end
+
+; ENVI 5 compatibility
+pro nrs_ndvi_tools
+  compile_opt idl2
+end
+
+

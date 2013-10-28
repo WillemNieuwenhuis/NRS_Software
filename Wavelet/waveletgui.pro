@@ -2,7 +2,7 @@ pro waveletgui_extensions_init
   compile_opt IDL2
   
   e = ENVI(/CURRENT)
-  e.AddExtension, 'Wavelet processing', 'waveletgui', PATH='Spatial'
+  e.AddExtension, 'Wavelet processing', 'waveletgui', PATH='NRS'
 end
 
 pro waveletgui

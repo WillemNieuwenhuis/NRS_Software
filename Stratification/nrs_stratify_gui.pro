@@ -12,7 +12,7 @@ pro nrs_stratify_gui_extensions_init
   e = envi(/current)
   if e eq !NULL then return
   
-  e.AddExtension, 'Stratification', 'nrs_stratify_gui';, PATH='Spatial'
+  e.AddExtension, 'Stratification', 'nrs_stratify_gui', path='NRS'
 end
 
 pro nrs_stratify_gui_event, Event

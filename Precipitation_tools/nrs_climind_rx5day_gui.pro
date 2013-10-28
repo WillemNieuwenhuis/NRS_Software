@@ -1,12 +1,3 @@
-pro nrs_climind_rx5day_gui_extensions_init
-  compile_opt idl2
-  
-  e = envi(/current)
-  if e eq !NULL then return
-  
-  e.AddExtension, 'Maximum consecutive 5-day precipitation', 'nrs_climind_rx5day_gui', PATH='Climate indices'
-end
-
 pro nrs_climind_rx5day_gui_event, event
   wTarget = (widget_info(Event.id,/NAME) eq 'TREE' ?  widget_info(Event.id, /tree_root) : event.id)
   wWidget =  Event.top

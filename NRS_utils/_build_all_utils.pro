@@ -41,6 +41,7 @@ pro _build_all_utils
            , 'nrs_sec_to_string.pro' $
            , 'nrs_shapefile_utils.pro' $
            , 'nrs_unzip.pro' $
+           , 'nrs_utils.pro' $
            , 'nrs_update_progress.pro' $
            , 'nrs_write_listfile.pro' $
            , 'pickcolorname.pro' $

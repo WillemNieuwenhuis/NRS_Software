@@ -4,3 +4,4 @@ pro nrs_amapp_tools_define_buttons, buttonInfo
     ref_value = 'NRS', position = 'after'
 
 end
+

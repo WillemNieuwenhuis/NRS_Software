@@ -38,5 +38,25 @@ pro nrs_precipitation_tools_define_buttons, buttonInfo
   envi_define_menu_button, buttonInfo, value = 'Classify SPI', $
     uvalue = 'Classify SPI', event_pro = 'nrs_classify_spi_gui', $
     ref_value = 'Precipitation', position = 'last'
-
 end
+
+; Also add as ENVI 5 extensions
+pro nrs_precipitation_tools_extensions_init
+  compile_opt idl2
+  
+  e = ENVI(/CURRENT)
+  e.AddExtension, 'Determine historical 95th percentile', 'nrs_climind_perc_gui', PATH='NRS/Precipitation tools/Climate indices'
+  e.AddExtension, '17,18 - Rx1day,Rx5day: Maximum 5-day precipitation', 'nrs_climind_rx5day_gui', PATH='NRS/Precipitation tools/Climate indices'
+  e.AddExtension, '22 - Rnn: Count wet days', 'nrs_climind_rnn_gui', PATH='NRS/Precipitation tools/Climate indices'
+  e.AddExtension, '23,24 - CDD,CWD: Maximum consecutive wet/dry', 'nrs_climind_cdd_gui', PATH='NRS/Precipitation tools/Climate indices'
+  e.AddExtension, '25 - r95p: Annual total very wet day precipitation', 'nrs_climind_r95p_gui', PATH='NRS/Precipitation tools/Climate indices'
+  e.AddExtension, '27 - PRCPTOT: Annual total wet day precipitation', 'nrs_climind_ptot_gui', PATH='NRS/Precipitation tools/Climate indices'
+  e.AddExtension, 'Calculate SPI', 'nrs_spi_gui', PATH='NRS/Precipitation tools'
+  e.AddExtension, 'Classify SPI', 'nrs_classify_spi_gui', PATH='NRS/Precipitation tools'
+end
+
+; ENVI 5 compatibility
+pro nrs_precipitation_tools
+  compile_opt idl2
+end
+

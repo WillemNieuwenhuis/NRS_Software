@@ -1,12 +1,3 @@
-pro nrs_climind_r95p_gui_extensions_init
-  compile_opt idl2
-  
-  e = envi(/current)
-  if e eq !NULL then return
-  
-  e.AddExtension, 'Annual precipitation on very wet days', 'nrs_climind_r95p_gui', PATH='Climate indices'
-end
-
 pro nrs_climind_r95p_gui_event, event
   wTarget = (widget_info(Event.id,/NAME) eq 'TREE' ?  widget_info(Event.id, /tree_root) : event.id)
   wWidget =  Event.top

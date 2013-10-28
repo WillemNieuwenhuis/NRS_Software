@@ -1,10 +1,3 @@
-pro nrs_statistics_batch_gui_extensions_init
-  compile_opt IDL2
-  
-  e = ENVI(/CURRENT)
-  e.AddExtension, 'Batch statistics', 'nrs_statistics_batch_gui', PATH='Basic tools'
-end
-
 pro nrs_statistics_batch_gui_event, event
   wTarget = (widget_info(Event.id,/NAME) eq 'TREE' ?  widget_info(Event.id, /tree_root) : event.id)
   wWidget =  Event.top

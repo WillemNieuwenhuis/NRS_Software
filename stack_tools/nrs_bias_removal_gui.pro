@@ -1,9 +1,3 @@
-;pro nrs_bias_removal_gui_define_buttons, buttonInfo
-;  envi_define_menu_button, buttonInfo, VALUE = 'Remove bias', $
-;    UVALUE = 'Remove Bias', EVENT_PRO = 'nrs_bias_removal_gui', $
-;    REF_VALUE = 'NRS', POSITION = 'last', /SEPARATOR
-;end
-
 pro nrs_bias_removal_gui_event, event
   wTarget = (widget_info(Event.id,/NAME) eq 'TREE' ?  widget_info(Event.id, /tree_root) : event.id)
   wWidget =  Event.top
