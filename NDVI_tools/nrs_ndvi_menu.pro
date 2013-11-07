@@ -23,6 +23,10 @@ pro nrs_ndvi_tools_define_buttons, buttonInfo
     uvalue = 'Winter NDVI', event_pro = 'nrs_winter_ndvi_gui', $
     ref_value = 'NDVI', position = 'last'
 
+  envi_define_menu_button, buttonInfo, value = 'Find start of growing season', $
+    uvalue = 'Find start of growing season', event_pro = 'nrs_growth_gui', $
+    ref_value = 'NDVI', position = 'last'
+
 end
 
 ; Also add as ENVI 5 extensions
@@ -35,6 +39,7 @@ pro nrs_ndvi_tools_extensions_init
   e.AddExtension, 'RPD (GWI)', 'nrs_rpd_gui', PATH='NRS/NDVI tools'
   e.AddExtension, 'GWI Threshold', 'nrs_rpd_perc_gui', PATH='NRS/NDVI tools'
   e.AddExtension, 'Winter NDVI', 'nrs_winter_ndvi_gui', PATH='NRS/NDVI tools'
+  e.AddExtension, 'Find start of growing season', 'nrs_growth_gui', PATH='NRS/NDVI tools'
 end
 
 ; ENVI 5 compatibility

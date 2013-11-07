@@ -100,7 +100,7 @@ pro nrs_find_ndvi_seasons, imagefile, shapefile, outputfile, start_date = start_
 
     for p = 0, nr_periods - 1 do begin
       y_jul = nrs_get_jul(minsel[p], aggr_period, per_year, syear, sjul)
-      year_str = nrs_julian_as_string(y_jul[1], year = y_jul[0])
+      year_str = nrs_julian_as_string(y_jul[1])
       seasons[p, i] = year_str
     endfor
     

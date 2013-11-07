@@ -4,6 +4,9 @@ pro _build_all_ndvi_tools
            , 'nrs_drought_gui_eventcb.pro' $
            , 'nrs_normalize_gui.pro' $
            , 'nrs_normalize_gui_eventcb.pro' $
+           , 'nrs_find_growth_start.pro' $
+           , 'nrs_growth_gui.pro' $
+           , 'nrs_growth_gui_eventcb.pro' $
            , 'nrs_rpd.pro' $
            , 'nrs_rpd_gui.pro' $
            , 'nrs_rpd_gui_eventcb.pro' $
