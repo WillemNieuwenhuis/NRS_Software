@@ -68,9 +68,7 @@ pro nrs_climind_cdd_handleOK, event
                        , outname = outfile $
                        , /calcdry $
                        , /calcwet $
-                       , /calchighwet $
                        , dry_limit = drylimit $
-                       , high_limit = 20 $
 ;                       , start_date, end_date $
                        , prog_obj = progressBar, cancelled = cancelled
 

@@ -11,7 +11,7 @@ pro nrs_precipitation_tools_define_buttons, buttonInfo
     uvalue = 'Determine historical 95th percentile', event_pro = 'nrs_climind_perc_gui', $
     ref_value = 'Climate indices', position = 'last'
 
-  envi_define_menu_button, buttoninfo, value = '17,18 - Rx1day,Rx5day: Maximum 5-day precipitation', $
+  envi_define_menu_button, buttoninfo, value = '17,18 - Rx1day,Rx5day: Maximum 1-day/5-day precipitation', $
     uvalue = 'Maximum 5-day precipitation', event_pro = 'nrs_climind_rx5day_gui', $
     ref_value = 'Climate indices', position = 'last', /sep
 
@@ -19,7 +19,7 @@ pro nrs_precipitation_tools_define_buttons, buttonInfo
     uvalue = 'Count wet days', event_pro = 'nrs_climind_rnn_gui', $
     ref_value = 'Climate indices', position = 'last'
 
-  envi_define_menu_button, buttoninfo, value = '23,24 - CDD,CWD: Maximum consecutive wet/dry', $
+  envi_define_menu_button, buttoninfo, value = '23,24 - CDD,CWD: Maximum consecutive dry/wet', $
     uvalue = 'Maximum consecutive wet/dry', event_pro = 'nrs_climind_cdd_gui', $
     ref_value = 'Climate indices', position = 'last'
 

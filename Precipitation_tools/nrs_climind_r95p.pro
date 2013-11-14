@@ -61,7 +61,7 @@ pro nrs_climind_r95p, inname $
     slice = envi_get_slice(fid = fid, line = line, xs = 0, xe = ns - 1, pos = pos, /bil)
     
     p95 = envi_get_slice(fid = fid_p, line = line, xs = 0, xe = ns - 1, pos = [0], /bil)
-    q95 = rebin(p95, ns, nb)  ; same size as slice
+    q95 = rebin(p95, ns, nb)  ; duplicate in band dir to get same size as input slice
     
     ix = where(slice lt limit, cnt)
     if cnt eq sl_tot then out_data[*] = 0.0 $

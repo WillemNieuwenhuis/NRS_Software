@@ -91,7 +91,7 @@ pro nrs_climind_cdd, inname, calcdry = dry, calcwet = wet, calchighwet = high_we
   endif
   if do_high then begin
     high_ndx = index++
-    bnames = [bnames, string(high_limit, format = '("R",i0,"mm")')]
+    bnames = [bnames, string(high_limit, format = '("CVWD",i0,"mm")')]
   endif
     
   out_data = fltarr(ns, nl, index)

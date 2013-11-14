@@ -21,6 +21,9 @@ pro nrs_climind_r95p_handleOK, event
   fld = widget_info(event.top, find_by_uname = 'nrs_climind_r95p_refstack')
   widget_control, fld, get_value = infile
   
+  fld = widget_info(event.top, find_by_uname = 'nrs_climind_r95p_percentile')
+  widget_control, fld, get_value = hist95_file
+  
   fld = widget_info(event.top, find_by_uname = 'nrs_climind_r95p_start_date')
   widget_control, fld, get_value = sd
   
@@ -33,6 +36,9 @@ pro nrs_climind_r95p_handleOK, event
   ; check input values
   infile = strtrim(infile, 2)
   if strlen(infile) eq 0 then return
+  
+  hist95_file = strtrim(hist95_file, 2)
+  if strlen(hist95_file) eq 0 then return
   
   if strlen(strtrim(sd, 2)) eq 0 then begin
     void = dialog_message('You need to specify the start date', /error)
@@ -58,9 +64,10 @@ pro nrs_climind_r95p_handleOK, event
                         , /fast_loop $
                         )
   nrs_climind_r95p, infile $
-                       , outname = outfile $
-                       , sd, ed $
-                       , prog_obj = progressBar, cancelled = cancelled
+                  , hist95_file $
+                  , outname = outfile $
+                  , sd, ed $
+                  , prog_obj = progressBar, cancelled = cancelled
 
   progressBar->destroy
   

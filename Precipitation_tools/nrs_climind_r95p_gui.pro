@@ -39,6 +39,14 @@ pro nrs_climind_r95p_gui, event
                 , event_pro = 'nrs_climind_r95p_handle_input' $
               )
 
+  nrs_climind_r95p_percentile = cw_dirfile(nrs_climind_r95p_mainPanel $
+                , title = 'Percentile image' $
+                , style = 'envi' $
+                , xsize = text_width $
+                , xtitlesize = label_width $
+                , uname = 'nrs_climind_r95p_percentile' $
+              )
+
   nrs_climind_r95p_start_date = fsc_inputfield(nrs_climind_r95p_mainPanel $
                 , uname = 'nrs_climind_r95p_start_date' $
                 , title = 'Start date' $

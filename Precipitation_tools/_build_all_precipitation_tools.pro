@@ -5,6 +5,9 @@ pro _build_all_precipitation_tools
            , 'nrs_classify_spi.pro' $
            , 'nrs_classify_spi_gui.pro' $
            , 'nrs_classify_spi_gui_eventcb.pro' $
+           , 'nrs_climind_cdd.pro' $
+           , 'nrs_climind_cdd_gui.pro' $
+           , 'nrs_climind_cdd_gui_eventcb.pro' $
            , 'nrs_climind_histpercentiles.pro' $
            , 'nrs_climind_histpercentiles_gui.pro' $
            , 'nrs_climind_histpercentiles_gui_eventcb.pro' $
@@ -21,9 +24,6 @@ pro _build_all_precipitation_tools
            , 'nrs_climind_rx5day_gui.pro' $
            , 'nrs_climind_rx5day_gui_eventcb.pro' $
            , 'nrs_precipitation_menu.pro' $
-           , 'nrs_rainfall_consecutive.pro' $
-           , 'nrs_rainfall_consecutive_gui.pro' $
-           , 'nrs_rainfall_consecutive_gui_eventcb.pro' $
           ]
   _auto_build, files, 'bin' + path_sep() + 'nrs_precipitation_tools.sav', logfile = 'bin' + path_sep() + 'nrs_precipitation_tools.log' 
 end
