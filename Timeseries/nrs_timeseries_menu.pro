@@ -19,4 +19,8 @@ pro nrs_timeseries_define_buttons, buttonInfo
     uvalue = 'Time interpolation', event_pro = 'nrs_time_interpol_gui', $
     ref_value = 'Timeseries', position = 'last'
 
+  envi_define_menu_button, buttonInfo, value = 'Correlate with profile', $
+    uvalue = 'Correlate with profile', event_pro = 'nrs_correlate_profile_gui', $
+    ref_value = 'Timeseries', position = 'last'
+
 end

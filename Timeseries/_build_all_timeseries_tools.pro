@@ -1,6 +1,9 @@
 pro _build_all_timeseries_tools
   ; Timeseries routines
-  files = ['nrs_harmonic_analysis.pro' $
+  files = [  'nrs_correlate_profile.pro' $
+           , 'nrs_correlate_profile_gui.pro' $
+           , 'nrs_correlate_profile_gui_eventcb.pro' $
+           , 'nrs_harmonic_analysis.pro' $
            , 'nrs_harmonic_gui.pro' $
            , 'nrs_harmonic_gui_eventcb.pro' $
            , 'nrs_harmonic_inv_gui.pro' $
