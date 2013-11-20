@@ -7,7 +7,7 @@
 ;
 ; :params:
 ;    table : in, required
-;      Fully specified ilename of the table 
+;      Fully specified filename of the table 
 ;
 ; :keywords:
 ;    col_count : out

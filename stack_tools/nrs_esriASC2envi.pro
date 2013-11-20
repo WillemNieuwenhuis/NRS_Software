@@ -113,7 +113,7 @@ pro nrs_esriSC2envi, filename
   isASCII = ~usesHeader && (file_info(filename)).exists
   
   if isASCII then hdrfile = ascfile
-  meta = nrs_read_listfile(hdrfile, lines = usesHeader ? 7 : 6)
+  meta = nrs_read_listfile(hdrfile)
   kv = parse_keys(meta)
   
   ns = get_value_by_key(kv, 'ncols', 3) ; 3 == long

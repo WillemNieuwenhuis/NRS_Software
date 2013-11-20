@@ -149,5 +149,4 @@ pro nrs_stack_image, outname, folder = folder, list_file = list_file, prog_obj =
           , map_info = mi $
           , interleave = 0 $
           , data_ignore_value = undef
-;  envi_write_envi_file, data, out_name = outname, bnames = bnames, /no_copy, /no_open, map_info = mi
 end
