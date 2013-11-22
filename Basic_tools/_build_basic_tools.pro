@@ -5,6 +5,9 @@ pro _build_basic_tools
            , 'nrs_classify_r2.pro' $
            , 'nrs_classify_r2_gui.pro' $
            , 'nrs_classify_r2_gui_eventcb.pro' $
+           , 'nrs_detect_burnt.pro' $
+           , 'nrs_detect_burnt_gui.pro' $
+           , 'nrs_detect_burnt_gui_eventcb.pro' $
            , 'nrs_model_perf_gui.pro' $
            , 'nrs_model_perf_gui_eventcb.pro' $
            , 'nrs_model_performance.pro' $

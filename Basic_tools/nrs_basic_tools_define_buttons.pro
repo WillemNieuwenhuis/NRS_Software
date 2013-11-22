@@ -19,6 +19,10 @@ pro nrs_basic_tools_define_buttons, buttonInfo
     uvalue = 'Spatial statistics (batch)', event_pro = 'nrs_statistics_batch_gui', $
     ref_value = 'NRS', position = 'first'
 
+  envi_define_menu_button, buttoninfo, value = 'Detect burnt periods', $
+    uvalue = 'Detect burnt periods', event_pro = 'nrs_detect_burnt_gui', $
+    ref_value = 'NRS', position = 'last'
+
 end
 
 pro nrs_basic_tools_extensions_init
@@ -30,6 +34,7 @@ pro nrs_basic_tools_extensions_init
   e.AddExtension, 'Import netCDF files', 'nrs_import_netcdf_gui', PATH='NRS/Basic tools'
   e.AddExtension, 'Extract by time / location', 'nrs_extract_time_gui', PATH='NRS/Basic tools'
   e.AddExtension, 'Classify R2', 'nrs_classify_r2_gui', PATH='NRS/Basic tools'
+  e.AddExtension, 'Detect burnt periods', 'nrs_detect_burnt_gui', PATH='NRS/Basic tools'
 end
 
 ; For ENVI 5 compatibility
