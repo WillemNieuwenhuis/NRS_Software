@@ -46,9 +46,9 @@ pro nrs_timed_aggregation_gui, event
                 , title = 'Start date' $
                 , labelalign = 1 $
                 , labelsize = label_width $
-                , unittext = '(dd-mm-yyyy)' $
+                , unittext = '(dd-mm-yyyy [hh:mm:ss])' $
                 , value = '' $
-                , xsize = text_small_width $
+                , xsize = text_small_width * 2 $
                 , /all_events $
                 , event_pro = 'nrs_timed_aggregation_handle_input' $
               )
@@ -58,9 +58,9 @@ pro nrs_timed_aggregation_gui, event
                 , title = 'End date' $
                 , labelalign = 1 $
                 , labelsize = label_width $
-                , unittext = '(dd-mm-yyyy)' $
+                , unittext = '(dd-mm-yyyy [hh:mm:ss])' $
                 , value = '' $
-                , xsize = text_small_width $
+                , xsize = text_small_width * 2 $
                 , /all_events $
                 , event_pro = 'nrs_timed_aggregation_handle_input' $
               )

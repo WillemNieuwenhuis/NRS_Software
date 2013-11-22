@@ -94,7 +94,7 @@ pro nrs_model_perf_gui, event
         )
 
   nrs_gui_createButtonPanel, nrs_model_perf_contentPanel $
-                , ok_uname = 'nrs_model_perf_gobutton', ok_value = 'Go!', ok_tooltip = 'Harmonic analysis on timeseries' $
+                , ok_uname = 'nrs_model_perf_gobutton', ok_value = 'Go!', ok_tooltip = 'Model performance indices' $
                 , cancel_uname = 'nrs_model_perf_cancelbutton', cancel_value = 'Done', cancel_tooltip = 'Cancel the operation'
 
   ; Make sure we create the form

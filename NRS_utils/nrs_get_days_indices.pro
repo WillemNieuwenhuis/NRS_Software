@@ -64,8 +64,8 @@ pro nrs_get_days_indices, julian, interval, nr_obs = nr_obs, dmbands = dmbands, 
 end
 
 function nrs_get_period_from_range, sd, ed, nb, per_str = input_period
-  per_len = [1, 8, 10, 16, 30, 365]
-  per_str = ['day', '8-day', '10-day', '16-day', 'month', 'year']
+  per_len = [0.25, 0.5, 1, 8, 10, 16, 30, 365]
+  per_str = ['6 hours', '12 hours', 'day', '8-day', '10-day', '16-day', 'month', 'year']
   input_period = (ed - sd + 1) / (nb - 1)   ; in days
   diff = abs(per_len - input_period)
   mn = min(diff, mn_ix)
@@ -131,24 +131,25 @@ end
 ;    Find the index in target for all values in source. The index for a value V from source
 ;    is defined as the first position in the target array with value W where W >= V.<p>
 ;    The arrays don't have to be of the same length. The arrays are assumed to be
-;    ordered in increasing values
-;
+;    ordered in increasing values.
+;    
 ; :Params:
-;    target : in
+;    target : in, required
 ;      First array 
-;    source : in
+;    source : in, required
 ;      Second array
 ;      
 ; :Keywords:
-;    index : out
+;    index : out, optional
 ;      Indices into the target array for all values in the source array.
-;    ri : out
+;    ri : out, optional
 ;      Reverse indices for a lookup from target in source. Indices into
 ;      the source array for all values in the target array.
 ;
 ; :History:
-;   - nov 2011: creation
+;   - 29 oct 2013: nieuwenhuis, added aligned keyword 
 ;   - dec 2012: Added ri keyword
+;   - nov 2011: creation
 ;
 ; :Author: nieuwenhuis
 ;-
@@ -196,14 +197,14 @@ end
 ; :author: nieuwenhuis
 ; :obsolete:
 ;-
-function nrs_map_date, sy, ey, nb
-  jd = [julday(1, 1, sy), julday(12, 31, ey)]
-  per = nrs_get_period_from_range(jd[0], jd[1], nb, per_str = per_str)
-  nrs_get_dt_indices, jd, period = 'day', julian_out = jo
-  nrs_get_dt_indices, jo, period = per_str, indices = ind, ri = ri, /clip
-
-  return, ri
-end
+;function nrs_map_date, sy, ey, nb
+;  jd = [julday(1, 1, sy), julday(12, 31, ey)]
+;  per = nrs_get_period_from_range(jd[0], jd[1], nb, per_str = per_str)
+;  nrs_get_dt_indices, jd, period = 'day', julian_out = jo
+;  nrs_get_dt_indices, jo, period = per_str, indices = ind, ri = ri, /clip
+;
+;  return, ri
+;end
 
 ;+
 ; :Description:
@@ -313,7 +314,8 @@ end
 ; :Author: nieuwenhuis
 ; 
 ; :History:
-;    jan, 2012: Inception
+;    - 29 oct 2013: nieuwenhuis, added support for smaller than one day periods
+;    - jan, 2012: Inception
 ;-
 pro nrs_get_dt_indices, julian, interval = interval, period = period $
                       , julian_out = jul_out $
@@ -341,6 +343,9 @@ pro nrs_get_dt_indices, julian, interval = interval, period = period $
   ey = my[nb - 1]
   em = mm[nb - 1]
   ed = md[nb - 1]
+  th = mh[0]
+  tm = mmn[0]
+  ts = ms[0]
   year_cnt = ey - sy + 1
   month_cnt = (ey - sy) * 12 + (em - sm) + 1
   
@@ -349,25 +354,37 @@ pro nrs_get_dt_indices, julian, interval = interval, period = period $
     new_nb = long((julian[nb - 1] - julian[0]) / interval) + 1
     jul_out = julday(sm, sd, sy) + lindgen(new_nb) * interval
   endif else begin
+    timar = ['1 hour', '2 hours', '3 hours', '4 hours', '6 hours', '12 hours']
+    mular = [24, 12, 8, 6, 4, 2]
+    ix = where(period eq timar, cnt_tim)
+    if cnt_tim eq 1 then begin
+      period = 'time'
+      mult = (mular[ix])[0]
+    endif
     case strlowcase(period) of
-      'day'   : begin
-                  period_out = 365
-                  new_nb = long(julian[nb - 1] - julian[0]) + 1
-                  jul_out = julday(sm, sd, sy) + lindgen(new_nb)
-                end
-      '8-day' : begin
-                  period_out = 46 
-                  nrs_get_days_from, julian, 8, 46, jul_out = jul_out, crop = crop, clip = clip
-                end
+      'time'   : begin
+                   nrs_days_per_year, [sd, ed], dybands = period_out
+                   new_nb = (long(julian[nb - 1] - julian[0]) + 1) * mult
+                   jul_out = julday(sm, sd, sy, th, tm, ts) + findgen(new_nb) / mult
+                 end
+      'day'    : begin
+                   nrs_days_per_year, [sd, ed], dybands = period_out
+                   new_nb = long(julian[nb - 1] - julian[0]) + 1
+                   jul_out = julday(sm, sd, sy) + lindgen(new_nb)
+                 end
+      '8-day'  : begin
+                   period_out = 46 
+                   nrs_get_days_from, julian, 8, 46, jul_out = jul_out, crop = crop, clip = clip
+                 end
       '10-day' : begin
-                  period_out = 36 
-                  corr = (sd - 1) / 10
-                  dar = (corr + (indgen(month_cnt * 3))) mod 3 * 10 + 1
-                  dar[0] = sd
-                  mar = 1 + (((corr + indgen(month_cnt * 3)) / 3) + (sm - 1)) mod 12
-                  yar = sy + (((corr + indgen(month_cnt * 3)) / 3) + (sm - 1)) / 12
-                  jul_out = julday(mar, dar, yar)
-                end
+                   period_out = 36 
+                   corr = (sd - 1) / 10
+                   dar = (corr + (indgen(month_cnt * 3))) mod 3 * 10 + 1
+                   dar[0] = sd
+                   mar = 1 + (((corr + indgen(month_cnt * 3)) / 3) + (sm - 1)) mod 12
+                   yar = sy + (((corr + indgen(month_cnt * 3)) / 3) + (sm - 1)) / 12
+                   jul_out = julday(mar, dar, yar)
+                 end
       '16-day' : begin
                   period_out = 23 
                   nrs_get_days_from, julian, 16, 23, jul_out = jul_out, crop = crop, clip = clip
@@ -399,6 +416,16 @@ pro nrs_get_dt_indices, julian, interval = interval, period = period $
     endcase
   endelse
   
+  ; Determine types of the dates:
+  ; long(3) for dates, or double(5) for date and time
+  tp_out = size(jul_out, /type)
+  tp_in = size(julian, /type)
+  if tp_in ne tp_out && tp_in eq 5 then begin
+    ji = long(julian + 0.5D)
+  endif else begin
+    ji = julian
+  endelse
+
   start_year_index = -1
   y1 = where(julday(1, 1, sy) eq jul_out, cnt1)
   y2 = where(julday(1, 1, sy + 1) eq jul_out, cnt2)
@@ -409,10 +436,10 @@ pro nrs_get_dt_indices, julian, interval = interval, period = period $
     offset = jul_out[1] - julian[0]
   endif
   
-  if arg_present(ri) then $
-    nrs_match_arrays, julian, jul_out, index = indices, ri = ri $
-  else $
-    nrs_match_arrays, julian, jul_out, index = indices
-  
+  if arg_present(ri) then begin
+    nrs_match_arrays, ji, jul_out, index = indices, ri = ri
+  endif else begin
+    nrs_match_arrays, ji, jul_out, index = indices
+  endelse
 end
 

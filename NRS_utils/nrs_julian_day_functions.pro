@@ -70,32 +70,53 @@ end
 
 ;+
 ; :Description:
-;    Convert a date-time string to a julian date. The date components
-;    are assumed to be numerical 
+;    Convert date-time strings to a julian date. The date components
+;    are assumed to be numerical. The input can either be a single string or
+;    a string array.
+;    
+;    The date string can contain a date or a date and time
 ;
 ; :Params:
 ;    datetime : in
-;      String with date and time
+;      String data with date and time
 ;
 ; :Returns:
 ;   Julian date, or 0 if conversion failed
 ;
 ; :Author: nieuwenhuis
+; 
+; :history:
+;   changes::
+;     14 nov 2013: nieuwenhuis, now accepts either a string or a string array
+;     17 jan 2012: nieuwenhuis, date only dates return long values; date and time
+;                               return floating points values
+;     26 dec 2011: nieuwenhuis, created
 ;-
 function nrs_str2julian, datetime
   compile_opt idl2
-  parts = strsplit(datetime, ' ' + string(9b), /extract, count = nr_dt)
-  if nr_dt eq 0 then return, 0
+
+  date_count = n_elements(datetime)
+  out = []
+  for s = 0, date_count - 1 do begin
+    parts = strsplit(datetime[s], ' ' + string(9b), /extract, count = nr_dt)
+    if nr_dt eq 0 then continue
+    
+    if nr_dt eq 1 then parts = [parts, '']
+    dt_arr = nrs_split_datetime(parts[0], parts[1])
+    dmy = nrs_dmy_mapping(dt_arr)
+    
+    if dt_arr[dmy[2]] lt 100 then continue
+    
+    if nr_dt eq 1 then begin
+      out = [out, julday(dt_arr[dmy[1]], dt_arr[dmy[0]], dt_arr[dmy[2]])]
+    endif else begin
+      out = [out, julday(dt_arr[dmy[1]], dt_arr[dmy[0]], dt_arr[dmy[2]], dt_arr[3], dt_arr[4], dt_arr[5])]
+    endelse
+  endfor
   
-  if nr_dt eq 1 then parts = [parts, '']
-  dt_arr = nrs_split_datetime(parts[0], parts[1])
-  dmy = nrs_dmy_mapping(dt_arr)
+  if n_elements(out) eq 0 then return, out
   
-  if dt_arr[dmy[2]] lt 100 then return, 0
-  
-  if nr_dt eq 1 then return, julday(dt_arr[dmy[1]], dt_arr[dmy[0]], dt_arr[dmy[2]])
-  
-  return, julday(dt_arr[dmy[1]], dt_arr[dmy[0]], dt_arr[dmy[2]], dt_arr[3], dt_arr[4], dt_arr[5] )
+  return, date_count gt 1 ? out : out[0]
 end
 
 function nrs_dmy_from_julian, julian
@@ -146,13 +167,22 @@ function nrs_julian_from_doy, doy, year
   return, jan1 + doy - 1
 end
 
-function nrs_julian_as_string, julian
-  caldat, julian, mm, dd, year
+function nrs_julian_as_string, julian, time = time, format = dtform
+  compile_opt idl2
+
+  formats_dt = [ '(c(cyi4.4,"-",cmoi2.2,"-",cdi2.2," ",chi2.2,":",cmi2.2,":",csi2.2))' $
+               , '(c(cdi2.2,"-",cmoi2.2,"-",cyi4.4," ",chi2.2,":",cmi2.2,":",csi2.2))']
+  formats_d =  [ '(c(cyi4.4,"-",cmoi2.2,"-",cdi2.2))' $
+               , '(c(cdi2.2,"-",cmoi2.2,"-",cyi4.4))']
+
+  if n_elements(dtform) eq 1 then dtform = (dtform > 0) < 1 $
+  else dtform = 0
   
-  if max(year) lt 100 then $
-    return, string(mm, format = '(i02)') + '-' + string(dd, format = '(i02)') $
-  else $ 
-    return, string(year, format = '(i04)') + '-' + string(mm, format = '(i02)') + '-' + string(dd, format = '(i02)') 
+  if keyword_set(time) then begin
+    return, string(julian, format = formats_dt[dtform])
+  endif else begin
+    return, string(julian, format = formats_d[dtform])
+  endelse 
 end
 
 function nrs_dmy_as_string, dmy

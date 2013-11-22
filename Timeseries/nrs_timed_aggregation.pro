@@ -26,12 +26,19 @@ function nrs_get_cross_index, sd, ed, per, input_period, aggr_interval, aggr_int
   nrs_get_dt_indices, [sd, ed], period = input_period $
                       , julian_out = jul_in, indices = ind_in
 
+  ; for input intervals less than one day:
+  ; adjust the input times and position them in the middle of the intervals
+  tim_int = jul_in[1] - jul_in[0]
+  if tim_int lt 1.0 then $
+    jul_in -= (jul_in[1] - jul_in[0]) / 2
+
   ; get the indices for the output image stack
   ; shortest period first
-  if n_elements(aggr_interval) gt 0 then $
+  if n_elements(aggr_interval) gt 0 then begin
     nrs_get_dt_indices, jul_in, period = aggr_interval $
                       , julian_out = jul_out $
                       , indices = indices, start_year_index = syi, num_period = npy
+  endif
 
   ; second period, if any
   if n_elements(aggr_interval2) gt 0 then $
@@ -39,36 +46,44 @@ function nrs_get_cross_index, sd, ed, per, input_period, aggr_interval, aggr_int
                       , julian_out = jo_lvl2 $
                       , indices = ind_lvl2, start_year_index = syi_lvl2, num_period = num_lvl2
 
+  strput, aggr_interval, strupcase(strmid(aggr_interval, 0, 1)) ; capitalize first character
+  
   ; for one level
   if level1 then begin
-    num_periods = npy
+    num_periods = n_elements(indices)
+    indices = [indices, n_elements(jul_in)]  ; add first position after the array
     p_ar = ptrarr(num_periods)
-    st_p = syi le 0 ? 0 : npy - syi
+    st_p = syi le 0 ? 0 : npy[0] - syi
+    npy_cnt = n_elements(npy)
     for p = 0, num_periods - 1 do begin
       arr = []
       six = p
+      npy_ix = 0
       while six lt n_elements(indices) - 1 do begin
         arr = [arr, indgen(indices[six + 1] - indices[six]) + indices[six]]
-        six += num_periods
+        six += npy[npy_ix]
+        if npy_cnt gt 1 then npy_ix++
       endwhile
-      pix = (st_p + p) mod num_periods
+      pix = (st_p + p) mod npy
       if ptr_valid(p_ar[pix]) then ptr_free, p_ar[pix]
       p_ar[pix] = ptr_new(arr)
     endfor
 
     sy = 1
+    
+    nrdig = fix(alog10(num_periods)) + 1
     if npy eq 1 then begin
       caldat, sd, m, d, sy
       form = '("Year: ",i04)'
     endif else if npy eq 12 then form = '("Month: ",i02)' $
-    else form = '("Period: ",i02)'
+    else form = '("' + aggr_interval + ': ",i0' + string(nrdig, format = '(i0)') + ')'
     bnames = string(indgen(num_periods) + sy, format = form)
   endif
 
-  ; for 2 levels; only year is expected
+  ; for 2 levels; only year is expected and handled
   if level2 then begin
-    num_periods = n_elements(indices) - 1
-    if indices[num_periods-1] eq indices[num_periods-2] then num_periods--
+    num_periods = n_elements(indices)
+    indices = [indices, n_elements(jul_in)]  ; add first position after the array
     p_ar = ptrarr(num_periods)
     for p = 0, num_periods - 1 do begin
       ps = indices[p]
@@ -82,7 +97,7 @@ function nrs_get_cross_index, sd, ed, per, input_period, aggr_interval, aggr_int
     st_p = syi lt 0 ? 0 : num_periods - syi
     bn = ((indgen(n_elements(yy)) + st_p) mod num_periods) + 1
     if num_periods eq 12 then form = '("Month.Year: ",i03,".",i04)' $
-    else form = '("Period.Year: ",i03,".",i04)'
+    else form = '("' + aggr_interval + '.Year: ",i03,".",i04)'
     bnames = string([transpose(bn), transpose(yy)], format = form)
   endif
 
@@ -92,7 +107,7 @@ end
 ;+
 ; :Description:
 ;    Aggregate a timeseries for periods of 8, 10, 16 days, month or year. This also depends
-;    on the input date interval (the output interval is always larger).<p> 
+;    on the input date interval (the output interval is always larger).
 ;     
 ;    The software can calculate the following aggregations:
 ;    <ul>
@@ -158,7 +173,7 @@ pro nrs_timed_aggregation, image $
   if n_elements(aggr_interval) gt 0 then nr_levels++
   if n_elements(aggr_interval2) gt 0 then nr_levels++
   if nr_levels gt 0 then begin
-    all_intervals = ['day', '8-day', '10-day', '16-day', 'month', 'year']
+    all_intervals = ['12 hours', 'day', '8-day', '10-day', '16-day', 'month', 'year']
     inter_ix = where(strlowcase(aggr_interval) eq all_intervals, cnt)
     if cnt eq 0 then begin
       ans = dialog_message('Level 1: Unsupported output period', title = 'Error', /error)
@@ -223,7 +238,7 @@ pro nrs_timed_aggregation, image $
   openw, unit, outname, /get_lun
 
   for l = 0, nl - 1 do begin
-    if l mod 10 eq 0 then $
+;    if l mod 10 eq 0 then $
       if nrs_update_progress(prog_obj, l, nl, cancelled = cancelled) then return
   
     data = envi_get_slice(fid = fid, line = l, xs = 0, xe = ns - 1, /bil)
@@ -281,7 +296,3 @@ pro nrs_timed_aggregation, image $
   free_lun, unit  ; close output file
 end
 
-pro nrs_t1
-  compile_opt idl2, logical_predicate
-
-end

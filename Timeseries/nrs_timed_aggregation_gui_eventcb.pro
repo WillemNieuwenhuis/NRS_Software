@@ -4,12 +4,15 @@ pro nrs_timed_aggregation_handle_input, event
   val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_aggregation_refstack')
   widget_control, val_fld, get_value = target
 
-  target_str = strtrim(target)
+  target_str = strtrim(target, 2)
   if strlen(target_str) eq 0 then return
 
   basename = getOutname(target_str, postfix = '_taggr', ext = '.dat')
   val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_aggregation_outputFile')
-  widget_control, val_fld, set_value = basename
+  widget_control, val_fld, get_value = outfile
+  outfile_str = strtrim(outfile, 2)
+  if strlen(outfile_str) eq 0 then $
+    widget_control, val_fld, set_value = basename
   
   envi_open_file, target_str, r_fid = fid, /no_realize, /no_interactive_query
   if fid eq -1 then return
