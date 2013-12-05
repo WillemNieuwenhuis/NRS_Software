@@ -345,7 +345,7 @@ end
 ;
 ; :Keywords:
 ;    out_name : in, optional
-;      The basename of the output file(s). If nor specified the input name will be used as template
+;      The basename of the output file(s). If not specified the input name will be used as template
 ;    prog_obj : in, optional
 ;      A progress indicator (of type progressBar)
 ;    cancelled : out
@@ -353,9 +353,11 @@ end
 ;
 ; :Author: nieuwenhuis
 ;-
-pro nrs_nc_get_data, filename, out_name = output_name $
+pro nrs_nc_get_data, filename, out_name = base_name $
                    , prog_obj = prog_obj, cancelled = cancelled
   compile_opt idl2, logical_predicate
+  
+  if n_elements(base_name) eq 0 then base_name = getOutname(filename, postfix = '_imp', ext = '.dat')
   
   nc_id = ncdf_open(filename)
 
@@ -412,7 +414,7 @@ pro nrs_nc_get_data, filename, out_name = output_name $
     nodata_set = n_elements(nodata) gt 0
 
     postfix = '_' + var.name
-    if n_elements(output_name) eq 0 then output_name = getOutname(filename, postfix = postfix, ext = '.dat')
+    output_name = getOutname(base_name, postfix = postfix, ext = '.dat')
   
     dt = var.data_type
     if n_elements(scale_factor) gt 0 then dt = size(scale_factor, /type) $
@@ -489,6 +491,9 @@ pro nrs_nc_get_data, filename, out_name = output_name $
       endelse
     endif
 
+    close, unit
+    free_lun, unit
+
     envi_setup_head, fname = output_name $
             , descrip = var_desc $
             , data_type = dt $
@@ -499,9 +504,6 @@ pro nrs_nc_get_data, filename, out_name = output_name $
             , map_info = mi $
             , data_ignore_value = nodata
   
-    close, unit
-    free_lun, unit
-
   endfor ; v
   
   ncdf_close, nc_id  ; done reading; close the nc file

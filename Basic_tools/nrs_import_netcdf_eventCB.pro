@@ -36,7 +36,7 @@ pro nrs_import_netcdf_handleOK, event
 
       fname = outfolder + path_sep() + file_basename(files[f])
       outname = getOutname(fname[0], postfix = '_imp', ext = '.dat')
-      nrs_nc_get_data, files[f], out_name = outname $
+      nrs_nc_get_data, strtrim(files[f], 2), out_name = outname $
                      , prog_obj = prog_obj, cancelled = cancelled
       nr_cancelled += cancelled
     endfor
