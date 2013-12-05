@@ -144,8 +144,13 @@ pro nrs_correlate_profile, image, profile_table $
 
   outdata = make_array(ns, nl, type = dt)
   
+  ix_all = lonarr(nb)
   for l = 0, nl - 1 do begin
-    if nrs_update_progress(prog_obj, l, nl, cancelled = cancelled) then return
+    if nrs_update_progress(prog_obj, l, nl, cancelled = cancelled) then begin
+      close, unit
+      free_lun, unit  ; close output file
+      return
+    endif
   
     data = envi_get_slice(fid = fid, line = l, xs = 0, xe = ns - 1, pos = pos, /bil)
     if ignore_undef then begin
@@ -155,13 +160,15 @@ pro nrs_correlate_profile, image, profile_table $
     for c = 0, ns - 1 do begin
       if ignore_NAN then begin
         ix = where(~finite(data[c, *], /nan), cnt_nan)
-        loc_data = data[c, ix]
-      endif else loc_data = data[c, *]
-      outdata[c, l] = correlate(loc_data, prof_data)
+      endif else ix = ix_all
+      outdata[c, l] = correlate(data[c, ix], prof_data[ix])
     endfor
   endfor
   
   writeu, unit, outdata
+  
+  close, unit
+  free_lun, unit  ; close output file
   
   meta = envi_set_inheritance(fid, dims, /full)
   
@@ -173,7 +180,4 @@ pro nrs_correlate_profile, image, profile_table $
           , bnames = 'Pearson correlation' $
           , inherit = meta
 
-  close, unit
-  free_lun, unit  ; close output file
-  
 end
