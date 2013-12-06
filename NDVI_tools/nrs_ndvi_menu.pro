@@ -23,6 +23,10 @@ pro nrs_ndvi_tools_define_buttons, buttonInfo
     uvalue = 'Winter NDVI', event_pro = 'nrs_winter_ndvi_gui', $
     ref_value = 'NDVI', position = 'last'
 
+  envi_define_menu_button, buttonInfo, value = 'Growing degree days (GDD)', $
+    uvalue = 'Growing degree days (GDD)', event_pro = 'nrs_growing_degree_days_gui', $
+    ref_value = 'NDVI', position = 'last'
+
   envi_define_menu_button, buttonInfo, value = 'Find start of growing season', $
     uvalue = 'Find start of growing season', event_pro = 'nrs_growth_gui', $
     ref_value = 'NDVI', position = 'last'
