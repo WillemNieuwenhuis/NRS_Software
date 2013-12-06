@@ -66,15 +66,15 @@ pro nrs_scale_offset, img_name, outname = outname $
   if csy_undef then delvar, mi
 ;  envi_file_mng, fid, /remove
   
-  dtx = where(dt_in eq [1 ,2 ,3 ,4 ,5 ,6 ,9 ,12 ,13 ,14 ,15], dt_cnt)
-  if n_elements(dt_out) eq 0 then dt_out = 0
-  dtoutx = where(dt_out eq [1 ,2 ,3 ,4 ,5 ,6 ,9 ,12 ,13 ,14 ,15], dtoutx_cnt)
+  dtx = where(dt_in eq [1, 2, 3, 4, 5, 6, 9, 12, 13, 14, 15], dt_cnt)
+  if n_elements(dt_out) eq 0 then dt_out = 0; 4  ; assume float
+  dtoutx = where(dt_out eq [1, 2, 3, 4, 5, 6, 9, 12, 13, 14, 15], dtoutx_cnt)
   
   if dt_cnt eq 0 then begin
     void = dialog_message('Image is not numeric', /error)
     return
   endif
-  if dtoutx_cnt eq 0 then data_type = dt_in
+  if dtoutx_cnt eq 0 then dt_out = dt_in
 
   cancelled = 0
 
