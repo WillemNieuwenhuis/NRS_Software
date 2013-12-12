@@ -67,13 +67,15 @@ pro nrs_extract_time_handleOK, event
     void = dialog_message('No input image specified', /error)
     return
   endif
-  if ed eq 0 || sd eq 0 then begin
-    void = dialog_message('Missing date(s)', /error)
-    return
-  endif
-  if ed lt sd then begin
-    void = dialog_message('End date before start date', /error)
-    return
+  if n_elements(sd) gt 0 && n_elements(ed) gt 0 then begin
+    if ed eq 0 || sd eq 0 then begin
+      void = dialog_message('Missing date(s)', /error)
+      return
+    endif
+    if ed lt sd then begin
+      void = dialog_message('End date before start date', /error)
+      return
+    endif
   endif
 
   if strlen(outfile) eq 0 then begin

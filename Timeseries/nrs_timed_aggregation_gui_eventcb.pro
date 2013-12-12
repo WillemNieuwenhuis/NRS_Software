@@ -28,7 +28,7 @@ pro nrs_timed_aggregation_handle_input, event
   if strlen(strtrim(str_sd, 2)) eq 0 || strlen(strtrim(str_ed, 2)) eq 0 then return
   sd = nrs_str2julian(str_sd)
   ed = nrs_str2julian(str_ed)
-  if ed lt sd then begin
+  if n_elements(sd) eq 0 || n_elements(ed) eq 0 || ed lt sd then begin
     widget_control, val_fld, set_value = ''
     return
   endif
