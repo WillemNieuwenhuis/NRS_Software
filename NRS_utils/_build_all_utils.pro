@@ -38,6 +38,7 @@ pro _build_all_utils
            , 'nrs_percentiles.pro' $ 
            , 'nrs_read_csv.pro' $
            , 'nrs_read_listfile.pro' $
+           , 'nrs_read_points_csv.pro' $
            , 'nrs_read_table.pro' $
            , 'nrs_sec_to_string.pro' $
            , 'nrs_shapefile_utils.pro' $
