@@ -363,12 +363,12 @@ pro nrs_get_dt_indices, julian, interval = interval, period = period $
     endif
     case strlowcase(period) of
       'time'   : begin
-                   nrs_days_per_year, [sd, ed], dybands = period_out
+                   nrs_days_per_year, [julian[0], julian[-1]], dybands = period_out
                    new_nb = (long(julian[nb - 1] - julian[0]) + 1) * mult
                    jul_out = julday(sm, sd, sy, th, tm, ts) + findgen(new_nb) / mult
                  end
       'day'    : begin
-                   nrs_days_per_year, [sd, ed], dybands = period_out
+                   nrs_days_per_year, [julian[0], julian[-1]], dybands = period_out
                    new_nb = long(julian[nb - 1] - julian[0]) + 1
                    jul_out = julday(sm, sd, sy) + lindgen(new_nb)
                  end
