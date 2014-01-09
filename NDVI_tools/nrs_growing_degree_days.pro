@@ -1,6 +1,8 @@
 pro nrs_growing_degree_days, image, outname = outname $
                   , calc_jerk = calc_jerk $
                   , calc_spring_start = calc_spring_start $
+                  , tbase_intercept = tbase_intercept $
+                  , tbase_slope = tbase_slope $
                   , prog_obj = prog_obj, cancelled = cancelled
   compile_opt idl2, logical_predicate
 
@@ -26,6 +28,10 @@ pro nrs_growing_degree_days, image, outname = outname $
   projection = envi_get_projection(fid = fid)
   geographic = envi_proj_create(/geographic)
   applyProj = (projection.name ne 'Arbitrary') 
+  
+  ; if not specified use tbase calculation based optimized for latitude between 52N to 72N
+  if n_elements(tbase_slope) eq 0 then tbase_slope = -0.25D
+  if n_elements(tbase_intercept) eq 0 then tbase_intercept = 13.0D
   
   cancelled = 0
   
@@ -66,7 +72,7 @@ pro nrs_growing_degree_days, image, outname = outname $
       lat = map_y
       lon = map_x
     endelse
-    tbase = -0.25D * lat + 13.0
+    tbase = tbase_slope * lat + tbase_intercept
     
     data = envi_get_slice(fid = fid, line = l, xs = 0, xe = ns - 1, pos = pos, /bil)
     gdu = (data - tbase[ixy]) > 0

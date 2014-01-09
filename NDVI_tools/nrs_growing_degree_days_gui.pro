@@ -43,6 +43,33 @@ pro nrs_growing_degree_days_gui, event
 
   nrs_growing_degree_days_param_group = cw_groupbox(nrs_growing_degree_days_mainPanel, group_title = 'Parameters')              
 
+  nrs_growing_degree_days_tbase_group = widget_base(nrs_growing_degree_days_param_group, row = 2, xpad = 0)
+  nrs_growing_degree_days_tbase = widget_base(nrs_growing_degree_days_tbase_group, /row, xpad = -6)
+  nrs_growing_degree_days_tbase_intercept = fsc_inputfield(nrs_growing_degree_days_tbase $
+                , uname = 'nrs_growing_degree_days_tbase_intercept' $
+                , title = 'T-base intercept' $
+                , labelalign = 1 $
+                , labelsize = label_width $
+                , value = '0.0' $
+                , xsize = text_small_width $
+                , event_pro =  'nrs_growing_degree_days_handle_tbase' $
+              )
+  nrs_growing_degree_days_tbase_slope = fsc_inputfield(nrs_growing_degree_days_tbase $
+                , uname = 'nrs_growing_degree_days_tbase_slope' $
+                , title = 'T-base slope' $
+                , labelalign = 1 $
+                , labelsize = label_width $
+                , value = '0.0' $
+                , xsize = text_small_width $
+                , event_pro =  'nrs_growing_degree_days_handle_tbase' $
+              )
+  nrs_growing_degree_days_tbase_formula = widget_label(nrs_growing_degree_days_tbase_group $
+                , uname = 'nrs_growing_degree_days_tbase_formula' $
+                , value = 'Tbase = 0.0' $
+                , /align_left $
+                , xsize = label_wide_width $
+              )
+
   nrs_growing_degree_days_jerk_panel = widget_base(nrs_growing_degree_days_param_group, /row, /nonexclusive)
   nrs_growing_degree_days_jerk_button = widget_button(nrs_growing_degree_days_jerk_panel $
                 , uname = 'nrs_growing_degree_days_jerk_button' $

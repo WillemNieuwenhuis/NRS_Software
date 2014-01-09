@@ -1,3 +1,29 @@
+pro nrs_growing_degree_days_handle_tbase, event
+  compile_opt idl2, logical_predicate
+  
+  val_fld = widget_info(event.top, find_by_uname = 'nrs_growing_degree_days_tbase_slope')
+  widget_control, val_fld, get_value = slope
+
+  val_fld = widget_info(event.top, find_by_uname = 'nrs_growing_degree_days_tbase_intercept')
+  widget_control, val_fld, get_value = intercept
+
+  slope_str = strtrim(slope, 2)
+  if strlen(slope_str) eq 0 then return
+  if isa(slope_str, 'float') eq 0 then return
+
+  intercept_str = strtrim(intercept, 2)
+  if strlen(intercept_str) eq 0 then return
+  if isa(intercept_str, 'float') eq 0 then return
+
+  val_fld = widget_info(event.top, find_by_uname = 'nrs_growing_degree_days_tbase_formula')
+  sign = slope lt 0 ? ' - ' : ' + '
+  if abs(slope) lt 0.001 then $
+    s = string(intercept, format='("Tbase = ",f0.1)') $
+  else $
+    s = string(intercept, sign, abs(slope), format='("Tbase = ",f0.1,a,f0.2," * latitude")')
+  widget_control, val_fld, set_value = s
+end
+
 pro nrs_growing_degree_days_handle_input, event
   compile_opt idl2, logical_predicate
   
@@ -24,6 +50,12 @@ pro nrs_growing_degree_days_handleOK, event
 
   val_fld = widget_info(event.top, find_by_uname = 'nrs_growing_degree_days_outputFile')
   widget_control, val_fld, get_value = outname
+  
+  val_fld = widget_info(event.top, find_by_uname = 'nrs_growing_degree_days_tbase_slope')
+  widget_control, val_fld, get_value = slope
+  
+  val_fld = widget_info(event.top, find_by_uname = 'nrs_growing_degree_days_tbase_intercept')
+  widget_control, val_fld, get_value = intercept
   
   val_fld = widget_info(event.top, find_by_uname = 'nrs_growing_degree_days_jerk_button')
   calc_jerk = widget_info(val_fld, /button_set)
@@ -53,6 +85,8 @@ pro nrs_growing_degree_days_handleOK, event
   nrs_growing_degree_days, ref $
                        , calc_jerk = calc_jerk $
                        , calc_spring_start = calc_spring_start $
+                       , tbase_intercept = intercept $
+                       , tbase_slope = slope $
                        , outname = outname $
                        , prog_obj = prog_obj, cancelled = cancelled
 
