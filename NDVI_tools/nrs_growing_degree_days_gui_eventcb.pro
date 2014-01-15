@@ -7,13 +7,15 @@ pro nrs_growing_degree_days_handle_tbase, event
   val_fld = widget_info(event.top, find_by_uname = 'nrs_growing_degree_days_tbase_intercept')
   widget_control, val_fld, get_value = intercept
 
-  slope_str = strtrim(slope, 2)
+  slope_str = strtrim(slope[0], 2)
   if strlen(slope_str) eq 0 then return
-  if isa(slope_str, 'float') eq 0 then return
+  if valid_num(slope_str) eq 0 then return
+  slope = float(slope_str)
 
-  intercept_str = strtrim(intercept, 2)
+  intercept_str = strtrim(intercept[0], 2)
   if strlen(intercept_str) eq 0 then return
-  if isa(intercept_str, 'float') eq 0 then return
+  if valid_num(intercept_str) eq 0 then return
+  intercept = float(intercept_str)
 
   val_fld = widget_info(event.top, find_by_uname = 'nrs_growing_degree_days_tbase_formula')
   sign = slope lt 0 ? ' - ' : ' + '
