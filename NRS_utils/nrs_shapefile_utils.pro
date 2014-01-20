@@ -110,3 +110,69 @@ pro copyProjectionFile, myshape, outputShape
   file_copy, inputProjFile, outputProjFile, /overwrite
 end
 
+;+
+; :description:
+;   read the point locations from a shape file
+;
+; :returns:
+;   An array of coordinate structures; the structure contains {X, Y, sort_code, shape_id}.
+;   
+; :params:
+;   shape: in
+;     Filename of shape file
+;
+; :author: nieuwenhuis
+; :history:
+;   - sept 2007: created
+;   - jan 2014: function renamed and changed to handle only a single shape file 
+;-
+function nrs_read_shape_points, shapes
+  compile_opt idl2, logical_predicate
+  
+  coordinate = {Coordinate, $
+        X : double(0), $
+        Y : double(0), $
+        S : double(0), $  ; value used for sorting
+        ID  : string('') $
+        }
+
+  ; open the input shapefile
+  shape = OBJ_NEW('IDLffShape', shapes)
+
+    ; Get the number of entities and the entity type.
+  shape->IDLffShape::GetProperty, n_entities = num_ent, $
+      entity_type = ent_type, n_attributes = num_attr
+
+  if ent_type ne 1 then begin  ; 1 == point
+    obj_destroy, shape
+    void = error_message('Only point features supported')
+    return, []
+  endif
+
+  coords = replicate(coordinate, num_ent)
+  for sh = 0, num_ent - 1 do begin
+    feature = shape->IDLffShape::GetEntity(sh, /attributes)
+    coords[sh].X = feature.bounds[0]
+    coords[sh].Y = feature.bounds[1]
+    coords[sh].S = feature.bounds[1] * 10000000 + feature.bounds[0]
+
+    ; Get the (string) ID of the feature
+    if num_attr gt 0 then begin
+      shape->IDLffShape::GetProperty, ATTRIBUTE_INFO = attr_info
+      for at = 0, num_attr - 1 do begin
+        if (strupcase(attr_info[at].name) eq 'ID') then begin
+          attr = feature.attributes
+          sid = (*attr).(at)
+          coords[sh].ID = sid
+        endif
+      endfor
+    endif
+    
+    shape->destroyentity, feature
+  endfor
+
+  obj_destroy, shape
+
+  return, coords
+end
+

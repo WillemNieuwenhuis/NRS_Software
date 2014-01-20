@@ -1,75 +1,3 @@
-;+
-; :description:
-;   read the point locations in the shape files such that
-;   several sequences of point locations are created, each
-;   sequence overlapping with one hymap image
-;
-; :params:
-;   shapes: in
-;     the list of names of the shape files
-;
-; :author: nieuwenhuis
-; :history:
-;   sept 2007 - created
-;-
-function nrs_read_points, shapes
-  compile_opt idl2, logical_predicate
-  
-	; first read all the points from the shape files
-	; into an array of point locations
-	coordinate = {Coordinate, $
-				X	: double(0), $
-				Y	: double(0), $
-				S	: double(0), $  ; value used for sorting
-				ID	: string('') $
-				}
-	coords = replicate(coordinate, 1000)
-	; start by reading all shapes to get the total point count
-	shapeCount = size(shapes, /n_elements)
-	entityCount = 0
-	for shp = 0, shapeCount - 1 do begin
-		; open the input shapefile
-		shape = OBJ_NEW('IDLffShape', shapes[shp])
-
-   		; Get the number of entities and the entity type.
-		shape->IDLffShape::GetProperty, n_entities = num_ent, $
-   			entity_type = ent_type, n_attributes = num_attr
-
-		if ent_type ne 1 then begin  ; 1 == point
-			obj_destroy, shape
-			continue
-		endif
-
-		for sh = 0, num_ent - 1 do begin
-			; get the feature: only the location is needed
-			feature = shape->IDLffShape::GetEntity(sh, /attributes)
-			coords[entityCount].X = feature.bounds[0]
-			coords[entityCount].Y = feature.bounds[1]
-			coords[entityCount].S = feature.bounds[1] * 10000000 + feature.bounds[0]
-
-			; Get the (string) ID of the feature
-			if num_attr gt 0 then begin
-				shape->IDLffShape::GetProperty, ATTRIBUTE_INFO = attr_info
-				for at = 0, num_attr - 1 do begin
-					if (strupcase(attr_info[at].name) eq 'ID') then begin
-						attr = feature.attributes
-						sid = (*attr).(at)
-						coords[entityCount].ID = sid
-					endif
-				endfor
-			endif else begin
-				continue  ; skip this feature if it has no ID
-			endelse
-
-			entityCount = entityCount + 1
-		endfor
-
-		obj_destroy, shape
-	endfor
-
-	return, coords[0 : entityCount - 1]
-end
-
 ; Parameters:
 ;	hymaps		(input) the array of names of the hymap images
 ;	maps		(output) the list of ID's of all valid maps in the hymaps list
@@ -322,7 +250,7 @@ END
 ;   The calculation is done for each separate point location.
 ;   The point locations are stored in a series of shape files
 ;   the spectra are store in hyperspectral images
-;   <p>
+;
 ;   The point locations are ordered to minimize the access to
 ;   the different hyperspectral images.
 ;
@@ -348,7 +276,7 @@ END
 pro nrs_average_spectrum, shapes, hymaps, outputFilename, threshold, kernel = kernel
   compile_opt idl2, logical_predicate
 
-	points = nrs_read_points(shapes)
+	points = nrs_read_shape_points(shapes)
 	points = points[sort(points.S)]
 
 	; maps contains the file ID's of all hyperspectral maps

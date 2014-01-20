@@ -4,7 +4,7 @@ pro nrs_average_spectrum_gui_extensions_init
   e = envi(/current)
   if e eq !NULL then return
   
-  e.AddExtension, 'Average spectrum', 'nrs_average_spectrum_gui', PATH='Spectral'
+  e.AddExtension, 'Average spectrum (batch)', 'nrs_average_spectrum_gui', PATH='Spectral'
 end
 
 pro nrs_average_spectrum_gui_event, event

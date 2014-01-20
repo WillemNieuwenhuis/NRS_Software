@@ -21,7 +21,7 @@
 ;
 ; :keywords:
 ;    data : out, optional
-;      The entire table parsed acoording to type
+;      The entire table parsed according to type
 ;    nr_cols : out, optional
 ;      Return the number of fields in the table
 ;    nr_recs : out, optional
