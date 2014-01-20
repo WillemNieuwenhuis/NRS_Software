@@ -218,9 +218,9 @@ end
 ;   label : in, optional {default = '...'}
 ;     Text value on the browse button
 ;   style : in, optional {default = 'directory'}
-;     <li>style='directory'   opens a folder browse dialog,
-;     <li> style='file' opens a file selection dialog,
-;     <li> style='envi' opens the ENVI style image selection dialog
+;     - style='directory'   opens a folder browse dialog,
+;     - style='file' opens a file selection dialog,
+;     - style='envi' opens the ENVI style image selection dialog
 ;   title : in, optional
 ;     The label text
 ;   uname : in, optional{default='cw_dirfile'}

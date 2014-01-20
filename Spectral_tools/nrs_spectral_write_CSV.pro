@@ -10,7 +10,7 @@
 ;    filename: in, required
 ;      the filename to store the spectra
 ;    avgSpectra : in, required
-;      the 2-dim array containing the spectra
+;      the 2-dim array containing the spectra (points (X) x spectral profile (Y))
 ;    pointIDs : in, required
 ;      the ID's of all valid points
 ;    pntCount : in, required
