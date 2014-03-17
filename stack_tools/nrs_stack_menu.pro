@@ -34,6 +34,10 @@ pro nrs_stack_tools_define_buttons, buttonInfo
   envi_define_menu_button, buttonInfo, value = 'Unstack layers', $
     uvalue = 'Unstack layers', event_pro = 'nrs_unstack_gui', $
     ref_value = 'Stack', position = 'last'
+
+  envi_define_menu_button, buttonInfo, value = 'Reverse layers', $
+    uvalue = 'Reverse layers', event_pro = 'nrs_stack_reverse_gui', $
+    ref_value = 'Stack', position = 'last'
 end
 
 ; Also add as ENVI 5 extensions
@@ -49,6 +53,7 @@ pro nrs_stack_tools_extensions_init
   e.AddExtension, 'Bandwise aggregation', 'nrs_stack_aggregation_gui', PATH='NRS/Stack tools'
   e.AddExtension, 'Stack layers', 'nrs_stack_gui', PATH='NRS/Stack tools'
   e.AddExtension, 'Unstack layers', 'nrs_unstack_gui', PATH='NRS/Stack tools'
+  e.addextension, 'Reverse layers', 'nrs_stack_reverse_gui', PATH='NRS/Stack tools'
 end
 
 ; ENVI 5 compatibility
