@@ -11,6 +11,14 @@ pro nrs_stack_tools_define_buttons, buttonInfo
     uvalue = 'Remove Bias', event_pro = 'nrs_bias_removal_gui', $
     ref_value = 'Stack', position = 'last'
 
+  envi_define_menu_button, buttonInfo, value = 'Reverse layers', $
+    uvalue = 'Reverse layers', event_pro = 'nrs_stack_reverse_gui', $
+    ref_value = 'Stack', position = 'last'
+    
+  envi_define_menu_button, buttonInfo, value = 'Batch reverse layers', $
+    uvalue = 'Batch reverse layers', event_pro = 'nrs_stack_reverse_batch_gui', $
+    ref_value = 'Stack', position = 'last'
+    
   envi_define_menu_button, buttonInfo, value = 'Stack statistics', $
     uvalue = 'Stack statistics', event_pro = 'nrs_stack_statistics_gui', $
     ref_value = 'Stack', position = 'last', /separator
@@ -33,10 +41,6 @@ pro nrs_stack_tools_define_buttons, buttonInfo
 
   envi_define_menu_button, buttonInfo, value = 'Unstack layers', $
     uvalue = 'Unstack layers', event_pro = 'nrs_unstack_gui', $
-    ref_value = 'Stack', position = 'last'
-
-  envi_define_menu_button, buttonInfo, value = 'Reverse layers', $
-    uvalue = 'Reverse layers', event_pro = 'nrs_stack_reverse_gui', $
     ref_value = 'Stack', position = 'last'
 end
 

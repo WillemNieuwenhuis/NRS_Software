@@ -15,6 +15,9 @@ pro _build_stack_tools
            , 'nrs_bias_removal.pro' $
            , 'nrs_bias_removal_gui.pro' $
            , 'nrs_bias_removal_gui_eventCB.pro' $
+           , 'nrs_stack_reverse_batch.pro' $
+           , 'nrs_stack_reverse_batch_gui.pro' $
+           , 'nrs_stack_reverse_batch_gui_eventcb.pro' $
            , 'nrs_stack_reverse.pro' $
            , 'nrs_stack_reverse_gui.pro' $
            , 'nrs_stack_reverse_gui_eventcb.pro' $
