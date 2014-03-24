@@ -1,6 +1,6 @@
 pro nrs_correlate_avg_profile, image, profile_table $
     , iterations = iterations $
-    , select_perc = select_perc $
+    , select_perc = select_perc $   ; range = [0, 1]
     , start_date = start_date $
     , end_date = end_date $
     , from_date = from_date $
@@ -73,30 +73,37 @@ pro nrs_correlate_avg_profile, image, profile_table $
   endelse
   pos = lindgen(to_band - from_band + 1) + from_band
   
-  if n_elements(outname) eq 0 then outname = getoutname(image, postfix = '_corr_r', ext = '.csv')
+  perc_str = string(fix(select_perc * 100), format = '(i02)')
+  if n_elements(outname) eq 0 then outname = getoutname(image, postfix = '_corr' + perc_str, ext = '.csv')
   
   ignore_NAN = keyword_set(ignore_NAN)
   ignore_undef = (dt eq size(undef, /type)) && (undef ne 1e-34) ; true if undef is defined
   nan = dt eq 4 ? !values.f_nan : !values.d_nan
   
   cancelled = 0
-  nrs_set_progress_property, prog_obj, /start, title = 'Correlation iteration' $
+  nrs_set_progress_property, prog_obj, /start, title = 'Iteration' $
     , xs = 600, ys = 400
   
   prog_inner = obj_new("PROGRESSBAR", background = 'white', color = 'green' $
-    , ysize = 15, title = "Timeseries profile correlation" $
+    , ysize = 15, title = "Profile correlation" $
     , /fast_loop $
     )
-  nrs_set_progress_property, prog_inner, /start, title = 'Correlation sensitivity' $
+
+  nrs_set_progress_property, prog_inner, /start $
     , xs = 650, ys = 500
   
   nrs_log_line, outname, 'iteration, correlation'
   ix_all = lonarr(nb)
+  part_ix = long(ns * nl * select_perc)
   for iter = 0, iterations - 1 do begin
-    if nrs_update_progress(prog_obj, l, nl, cancelled = cancelled) then return
+    if nrs_update_progress(prog_obj, iter, iterations, cancelled = cancelled) then return
     
     ; determine random locations
-    select = where(randomu(seed, ns, nl, /uniform) lt select_perc, cnt)
+    fsel = randomu(seed, ns, nl, /uniform)
+    six = sort(fsel)
+    part_val = fsel[six[part_ix]] 
+    select = where(fsel lt part_val, cnt)
+    select = array_indices([ns, nl], select, /dim)
     
     ; collect data from the random selected locations into 2D array accu (locations x bands)
     accu = []
@@ -104,7 +111,9 @@ pro nrs_correlate_avg_profile, image, profile_table $
       if nrs_update_progress(prog_inner, l, nl, cancelled = cancelled) then return
       
       data = envi_get_slice(fid = fid, line = l, xs = 0, xe = ns - 1, pos = pos, /bil)
-      accu = [accu, data[select[*, l]]]
+      sel = where(select[1,*] eq l, cnt_l)
+      if cnt_l gt 0 then $
+        accu = [accu, data[select[0, sel], *]]
     endfor
     
     ; mask data ignore value
@@ -114,18 +123,20 @@ pro nrs_correlate_avg_profile, image, profile_table $
     endif
     
     ; calculate the average profile for the selected locations
-    accu_prof = mean(accu, dim = 2, nan = ignore_NAN)
+    accu_prof = mean(accu, dim = 1, nan = ignore_NAN)
     if ignore_NAN then begin
-      ix = where(~finite(data[c, *], /nan), cnt_nan)
+      ix = where(~finite(accu_prof, /nan), cnt_nan)
     endif else ix = ix_all
     
     corr = correlate(accu_prof[ix], prof_data[ix])
     
-    nrs_log_line, outname, strjoin([ string(iter + 1, format = '(i05)') $
+    nrs_log_line, outname, /append, strjoin([ string(iter + 1, format = '(i5)') $
                                    , string(corr, format = '(f0.8)') $
                                    ] $
-                                   , delimiter = ',' $
+                                   , ',' $
                                  )
   endfor
+  
+  if obj_valid(prog_inner) then prog_inner->destroy
 
 end
