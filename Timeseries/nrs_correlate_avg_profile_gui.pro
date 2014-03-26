@@ -103,6 +103,7 @@ pro nrs_correlate_avg_profile_gui, event
     , /integer $
     , xsize = text_small_width $
     , /all_events $
+    , event_pro = 'nrs_correlate_avg_profile_handle_input' $
     )
   
   nrs_correlate_avg_profile_param_group = cw_groupbox(nrs_correlate_avg_profile_mainPanel, group_title = 'Parameters')              
@@ -179,6 +180,7 @@ pro nrs_correlate_avg_profile_gui, event
         , title = 'Output name' $
         , xsize = text_width $
         , xtitlesize = label_width $
+        , event_pro = 'nrs_correlate_avg_profile_handle_outname' $
         )
 
   nrs_gui_createButtonPanel, nrs_correlate_avg_profile_contentPanel $
@@ -191,6 +193,7 @@ pro nrs_correlate_avg_profile_gui, event
                                , todate : nrs_correlate_avg_profile_to_date $
                                , fromband : nrs_correlate_avg_profile_from_band $
                                , toband : nrs_correlate_avg_profile_to_band $
+                               , outname_sugg : '' $
                  }
 
   ; Initialize stuff

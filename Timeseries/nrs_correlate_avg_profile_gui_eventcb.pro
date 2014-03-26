@@ -32,13 +32,20 @@ pro nrs_correlate_avg_profile_handle_input, event
   target_str = strtrim(target, 2)
   if strlen(target_str) eq 0 then return
 
-  perc_str = string(percent[0], format = '(i02)')
-  basename = getOutname(target_str, postfix = '_corr' + perc_str, ext = '.csv')
   val_fld = widget_info(event.top, find_by_uname = 'nrs_correlate_avg_profile_outputFile')
   widget_control, val_fld, get_value = outfile
+
+  widget_control, event.top, get_uvalue = info
+  replace_ok = (info.outname_sugg eq '') || (info.outname_sugg eq outfile)
+
+  perc_str = string(percent[0], format = '(i02)')
+  basename = getOutname(target_str, postfix = '_corr' + perc_str, ext = '.csv')
   outfile_str = strtrim(outfile, 2)
-  if strlen(outfile_str) eq 0 then $
+  if replace_ok || (strlen(outfile_str) eq 0) then begin
     widget_control, val_fld, set_value = basename
+    info.outname_sugg = basename
+    widget_control, event.top, set_uvalue = info
+  endif
   
   envi_open_file, target_str, r_fid = fid, /no_realize, /no_interactive_query
   if fid eq -1 then return
@@ -51,6 +58,17 @@ pro nrs_correlate_avg_profile_handle_input, event
 
   val_fld = widget_info(event.top, find_by_uname = 'nrs_correlate_avg_profile_input_period_label')
   widget_control, val_fld, set_value = 'Input period: ' + input_period
+end
+
+pro nrs_correlate_avg_profile_handle_outname, event
+  compile_opt idl2, logical_predicate
+  
+  val_fld = widget_info(event.top, find_by_uname = 'nrs_correlate_avg_profile_outputFile')
+  widget_control, val_fld, get_value = outfile
+
+  widget_control, event.top, get_uvalue = info
+  info.outname_sugg = basename
+  widget_control, event.top, set_uvalue = info
 end
 
 pro nrs_correlate_avg_profile_handle_from_to, event

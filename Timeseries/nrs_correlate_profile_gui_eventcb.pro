@@ -194,7 +194,7 @@ pro nrs_correlate_profile_handleOK, event
                        , outname = outname $
                        , prog_obj = prog_obj, cancelled = cancelled
 
-  if prog_obj ne !null then $
-    prog_obj -> Destroy
+  if obj_valid(prog_obj) then $
+    prog_obj->Destroy
 end
 
