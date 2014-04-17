@@ -37,6 +37,6 @@ pro nrs_stack_statistics_handleOK, event
   
   nrs_stack_statistics, fid_ref, outname = outname, prog_obj = progressBar, cancelled = cancelled
   
-  progressBar -> Destroy
+  if obj_valid(progressBar) then progressBar->Destroy
 end
 

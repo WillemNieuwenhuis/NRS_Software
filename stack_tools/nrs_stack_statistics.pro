@@ -17,33 +17,49 @@ pro nrs_stack_statistics, fid, outname = outname $
   has_undef = (size(undef, /type) eq dt) or ( (size(undef, /type) eq 5) and undef ne 1e34)
   mi = envi_get_map_info(fid = fid, undefined = csy_undef)
   if csy_undef then void = temporary(mi)
-  
-  cube = make_array(ns, nl, nb, type = dt)
-  out = make_array(ns, nl, 5, type = dt)
-  for b = 0, nb - 1 do begin
-    if nrs_update_progress(prog_obj, b, nb, cancelled = cancelled) then return
 
-    cube[*, *, b] = envi_get_data(fid = fid, dims = dims, pos = b)
-  endfor
+  if n_elements(outname) eq 0 then $
+    outname = getoutname(fname, postfix = '_stat', ext = '.')
+  openw, unit, outname, /get_lun
   
-  if ignore_undef then begin 
-    uix = where(cube eq undef, cnt_undef)
-    if cnt_undef gt 0 then begin
-      cube[uix] = !values.f_nan
+  out = make_array(ns, 5, type = dt)
+  pos = indgen(nb)
+  for l = 0, nl - 1 do begin
+    if nrs_update_progress(prog_obj, l, nl, cancelled = cancelled) then return
+    slice = envi_get_slice(fid = fid, line = l, xs = 0, xe = ns - 1, pos = pos)   
+    if ignore_undef then begin 
+      uix = where(slice eq undef, cnt_undef)
+      if cnt_undef gt 0 then begin
+        slice[uix] = !values.f_nan
+      endif
     endif
-  endif
-  res = moment(cube, dim = 3, /nan) ; only works in ENVI 4.8!
-  out[*, *, 0] = res[*, *, 0]
-  out[*, *, 1] = sqrt(res[*, *, 1])
-  out[*, *, 2] = out[*, *, 1] / out[*, *, 0]  
-  out[*, *, 3] = min(cube, dim = 3, max = mx, /nan)
-  out[*, *, 4] = mx
+    res = moment(slice, dim = 2, /nan)
+    out[*, 0] = res[*, 0]
+    out[*, 1] = sqrt(res[*, 1])
+    out[*, 2] = out[*, 1] / out[*, 0]  
+    out[*, 3] = min(slice, dim = 2, max = mx, /nan)
+    out[*, 4] = mx
+    
+    writeu, unit, out
+
+  endfor
  
   bnames = ['Mean', 'Stddev', 'CV', 'Min', 'Max'] 
   
-  if n_elements(outname) eq 0 then $
-    outname = getOutname(fname, postfix = '_stat', ext = '.')
-  envi_write_envi_file, out, out_name = outname, map_info = mi, bnames = bnames, data_ignore_value = undef
+  meta = envi_set_inheritance(fid, dims, /full)
+  
+  close, unit
+  free_lun, unit
+  envi_setup_head, fname = outname $
+    , data_type = dt $
+    , /write $
+    , interleave = 1 $  ; BIL = 1
+    , nb = 5, nl = nl, ns = ns $
+    , bnames = bnames $
+    , inherit = meta $
+    , map_info = mi $
+    , data_ignore_value = undef
+
 end
 
 ;+
