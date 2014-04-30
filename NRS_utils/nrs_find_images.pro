@@ -71,3 +71,28 @@ function nrs_find_images, folder, pattern, extension = ext $
     
   return, []
 end
+
+;+
+; :description:
+;    Given a header file of an ENVI image, find the filename of the ENVI datafile
+;
+; :params:
+;    headerfile
+;      The name of the ENVI header file
+;
+; :author:
+;   Willem Nieuwenhuis
+;
+; :history:
+;   - 30 April 2014: created
+;-
+function nrs_get_envi_datafilename, headerfile
+  compile_opt idl2, logical_predicate
+  
+  file_mask = nrs_remove_file_extension(headerfile) + '.*'
+  raw_files = file_search(count = file_count, file_mask)
+  ix = where(nrs_get_file_extension(raw_files) ne '.hdr', cnt)
+  if cnt gt 0 then raw_files = raw_files[ix]
+
+  return, raw_files
+end

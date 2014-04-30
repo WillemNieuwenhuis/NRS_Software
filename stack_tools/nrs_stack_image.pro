@@ -28,7 +28,7 @@
 pro nrs_stack_image, outname, folder = folder, list_file = list_file, prog_obj = prog_obj, cancelled = cancelled
   compile_opt idl2, logical_predicate
   
-  cancelled = 0
+  cancelled = 1
   nrs_set_progress_property, prog_obj, title = 'Stacking layers', /start
   
   nrfiles = n_elements(list_file)
@@ -53,13 +53,16 @@ pro nrs_stack_image, outname, folder = folder, list_file = list_file, prog_obj =
   endif
   if doFolder eq 1 then begin
     lst = nrs_find_images(folder, '.*', extension = 'hdr')
-    if n_elements(lst) eq 0 || lst[0] eq -1 then begin
+    if n_elements(lst) eq 0 then begin
       void = error_message('No files found', traceback = 0, /error)
       return
     endif
     lst = lst[sort(lst)]
+    lst = nrs_get_envi_datafilename(lst)
   endif
   
+  cancelled = 0
+
   ; check sizes
   ans = -1
   anl = -1

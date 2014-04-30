@@ -1,4 +1,6 @@
 pro nrs_stack_use_folder_toggle, event
+  compile_opt idl2, logical_predicate
+  
   if (event.id eq widget_info(event.top, find_by_uname='nrs_stack_use_folder_button')) then begin
     isOn = widget_info(event.id, /button_set)
     ; toggle visibility folder and file list fields
@@ -11,6 +13,8 @@ pro nrs_stack_use_folder_toggle, event
 end
 
 pro nrs_stack_handleOK, event
+  compile_opt idl2, logical_predicate
+  
   val_fld = widget_info(event.top, find_by_uname = 'nrs_stack_use_folder_button')
   useFilelist = widget_info(val_fld, /button_set)
 

@@ -87,7 +87,7 @@ pro nrs_correlate_profile_gui, event
                 , uname = 'nrs_correlate_profile_NAN_button' $
                 , value = 'Ignore missing data' $
                 , xsize = label_width $
-                , event_pro = 'nrs_correlate_profile_toggle_NAN_ignore' $
+;                , event_pro = 'nrs_correlate_profile_toggle_NAN_ignore' $
               )
 
   nrs_correlate_profile_paramrow_panel = widget_base(nrs_correlate_profile_param_group, /row)
