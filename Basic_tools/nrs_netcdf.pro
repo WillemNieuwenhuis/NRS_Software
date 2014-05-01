@@ -554,8 +554,8 @@ function nrs_get_dt_from_units, timar, time_units, julian = julian, interval = i
   compile_opt idl2, logical_predicate
   
   ; first determine the absolute start date and the time interval
-  periods = ['d', 'day', 'days', 'h', 'hr', 'hour', 'hours', 'min', 'minute', 'minutes', 's', 'sec', 'seconds']
-  piv = [86400, 86400, 86400, 3600, 3600, 3600, 3600, 60, 60, 60, 1, 1, 1]
+  periods = ['yr', 'year', 'years', 'mon', 'month', 'months', 'week', 'weeks', 'd', 'day', 'days', 'h', 'hr', 'hour', 'hours', 'min', 'minute', 'minutes', 's', 'sec', 'seconds']
+  piv = [-365, -365, -365, -31,-31, -31, -7, -7, 86400, 86400, 86400, 3600, 3600, 3600, 3600, 60, 60, 60, 1, 1, 1]
   parts = strsplit(time_units, ' ', /extract)
   
   min_date = min(timar, max = max_date)
@@ -590,7 +590,14 @@ function nrs_get_dt_from_units, timar, time_units, julian = julian, interval = i
         endswitch
       endif
       jd = julday(month, day, year, hour, minute, second)
-      julian = (double(interval) * timar) / 86400D + jd
+      if interval lt 0 then begin
+        case interval of
+          -365 : julian = julday(month, day, year + timar, hour, minute, second)
+          -31 : julian = julday(((month + timar - 1) mod 12) + 1, day, year + (month + timar - 1) / 12, hour, minute, second)
+          -7 : julian = (double(interval) * timar * 7) / 86400D + jd
+        endcase
+      endif $
+      else julian = (double(interval) * timar) / 86400D + jd
       
       return, 1
     endif else if parts[1] eq 'as' then begin

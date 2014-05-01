@@ -19,7 +19,7 @@ pro nrs_stack_statistics, fid, outname = outname $
   if csy_undef then void = temporary(mi)
 
   if n_elements(outname) eq 0 then $
-    outname = getoutname(fname, postfix = '_stat', ext = '.')
+    outname = getoutname(fname, postfix = '_stat', ext = '.dat')
   openw, unit, outname, /get_lun
   
   out = make_array(ns, 5, type = dt)

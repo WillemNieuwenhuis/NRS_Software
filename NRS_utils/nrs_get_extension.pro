@@ -34,7 +34,8 @@ function nrs_get_file_extension, name, exclude_dot = exclude_dot
     ix = where(pos gt 0, cnt)
     if cnt gt 0 then begin
       if keyword_set(exclude_dot) then pos = min([transpose(pos + 1), transpose(strlen(name))], dim = 1)
-      ext = strmid(name, transpose(pos))
+      if n_elements(pos) gt 1 then pos = transpose(pos)
+      ext = strmid(name, pos)
     endif
   endif
   
