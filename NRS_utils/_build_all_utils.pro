@@ -30,6 +30,7 @@ pro _build_all_utils
            , 'nrs_IDL_type_to_string.pro' $
            , 'nrs_julian_day_functions.pro' $
            , 'nrs_lin_regress.pro' $
+           , 'nrs_load_class_image.pro' $
            , 'nrs_load_lcb.pro' $
            , 'nrs_logging.pro' $
            , 'nrs_minmax_from_datatype.pro' $

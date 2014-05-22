@@ -27,6 +27,10 @@ pro nrs_stack_tools_define_buttons, buttonInfo
     uvalue = 'Stack quartiles', event_pro = 'nrs_stack_quartiles_gui', $
     ref_value = 'Stack', position = 'last', /separator
 
+  envi_define_menu_button, buttonInfo, value = 'Zonal percentiles', $
+    uvalue = 'Zonal percentiles', event_pro = 'nrs_zonal_percentiles_gui', $
+    ref_value = 'Stack', position = 'last'
+    
   envi_define_menu_button, buttonInfo, value = 'Aggregate stack', $
     uvalue = 'Aggregate stack', event_pro = 'nrs_aggregate_gui', $
     ref_value = 'Stack', position = 'last'
@@ -53,6 +57,7 @@ pro nrs_stack_tools_extensions_init
   e.AddExtension, 'Remove bias', 'nrs_bias_removal_gui', PATH='NRS/Stack tools'
   e.AddExtension, 'Stack statistics', 'nrs_stack_statistics_gui', PATH='NRS/Stack tools'
   e.AddExtension, 'Stack quartiles', 'nrs_stack_quartiles_gui', PATH='NRS/Stack tools'
+  e.addextension, 'Zonal percentiles', 'nrs_zonal_percentiles_gui', PATH='NRS/Stack tools'
   e.AddExtension, 'Aggregate stack', 'nrs_aggregate_gui', PATH='NRS/Stack tools'
   e.AddExtension, 'Bandwise aggregation', 'nrs_stack_aggregation_gui', PATH='NRS/Stack tools'
   e.AddExtension, 'Stack layers', 'nrs_stack_gui', PATH='NRS/Stack tools'
