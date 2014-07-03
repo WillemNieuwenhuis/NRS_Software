@@ -74,7 +74,7 @@ pro nrs_autoclus_gui, event
   nrs_autoclus_mask_base = widget_base(nrs_autoclus_group, /nonexclusive, uname = 'nrs_autoclus_mask_base')
   nrs_autoclus_mask_button = widget_button(nrs_autoclus_mask_base $
                 , uname = 'nrs_autoclus_mask_button' $
-                , value = 'Classify zeros' $
+                , value = 'Classify zeroes' $
               )
 
   nrs_autoclus_separ_group = cw_groupbox(nrs_autoclus_mainPanel, group_title = 'Separability parameters')              
