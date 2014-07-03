@@ -4,5 +4,5 @@ pro _build_topographic_tools
              'nrs_shortwaverad.pro' $
            , 'run_china.pro' $
           ]
-  _auto_build, files, 'bin' + path_sep() + 'nrs_topograhic.sav', logfile = 'bin' + path_sep() + 'nrs_topograhic.log'
+  _auto_build, files, 'bin' + path_sep() + 'nrs_topographic.sav', logfile = 'bin' + path_sep() + 'nrs_topographic.log'
 end

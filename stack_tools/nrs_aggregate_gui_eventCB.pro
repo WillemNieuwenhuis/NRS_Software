@@ -10,7 +10,7 @@ pro nrs_aggregate_handle_input, event
 
   postfix = '_' + aggr_method
   if aggr_method eq 'All' then postfix = '_aggr'
-  energy_name = getOutname(stack_str, postfix = postfix, ext = '.')
+  energy_name = getOutname(stack_str, postfix = postfix, ext = '.dat')
   val_fld = widget_info(event.top, find_by_uname = 'nrs_aggregate_outputFile')
   widget_control, val_fld, set_value = energy_name
 end
@@ -40,7 +40,7 @@ pro nrs_aggregate_handleOK, event
   
     ; initialise tranquilizer
   progressBar = Obj_New("PROGRESSBAR", background = 'white', color = 'green' $
-                        , ysize = 15, title = "Calculate aggreagtion" $
+                        , ysize = 15, title = "Calculate aggregation" $
                         , /fast_loop $
                         )
   

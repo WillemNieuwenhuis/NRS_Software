@@ -31,7 +31,7 @@ pro nrs_stack_aggregation_handleGo, Event
                         , title = 'Stack: bandwise aggregation')
   progressBar -> Start
 
-  outname = getoutname(fname, postfix = '_' + aggr_meth, ext = '.')
+  outname = getoutname(fname, postfix = '_' + aggr_meth, ext = '.dat')
 
   cube = fltarr(ns, nl, nr_files)
   
