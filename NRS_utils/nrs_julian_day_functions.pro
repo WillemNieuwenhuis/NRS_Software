@@ -170,8 +170,8 @@ end
 function nrs_julian_as_string, julian, time = time, format = dtform
   compile_opt idl2
 
-  formats_dt = [ '(c(cyi4.4,"-",cmoi2.2,"-",cdi2.2," ",chi2.2,":",cmi2.2,":",csi2.2))' $
-               , '(c(cdi2.2,"-",cmoi2.2,"-",cyi4.4," ",chi2.2,":",cmi2.2,":",csi2.2))']
+  formats_dt = [ '(c(cyi4.4,"-",cmoi2.2,"-",cdi2.2," ",cHi2.2,":",cmi2.2,":",csi2.2))' $
+               , '(c(cdi2.2,"-",cmoi2.2,"-",cyi4.4," ",cHi2.2,":",cmi2.2,":",csi2.2))']
   formats_d =  [ '(c(cyi4.4,"-",cmoi2.2,"-",cdi2.2))' $
                , '(c(cdi2.2,"-",cmoi2.2,"-",cyi4.4))']
 
