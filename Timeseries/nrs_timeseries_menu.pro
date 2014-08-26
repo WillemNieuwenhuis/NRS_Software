@@ -27,6 +27,16 @@ pro nrs_timeseries_define_buttons, buttonInfo
     uvalue = 'Sensitivity of correlate profile', event_pro = 'nrs_correlate_avg_profile_gui', $
     ref_value = 'Timeseries', position = 'last'
     
+  envi_define_menu_button, buttonInfo, value = 'Apply season filter', $
+    uvalue = 'Apply season filter', event_pro = 'nrs_apply_season_filter_gui', $
+    ref_value = 'Timeseries', position = 'last', /separator
+
+  envi_define_menu_button, buttonInfo, value = 'Determine pay percentage', $
+    uvalue = 'Determine pay percentage', event_pro = 'nrs_interpolate_to_payment_gui', $
+    ref_value = 'NRS', position = 'last'
+    
+end
+    
 end
 
 ; Also add as ENVI 5 extensions
@@ -40,6 +50,8 @@ pro nrs_timeseries_extensions_init
   e.addextension, 'Time interpolation', 'nrs_time_interpol_gui', PATH='NRS/Timeseries'
   e.addextension, 'Correlate with profile', 'nrs_correlate_profile_gui', PATH='NRS/Timeseries'
   e.addextension, 'Sensitivity of correlate profile', 'nrs_correlate_avg_profile_gui', PATH='NRS/Timeseries'
+  e.addextension, 'Apply season filter', 'nrs_apply_season_filter_gui', PATH='NRS/Timeseries'
+  e.addextension, 'Determine pay percentage', 'nrs_interpolate_to_payment_gui', PATH='NRS/Timeseries'
 end
 
 ; ENVI 5 compatibility
