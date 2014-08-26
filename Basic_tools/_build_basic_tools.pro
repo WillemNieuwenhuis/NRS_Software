@@ -1,4 +1,9 @@
 pro _build_basic_tools
+  compile_opt idl2
+
+  _auto_build_version, name = 'basic_tools'
+  resolve_routine, 'basic_tools_version'
+  
   files = [ $
              'nrs_area_numbering.pro' $
            , 'nrs_basic_tools_define_buttons.pro' $
@@ -23,3 +28,4 @@ pro _build_basic_tools
           ]
   _auto_build, files, 'bin' + path_sep() + 'nrs_basic_tools.sav', logfile = 'bin' + path_sep() + 'nrs_basic_tools.log'
 end
+
