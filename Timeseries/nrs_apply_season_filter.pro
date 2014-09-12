@@ -25,6 +25,9 @@
 ;    cancelled : out
 ;      When set, indicates an error, or user abort
 ;
+; :history:
+;   - 26 aug 2014: created
+;
 ; :author: nieuwenhuis
 ;-
 pro nrs_apply_season_filter, image, classfile, season_table $
@@ -109,6 +112,7 @@ pro nrs_apply_season_filter, image, classfile, season_table $
   
   ; first determine year band index
   bind = (indgen(nb) + offset[0]) mod img_per_year
+  yind = yy + ((indgen(nb) + offset[0]) / img_per_year)
   
   for band = 0, nb - 1 do begin
     if nrs_update_progress(prog_obj, band, nb, cancelled = cancelled) then begin
@@ -122,6 +126,7 @@ pro nrs_apply_season_filter, image, classfile, season_table $
     
   meta = envi_set_inheritance(fid, dims, /full)
   
+  bnames = 'Year.period ' + string(yind, format = '(I04)') + '.' + string(bind + 1, format = '(I02)')
   envi_setup_head, fname = outname $
     , data_type = dt $   ; same as input
     , /write $
