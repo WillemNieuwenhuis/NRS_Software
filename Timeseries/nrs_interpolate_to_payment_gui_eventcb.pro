@@ -29,7 +29,7 @@ pro nrs_interpolate_to_payment_handle_input, event
   target_str = strtrim(target, 2)
   if strlen(target_str) eq 0 then return
   
-  basename = getoutname(target_str, postfix = '_grow', ext = '.dat')
+  basename = getoutname(target_str, postfix = '_perc', ext = '.dat')
   val_fld = widget_info(event.top, find_by_uname = 'nrs_interpolate_to_payment_output')
   widget_control, val_fld, get_value = outfile
   outfile_str = strtrim(outfile, 2)

@@ -3,6 +3,7 @@ pro nrs_interpolate_to_payment, image, classfile, table_5, table_25 $
   , outname = outname $
   , start_date = start_date $
   , end_date = end_date $
+  , debug = debug $
   , prog_obj = prog_obj, cancelled = cancelled
   compile_opt idl2, logical_predicate
   
@@ -75,11 +76,13 @@ pro nrs_interpolate_to_payment, image, classfile, table_5, table_25 $
     count_ar[cli] = cnt
   endfor
   
-  nrs_set_progress_property, prog_obj, /start, title = 'Applying growing season filter'
+  nrs_set_progress_property, prog_obj, /start, title = 'Determine pay percentage'
   
   ; process the data one band at a time
   if n_elements(outname) eq 0 then outname = getoutname(image, postfix = '_perc', ext = '.dat')
+  outname_d = getoutname(outname, postfix = '_d', ext = '.dat')
   openw, unit, outname, /get_lun
+  if debug then openw, unit_d, outname_d, /get_lun
   
   ; first determine year band index
   bind = (indgen(nb) + offset[0]) mod img_per_year
@@ -91,6 +94,11 @@ pro nrs_interpolate_to_payment, image, classfile, table_5, table_25 $
       close, unit
       free_lun, unit
       file_delete, outname, /quiet, /noexpand_path
+      if debug then begin
+        close, unit_d
+        free_lun, unit_d
+        file_delete, outname_d, /quiet, /noexpand_path
+      endif
       ptr_free, mask
       return
     endif
@@ -112,6 +120,11 @@ pro nrs_interpolate_to_payment, image, classfile, table_5, table_25 $
     ; keep previously discovered unclassified values
     if dcnt gt 0 then out_data[dx] = 0
     
+    if debug then begin
+      out_data_d = byte(out_data * 1.50 + 50)
+      if dcnt gt 0 then out_data_d[dx] = 0
+      writeu, unit_d, out_data_d
+    endif
     writeu, unit, out_data
   endfor
   
@@ -125,9 +138,21 @@ pro nrs_interpolate_to_payment, image, classfile, table_5, table_25 $
     , nb = nb, nl = nl, ns = ns $
     , bnames = bnames $
     , inherit = meta
-    
+
   close, unit
   free_lun, unit
+  if debug then begin
+    envi_setup_head, fname = outname_d $
+      , data_type = size(out_data_d, /type) $
+      , /write $
+      , interleave = 0 $  ; BSQ
+      , nb = nb, nl = nl, ns = ns $
+      , bnames = bnames $
+      , inherit = meta
+      
+    close, unit_d
+    free_lun, unit_d
+  endif
   ptr_free, mask
 end  
 
