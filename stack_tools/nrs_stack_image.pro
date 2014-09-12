@@ -18,6 +18,8 @@
 ;      with all filenames of the files to stack.
 ;      
 ;      In case of a file list, it is treated as the actual list of files to stack
+;    extension : in, optional, default = '*' (all files)
+;      Define the allowed data file extension
 ;    prog_obj : in, optional
 ;      A ProgressBar object to indicate progress
 ;    cancelled : out, optional
@@ -25,12 +27,15 @@
 ;
 ; :Author: nieuwenhuis
 ;-
-pro nrs_stack_image, outname, folder = folder, list_file = list_file, prog_obj = prog_obj, cancelled = cancelled
+pro nrs_stack_image, outname, folder = folder, list_file = list_file $
+                   , extension = extension $
+                   , prog_obj = prog_obj, cancelled = cancelled
   compile_opt idl2, logical_predicate
   
   cancelled = 1
   nrs_set_progress_property, prog_obj, title = 'Stacking layers', /start
   
+  if n_elements(extension) eq 0 then extension = '*'
   nrfiles = n_elements(list_file)
   doFolder = n_elements(folder) eq 1
   doFolder = doFolder && (strlen(strtrim(folder, 2)) gt 0)
@@ -52,7 +57,7 @@ pro nrs_stack_image, outname, folder = folder, list_file = list_file, prog_obj =
     endelse
   endif
   if doFolder eq 1 then begin
-    lst = nrs_find_images(folder, '.*', extension = 'hdr')
+    lst = nrs_find_images(folder, '.*', extension = '*', /exclude_hdr)
     if n_elements(lst) eq 0 then begin
       void = error_message('No files found', traceback = 0, /error)
       return
