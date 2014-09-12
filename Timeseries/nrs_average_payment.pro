@@ -3,6 +3,7 @@ pro nrs_average_payment, image, classfile, season_table $
   , outname = outname $
   , start_date = start_date $
   , end_date = end_date $
+  , season_origin = season_origin $ ; as date
   , prog_obj = prog_obj, cancelled = cancelled
   compile_opt idl2, logical_predicate
   
@@ -31,6 +32,10 @@ pro nrs_average_payment, image, classfile, season_table $
   mi = envi_get_map_info(fid = fid, undefined = crd_undef)
   if crd_undef eq 1 then mi = temporary(dummy)
   
+  ; handle nodata values 
+  if n_elements(undef) eq 0 then undef = 0
+  if (size(undef, /type) eq 5) and (undef eq 1e-34) then undef = 255
+  
   envi_open_file, classfile, r_fid = class, /no_realize, /no_interactive_query
   if class eq -1 then  begin
     ans = dialog_message('Could not open class map', title = 'Error', /error)
@@ -50,17 +55,25 @@ pro nrs_average_payment, image, classfile, season_table $
   caldat, sd, mm, dd, start_yy
   caldat, ed, mm, dd, end_yy 
   sdy = julday(1, 1, start_yy)
-  nrs_get_dt_indices, [sd, ed], julian_out = jo, period = '10-day'
-  nrs_get_dt_indices, [sdy, ed], julian_out = joy, period = '10-day'
+  dummy = nrs_get_period_from_range(sd, ed, nb, per_str = ip)
+  nrs_get_dt_indices, [sd, ed], julian_out = jo, period = ip
+  nrs_get_dt_indices, [sdy, ed], julian_out = joy, period = ip
   offset = where(jo[0] eq joy, cnt) ; number of bands to skip since start of year
   nr_years = end_yy - start_yy + 1
+  ; check and set calendar origin, default = 1 jan
+  seas_offset = 0
+  if n_elements(season_origin) gt 0 then begin
+    offset_date = nrs_str2julian(season_origin)
+    so = where(offset_date lt joy, cnt)
+    if cnt gt 0 then seas_offset = so[0]
+  endif
   
   ; seasons table contains values zero and one: zero = out of growing season, one = in growing season
   classes = season.(0)
   nr_classes = n_elements(classes)
   tbl_data = intarr(n_elements(season.(0)), field_count - 1)
   for c = 1, field_count - 1 do begin
-    tbl_data[*, c - 1] = season.(c)
+    tbl_data[*, c - 1] = shift(season.(c), -seas_offset)
   endfor
   
   nrs_set_progress_property, prog_obj, /start, title = 'Calculate averages per growing seasons'
@@ -76,14 +89,15 @@ pro nrs_average_payment, image, classfile, season_table $
     if ones[0] eq img_per_year then continue
     if zeroes[0] lt ones[0] then zeroes = zeroes[1:-1]
     len = min([2, n_elements(ones), n_elements(zeroes)])
-    seas_start[cli * 2, 0] = ones[0 : len - 1]
-    seas_end[cli * 2, 0] = zeroes[0 : len -1]
+    seas_start[cli * 2] = ones[0 : len - 1]
+    seas_end[cli * 2] = zeroes[0 : len -1]
   endfor
   
-  outname_d = getoutname(image, postfix = '_gra', ext = '.dat')
+  outname = getoutname(image, postfix = '_gra', ext = '.dat')
   openw, unit, outname, /get_lun
 
-  data_out = bytarr(ns * nl, 2)
+  ; define output buffer, init the values to nodata
+  data_out = fltarr(ns * nl, 2) + undef
   
   for band = 0, nb - 1 do begin
     if nrs_update_progress(prog_obj, band, nb, cancelled = cancelled) then begin
@@ -94,6 +108,7 @@ pro nrs_average_payment, image, classfile, season_table $
     endif
 
     data = envi_get_data(fid = fid, dims = dims, pos = band)
+    uix = where(data eq undef, ucnt)
     grow_ix = (band + offset) mod img_per_year
     grow_yr = (band + offset) / img_per_year
     correct = grow_yr eq 0 ? offset : 0;
@@ -102,14 +117,15 @@ pro nrs_average_payment, image, classfile, season_table $
       ix = where(cldata eq cl, cnt)
       if cnt eq 0 then continue
       
-      ps = seas_start[cli * 2, 0]
-      pe = seas_end[cli * 2, 0]
+      ps = seas_start[cli * 2]
+      pe = seas_end[cli * 2]
+      if ps eq -1 then continue ; no growing seasons for this class
       agg_ix = 0
       if grow_ix lt ps then continue
       if grow_ix gt pe then begin
         agg_ix = 1
-        ps = seas_start[cli * 2, 1]
-        pe = seas_end[cli * 2, 1]
+        ps = seas_start[cli * 2 + 1]
+        pe = seas_end[cli * 2 + 1]
       endif
       if (grow_ix lt ps) or (grow_ix gt pe) then continue
       if (grow_yr eq 0) then begin  ; correction if first year does not start 1-jan
@@ -117,22 +133,24 @@ pro nrs_average_payment, image, classfile, season_table $
         if ps gt pe then continue ; no data available, so skip
       endif
       
-      data_out[ix, agg_ix] += data[ix] / (pe - ps + 1)
+      data_out[ix, agg_ix] += 1.0* data[ix] / (pe - ps + 1)
     endfor
     
     if grow_ix eq img_per_year - 1 then begin
-      writeu, unit, data_out
-      data_out[*] = 0
+      ; mask out nodata values in input from the output
+      if ucnt gt 0 then data_out[uix] = undef
+      writeu, unit, byte(data_out)
+      data_out[*] = undef ; reset output buffer for next iteration
     endif
   endfor
 
   meta = envi_set_inheritance(fid, dims, /full)
   
-  yind = indgen(nr_years * 2) / 2 + sdy
+  yind = indgen(nr_years * 2) / 2 + start_yy
   bind = indgen(nr_years * 2) mod 2
   bnames = 'Year.period ' + string(yind, format = '(I04)') + '.' + string(bind + 1, format = '(I02)')
   envi_setup_head, fname = outname $
-    , data_type = size(data_out, /type) $
+    , data_type = size(byte(1), /type) $
     , /write $
     , interleave = 0 $  ; BSQ
     , nb = nr_years * 2, nl = nl, ns = ns $
