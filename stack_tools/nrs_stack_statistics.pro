@@ -85,6 +85,9 @@ end
 ;      Indicates if the process was interupted by the user in the progressBar
 ;
 ; :Author: nieuwenhuis
+; 
+; :history:
+;   - 2 May 2014: nieuwenhuis, Reduced memory footprint by reading slices
 ;-
 pro nrs_aggregate_layers, fid, aggr_method, layers = layers, outname = outname, prog_obj = prog_obj, cancelled = cancelled
   compile_opt idl2, logical_predicate
@@ -101,37 +104,39 @@ pro nrs_aggregate_layers, fid, aggr_method, layers = layers, outname = outname, 
   if n_elements(layers) eq 0 then $
     layers = indgen(nb)
   nr_band = n_elements(layers)
-  cube = make_array(ns, nl, nr_band, type = dt)
-  for b = 0, nr_band - 1 do begin
-    if nrs_update_progress(prog_obj, b, nb, cancelled = cancelled) then return
-
-    cube[*, *, b] = envi_get_data(fid = fid, dims = dims, pos = layers[b])
-  endfor
-  
   if aggr_method eq 'All' then begin
     out = make_array(ns, nl, 5, type = dt)
-    out[*, *, 0] = total(cube, 3)
-    out[*, *, 1] = total(cube, 3) / nr_band
-    out[*, *, 2] = median(cube, dimension = 3)
-    out[*, *, 3] = min(cube, dimension = 3)
-    out[*, *, 4] = max(cube, dimension = 3)
     bnames = ['Sum', 'Mean', 'Median', 'Min', 'Max']
     postfix = '_aggr'
   end else begin
     out = make_array(ns, nl, type = dt)
-    case strlowcase(aggr_method) of
-      'sum'    : out = total(cube, 3)
-      'mean'   : out = total(cube, 3) / nr_band
-      'median' : out = median(cube, dimension = 3)
-      'min'    : out = min(cube, dimension = 3)
-      'max'    : out = max(cube, dimension = 3)
-    endcase
     bnames = [aggr_method]
     postfix = '_' + aggr_method
   endelse
+  for l = 0, nl - 1 do begin
+    if nrs_update_progress(prog_obj, l, nl, cancelled = cancelled) then return
+
+    cube = envi_get_slice(fid = fid, xs = 0, xe = ns - 1, line = l, pos = layers[b], /bil)
+  
+    if aggr_method eq 'All' then begin
+      out[*, l, 0] = total(cube, 2, /nan)
+      out[*, l, 1] = total(cube, 2, /nan) / nr_band
+      out[*, l, 2] = median(cube, dimension = 2)
+      out[*, l, 3] = min(cube, dimension = 2, /nan)
+      out[*, l, 4] = max(cube, dimension = 2, /nan)
+    end else begin
+      case strlowcase(aggr_method) of
+        'sum'    : out[*, l] = total(cube, 2, /nan)
+        'mean'   : out[*, l] = total(cube, 2, /nan) / nr_band
+        'median' : out[*, l] = median(cube, dimension = 2)
+        'min'    : out[*, l] = min(cube, dimension = 2, /nan)
+        'max'    : out[*, l] = max(cube, dimension = 2, /nan)
+      endcase
+    endelse
+  endfor
 
   if n_elements(outname) eq 0 then $
-    outname = getOutname(fname, postfix = postfix, ext = '.')
+    outname = getOutname(fname, postfix = postfix, ext = '.dat')
     
   envi_write_envi_file, out, out_name = outname, map_info = mi, bnames = bnames
 end
