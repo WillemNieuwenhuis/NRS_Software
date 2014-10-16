@@ -1,11 +1,11 @@
-pro change_detection_v2_handleBrowseInput, event
-  fld = widget_info(event.top, find_by_uname = 'change_detection_v2_inputImage')
+pro covercam_handleBrowseInput, event
+  fld = widget_info(event.top, find_by_uname = 'covercam_inputImage')
   widget_control, fld, get_value = inputfile
   len = strlen(strtrim(inputfile))
   
-  fld = widget_info(event.top, find_by_uname = 'change_detection_v2_year_panel')
+  fld = widget_info(event.top, find_by_uname = 'covercam_year_panel')
   widget_control, fld, sensitiv = len gt 0
-  fld = widget_info(event.top, find_by_uname = 'change_detection_v2_time_panel')
+  fld = widget_info(event.top, find_by_uname = 'covercam_time_panel')
   widget_control, fld, sensitiv = len gt 0
   
   if strlen(strtrim(inputfile)) eq 0 then return
@@ -15,19 +15,19 @@ pro change_detection_v2_handleBrowseInput, event
   envi_open_file, inputfile, r_fid = fid, /no_realize, /no_interactive_query
   envi_file_query, fid, nb = nb
   
-  fld = widget_info(event.top, find_by_uname = 'change_detection_v2_ndvipy')
+  fld = widget_info(event.top, find_by_uname = 'covercam_ndvipy')
   widget_control, fld, get_value = ndvilayers
   ndvi_py = fix(strtrim(ndvilayers))
-  change_detection_v2_update_time_fields, event, nb, ndvi_py
+  covercam_update_time_fields, event, nb, ndvi_py
   
-  fld = widget_info(event.top, find_by_uname = 'change_detection_v2_magnitude')
+  fld = widget_info(event.top, find_by_uname = 'covercam_magnitude')
   widget_control, fld, get_value = ofile
   if strlen(strtrim(ofile)) eq 0 then $
     widget_control, fld, set_value = magfile
 end
 
-function change_detection_v2_handle_NPY_change, event
-  fld = widget_info(event.top, find_by_uname = 'change_detection_v2_inputImage')
+function covercam_handle_NPY_change, event
+  fld = widget_info(event.top, find_by_uname = 'covercam_inputImage')
   widget_control, fld, get_value = inputfile
   
   nb = -1
@@ -36,18 +36,18 @@ function change_detection_v2_handle_NPY_change, event
     envi_file_query, fid, nb = nb
   endif
   
-  fld = widget_info(event.top, find_by_uname = 'change_detection_v2_ndvipy')
+  fld = widget_info(event.top, find_by_uname = 'covercam_ndvipy')
   widget_control, fld, get_value = ndvilayers
   ndvi_py = fix(ndvilayers)
   
-  change_detection_v2_update_time_fields, event, nb, ndvi_py
+  covercam_update_time_fields, event, nb, ndvi_py
 end
 
-function change_detection_v2_handle_time_ft, event
-  fld_f = widget_info(event.top, find_by_uname = 'change_detection_v2_time_from')
+function covercam_handle_time_ft, event
+  fld_f = widget_info(event.top, find_by_uname = 'covercam_time_from')
   widget_control, fld_f, get_uvalue = from
   widget_control, fld_f, get_value = user_from
-  fld = widget_info(event.top, find_by_uname = 'change_detection_v2_time_to')
+  fld = widget_info(event.top, find_by_uname = 'covercam_time_to')
   widget_control, fld, get_uvalue = to
   widget_control, fld, get_value = user_to
   fromobj = (from.Object)->getID()
@@ -61,21 +61,21 @@ function change_detection_v2_handle_time_ft, event
   endif
 end
 
-pro change_detection_v2_update_time_fields, event, nb, ndvi_py
+pro covercam_update_time_fields, event, nb, ndvi_py
   if nb gt 0 then begin
     nryears = nb / ndvi_py
     ystr = string(indgen(nryears) + 1, format = '(i0)')
     
-    fld = widget_info(event.top, find_by_uname = 'change_detection_v2_years_combo')
+    fld = widget_info(event.top, find_by_uname = 'covercam_years_combo')
     widget_control, fld, set_value = [ 'All', ystr]
     widget_control, fld, set_combobox_select = 0
   endif
 
-  fld_f = widget_info(event.top, find_by_uname = 'change_detection_v2_time_from')
+  fld_f = widget_info(event.top, find_by_uname = 'covercam_time_from')
   widget_control, fld_f, get_uvalue = from
   fromobj = (from.Object)->getID()
   widget_control, fromobj, get_uvalue = user_from
-  fld = widget_info(event.top, find_by_uname = 'change_detection_v2_time_to')
+  fld = widget_info(event.top, find_by_uname = 'covercam_time_to')
   widget_control, fld, get_uvalue = to
   toobj = (to.Object)->getID()
   widget_control, toobj, get_uvalue = user_to
@@ -83,41 +83,41 @@ pro change_detection_v2_update_time_fields, event, nb, ndvi_py
   widget_control, fld, set_value = string(user_to < ndvi_py, format = '(i0)')
 end
 
-pro change_detection_v2_handleGo, event
+pro covercam_handleGo, event
   compile_opt idl2, logical_predicate
 
   ; collect parameters
-  fld = widget_info(event.top, find_by_uname = 'change_detection_v2_inputImage')
+  fld = widget_info(event.top, find_by_uname = 'covercam_inputImage')
   widget_control, fld, get_value = inputfile
 
-  fld = widget_info(event.top, find_by_uname = 'change_detection_v2_ndvipy')
+  fld = widget_info(event.top, find_by_uname = 'covercam_ndvipy')
   widget_control, fld, get_value = ndvilayers
 
-  fld = widget_info(event.top, find_by_uname = 'change_detection_v2_years_combo')
+  fld = widget_info(event.top, find_by_uname = 'covercam_years_combo')
   sel_year = widget_info(fld, /combobox_gettext)
 
-  fld = widget_info(event.top, find_by_uname = 'change_detection_v2_time_from')
+  fld = widget_info(event.top, find_by_uname = 'covercam_time_from')
   widget_control, fld, get_value = fromtime
     
-  fld = widget_info(event.top, find_by_uname = 'change_detection_v2_time_to')
+  fld = widget_info(event.top, find_by_uname = 'covercam_time_to')
   widget_control, fld, get_value = totime
 
-  fld = widget_info(event.top, find_by_uname = 'change_detection_v2_classes')
+  fld = widget_info(event.top, find_by_uname = 'covercam_classes')
   widget_control, fld, get_value = classfile
 
-  fld = widget_info(event.top, find_by_uname = 'change_detection_v2_refimage')
+  fld = widget_info(event.top, find_by_uname = 'covercam_refimage')
   widget_control, fld, get_value = refimage
 
-  fld = widget_info(event.top, find_by_uname = 'change_detection_v2_magnitude')
+  fld = widget_info(event.top, find_by_uname = 'covercam_magnitude')
   widget_control, fld, get_value = magname
   
   fld = widget_info(event.top, find_by_uname = 'change_detection_sd_muly_combo')
   sd_mult_str = widget_info(fld, /combobox_gettext)
   
-  fld = widget_info(event.top, find_by_uname = 'change_detection_v2_mask')
+  fld = widget_info(event.top, find_by_uname = 'covercam_mask')
   widget_control, fld, get_value = pixmask_str
   
-  fld = widget_info(event.top, find_by_uname = 'change_detection_v2_absdiff')
+  fld = widget_info(event.top, find_by_uname = 'covercam_absdiff')
   abs_diff = widget_info(fld, /button_set)
   
   

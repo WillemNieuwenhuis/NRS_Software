@@ -1,43 +1,25 @@
-; Add a menu item to the NRS menu
-pro change_detection_v2_gui_define_buttons, buttonInfo
-  envi_define_menu_button, buttonInfo, VALUE = 'Probability of change...', $
-    UVALUE = 'Detect changes', EVENT_PRO = 'change_detection_v2_menu', $
-    REF_VALUE = 'NRS', POSITION = 'last',/SEPARATOR
-
-end
-
-pro change_detection_v2_gui_event, event
+pro covercam_gui_event, event
   wTarget = (widget_info(Event.id,/NAME) eq 'TREE' ?  $
       widget_info(Event.id, /tree_root) : event.id)
 
   wWidget =  Event.top
 
   case wTarget of
-    Widget_Info(wWidget, FIND_BY_UNAME='change_detection_v2_CancelButton'): begin
+    Widget_Info(wWidget, FIND_BY_UNAME='covercam_CancelButton'): begin
       if( Tag_Names(Event, /STRUCTURE_NAME) eq 'WIDGET_BUTTON' )then $
         widget_control, event.top, /destroy
     end
-    Widget_Info(wWidget, FIND_BY_UNAME='change_detection_v2_GoButton'): begin
+    Widget_Info(wWidget, FIND_BY_UNAME='covercam_GoButton'): begin
       if( Tag_Names(Event, /STRUCTURE_NAME) eq 'WIDGET_BUTTON' )then $
-        change_detection_v2_handleGo, Event
+        covercam_handleGo, Event
     end
   else:
 
   endcase
 
 end
-;
-; Empty stub procedure used for autoloading.
-;
-pro change_detection_v2_gui, GROUP_LEADER = wGroup, _EXTRA = _VWBExtra_
-  change_detection_v2_mainPanel, GROUP_LEADER = wGroup, _EXTRA = _VWBExtra_
-end
 
-pro change_detection_v2_menu, event
-  change_detection_v2_mainPanel
-end
-
-pro change_detection_v2_mainPanel, GROUP_LEADER = wGroup, _EXTRA = _VWBExtra_
+pro covercam_gui, event, GROUP_LEADER = wGroup, _EXTRA = _VWBExtra_
   state = { $
     parent:   long(0) $
   }
@@ -48,41 +30,41 @@ pro change_detection_v2_mainPanel, GROUP_LEADER = wGroup, _EXTRA = _VWBExtra_
   text_small_width = 5
   num_width =   15
 
-  change_detection_v2_contentPanel = widget_base(GROUP_LEADER = wGroup, UNAME = 'change_detection_v2_contentPanel'  $
+  covercam_contentPanel = widget_base(GROUP_LEADER = wGroup, UNAME = 'covercam_contentPanel'  $
     , /col  $
     , tab_mode = 1 $
-    , TITLE = 'Change detection')
+    , TITLE = 'CoverCam')
 
-  change_detection_v2_inputPanel = widget_base(change_detection_v2_contentPanel, /frame, /col)
+  covercam_inputPanel = widget_base(covercam_contentPanel, /frame, /col)
   
-  change_detection_v2_refimage = cw_dirfile(change_detection_v2_inputPanel $
+  covercam_refimage = cw_dirfile(covercam_inputPanel $
                 , title = 'NDVI data stack (reference period)' $
                 , style = 'envi' $
                 , xsize = text_width $
                 , xtitlesize = label_width $
-                , uname = 'change_detection_v2_refimage' $
+                , uname = 'covercam_refimage' $
               )
 
-  change_detection_v2_classes = cw_dirfile(change_detection_v2_inputPanel $
+  covercam_classes = cw_dirfile(covercam_inputPanel $
                 , title = 'Classified NDVI map (raster)' $
                 , style = 'envi' $
                 , xsize = text_width $
                 , xtitlesize = label_width $
-                , uname = 'change_detection_v2_classes' $
+                , uname = 'covercam_classes' $
               )
 
-  change_detection_v2_inputImage = cw_dirfile(change_detection_v2_inputPanel $
+  covercam_inputImage = cw_dirfile(covercam_inputPanel $
                 , title = 'NDVI data stack (for change analysis)' $
                 , style = 'envi' $
                 , xsize = text_width $
                 , xtitlesize = label_width $
-                , uname = 'change_detection_v2_inputImage' $
-                , event_pro = 'change_detection_v2_handleBrowseInput' $
+                , uname = 'covercam_inputImage' $
+                , event_pro = 'covercam_handleBrowseInput' $
               )
 
-  group = cw_groupbox(change_detection_v2_inputPanel, group_title = 'Parameters')              
-  change_detection_v2_ndvipy = fsc_inputfield(group $
-                , uname = 'change_detection_v2_ndvipy' $
+  group = cw_groupbox(covercam_inputPanel, group_title = 'Parameters')              
+  covercam_ndvipy = fsc_inputfield(group $
+                , uname = 'covercam_ndvipy' $
                 , title = 'NDVI layers per year' $
                 , labelalign = 1 $
                 , labelsize = label_width $
@@ -90,31 +72,31 @@ pro change_detection_v2_mainPanel, GROUP_LEADER = wGroup, _EXTRA = _VWBExtra_
                 , xsize = text_small_width $
                 , /integervalue $
                 , /all_events $
-                , event_func = 'change_detection_v2_handle_NPY_change' $
+                , event_func = 'covercam_handle_NPY_change' $
               )
               
-  change_detection_v2_year_panel = widget_base(group $
+  covercam_year_panel = widget_base(group $
                 , /row $
                 , sensitiv = 0 $
-                , uname = 'change_detection_v2_year_panel' $
+                , uname = 'covercam_year_panel' $
               )
-  change_detection_v2_years_label = widget_label(change_detection_v2_year_panel $
+  covercam_years_label = widget_label(covercam_year_panel $
                 , xsize = label_width $
                 , value = 'Select year(s)' $
               )
-  change_detection_v2_years_combo = widget_combobox(change_detection_v2_year_panel $
-                , uname = 'change_detection_v2_years_combo' $
+  covercam_years_combo = widget_combobox(covercam_year_panel $
+                , uname = 'covercam_years_combo' $
                 , value = ['All'] $
               )
 
-  change_detection_v2_time_panel = widget_base(group $
+  covercam_time_panel = widget_base(group $
                 , /row $
                 , sensitiv = 0 $
-                , uname = 'change_detection_v2_time_panel' $
+                , uname = 'covercam_time_panel' $
               )
               
-  change_detection_v2_time_from = fsc_inputfield(change_detection_v2_time_panel $
-                , uname = 'change_detection_v2_time_from' $
+  covercam_time_from = fsc_inputfield(covercam_time_panel $
+                , uname = 'covercam_time_from' $
                 , title = 'Select period in the year; From' $
                 , labelalign = 1 $
                 , labelsize = label_width $
@@ -123,11 +105,11 @@ pro change_detection_v2_mainPanel, GROUP_LEADER = wGroup, _EXTRA = _VWBExtra_
                 , uvalue = 1 $
                 , /integervalue $
                 , /all_events $
-                , event_func = 'change_detection_v2_handle_time_ft' $
+                , event_func = 'covercam_handle_time_ft' $
               )
 
-  change_detection_v2_time_to = fsc_inputfield(change_detection_v2_time_panel $
-                , uname = 'change_detection_v2_time_to' $
+  covercam_time_to = fsc_inputfield(covercam_time_panel $
+                , uname = 'covercam_time_to' $
                 , title = 'To' $
                 , labelalign = 0 $
                 , labelsize = 0 $
@@ -136,32 +118,32 @@ pro change_detection_v2_mainPanel, GROUP_LEADER = wGroup, _EXTRA = _VWBExtra_
                 , uvalue = 36 $   ; use uvalue as memory for the value
                 , /integervalue $
                 , /all_events $
-                , event_func = 'change_detection_v2_handle_time_ft' $
+                , event_func = 'covercam_handle_time_ft' $
               )
 
-  change_detection_v2_sd_panel = widget_base(group $
+  covercam_sd_panel = widget_base(group $
                 , /row $
-                , uname = 'change_detection_v2_sd_panel' $
+                , uname = 'covercam_sd_panel' $
               )
 
-  change_detection_v2_sd_label = widget_label(change_detection_v2_sd_panel $
+  covercam_sd_label = widget_label(covercam_sd_panel $
                 , xsize = label_width $
                 , value = 'Threshold' $
               )
 
-  change_detection_sd_muly_combo = widget_combobox(change_detection_v2_sd_panel $
+  change_detection_sd_muly_combo = widget_combobox(covercam_sd_panel $
                 , uname = 'change_detection_sd_muly_combo' $
                 , value = ['1', '1.5', '2', '2.5', '3', '3.5'] $
               )
 
-  change_detection_v2_sd_unit_label = widget_label(change_detection_v2_sd_panel $
+  covercam_sd_unit_label = widget_label(covercam_sd_panel $
 ;                , xsize = label_width $
                 , value = ' * SD' $
               )
 
   cd_mask_base = widget_base(group, /row)
-  change_detection_v2_mask = fsc_inputfield(cd_mask_base $
-                , uname = 'change_detection_v2_mask' $
+  covercam_mask = fsc_inputfield(cd_mask_base $
+                , uname = 'covercam_mask' $
                 , title = 'Excluded areas (less than)' $
                 , labelalign = 1 $
                 , labelsize = label_width $
@@ -173,52 +155,35 @@ pro change_detection_v2_mainPanel, GROUP_LEADER = wGroup, _EXTRA = _VWBExtra_
               
   void = widget_label(cd_mask_base, value = 'pixels')
 
-  change_detection_v2_absdiff_panel = widget_base(group $
+  covercam_absdiff_panel = widget_base(group $
                 , title = 'Absolute differences', /col, /nonexclusive)
-  change_detection_v2_absdiff = widget_button(change_detection_v2_absdiff_panel $
-                , uname = 'change_detection_v2_absdiff'  $
+  covercam_absdiff = widget_button(covercam_absdiff_panel $
+                , uname = 'covercam_absdiff'  $
                 , /align_left $
                 , value = 'Absolute differences only' $
               )
               
-  change_detection_v2_outputPanel = cw_groupbox(change_detection_v2_inputPanel, group_title = 'Output')              
-  change_detection_v2_magnitude = cw_dirfile(change_detection_v2_outputPanel $
+  covercam_outputPanel = cw_groupbox(covercam_inputPanel, group_title = 'Output')              
+  covercam_magnitude = cw_dirfile(covercam_outputPanel $
                 , title = 'Probability of change map(s)' $
                 , style = 'file' $
                 , xsize = text_width $
                 , xtitlesize = label_width $
-                , uname = 'change_detection_v2_magnitude' $
+                , uname = 'covercam_magnitude' $
               )
               
-  change_detection__v2_createButtonPanel, change_detection_v2_contentPanel
+  nrs_gui_createButtonPanel, covercam_contentPanel $ 
+    , ok_uname = 'covercam_GoButton', ok_value = 'Go!', ok_tooltip = 'Find best spectral matches' $
+    , cancel_uname = 'covercam_CancelButton', cancel_value = 'Done', cancel_tooltip = 'Cancel the operation'
+    
 
   ; Make sure we create the form
-  Widget_Control, /REALIZE, change_detection_v2_contentPanel
+  Widget_Control, /REALIZE, covercam_contentPanel
 
   ; Initialize stuff
-  widget_control, change_detection_v2_absdiff, /set_button
-  state.parent = change_detection_v2_contentPanel
-  widget_control, change_detection_v2_contentPanel, set_uvalue = state
+  widget_control, covercam_absdiff, /set_button
+  state.parent = covercam_contentPanel
+  widget_control, covercam_contentPanel, set_uvalue = state
 
-  XManager, 'change_detection_v2_gui', change_detection_v2_contentPanel, /NO_BLOCK
+  XManager, 'covercam_gui', covercam_contentPanel, /NO_BLOCK
  end
-
-pro change_detection__v2_createButtonPanel, parent
-  ; Button panel (OK, Cancel etc)
-  Buttonpanel = Widget_Base(parent $
-    , /ALIGN_RIGHT $
-    , /Row, SPACE = 3 $
-    , XPAD = 3 $
-    )
-
-  change_detection_v2_GoButton = Widget_Button(Buttonpanel, UNAME='change_detection_v2_GoButton'  $
-    ,SCR_XSIZE=50 ,SCR_YSIZE=22  $
-    ,/ALIGN_CENTER $
-    ,TOOLTIP='Find best spectral matches' ,VALUE='Go!')
-
-  change_detection_v2_CancelButton = Widget_Button(Buttonpanel, UNAME='change_detection_v2_CancelButton'  $
-    ,SCR_XSIZE=50 ,SCR_YSIZE=22  $
-    ,/ALIGN_CENTER $
-    ,TOOLTIP='Cancel the operation' ,VALUE='Close')
-
-end
