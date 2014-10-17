@@ -3,7 +3,6 @@
 	<name>Change Detection</name>
 	<comment></comment>
 	<projects>
-		<project>NRS_utils</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
