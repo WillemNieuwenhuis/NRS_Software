@@ -1,4 +1,5 @@
 pro nrs_water_index_ratio, image, water_index, outname = outname $
+                  , no_data_value = undef $
                   , prog_obj = prog_obj, cancelled = cancelled
   compile_opt idl2, logical_predicate
   
@@ -25,8 +26,11 @@ pro nrs_water_index_ratio, image, water_index, outname = outname $
   inherit = envi_set_inheritance(fid, dims, /full)
 
   if nb ne 7 then begin
-    void = error_message('Expected 7 reflectance bands, only ' + string(nb) + ' found.')
-    return
+    if nb ne 2 then begin
+      void = error_message('Expected 7 reflectance bands, only ' + string(nb) + ' found.')
+      return
+    endif
+    sel_bands = [0, 1]  ; special (hidden) option: assume that the indices are in a 2-band image
   endif
   
   if (n_elements(wl) eq 0) || (wl eq -1) then begin
@@ -35,6 +39,8 @@ pro nrs_water_index_ratio, image, water_index, outname = outname $
   endif else begin
 ; TODO: match wavelengths to determine required bands  
   endelse
+  
+  if n_elements(undef) eq 0 then undef = -9999.0
   
   cancelled = 0
   nrs_set_progress_property, prog_obj, /start, title = 'Calculate water index: ' + water_index
@@ -53,8 +59,11 @@ pro nrs_water_index_ratio, image, water_index, outname = outname $
     endif
     
     data = envi_get_slice(fid = fid, line = l, xs = 0, xe = ns - 1, pos = pos, /bil)
+    sum = total(data, 2)
+    ix = where(sum lt 0.001, cnt)
     
     out_data = (float(data[*, b1] - data[*, b2])) / (data[*, b1] + data[*, b2])
+    if cnt gt 0 then out_data[ix] = undef   ; mask division by zero results
     
     writeu, unit, out_data
   endfor
@@ -65,6 +74,7 @@ pro nrs_water_index_ratio, image, water_index, outname = outname $
         , ns = ns, nl = nl, nb = 1 $
         , bnames = [strupcase(water_index)] $
         , interleave = 1 $  ; 1 == BIL
+        , data_ignore_value = undef $
         , /write $
         , inherit = inherit
   
