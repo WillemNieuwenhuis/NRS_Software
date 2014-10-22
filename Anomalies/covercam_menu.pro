@@ -1,6 +1,6 @@
 ; Add a menu item to the NRS menu
 pro covercam_define_buttons, buttonInfo
-  envi_define_menu_button, buttonInfo, VALUE = 'Probability of change (CoverCam) ...', $
+  envi_define_menu_button, buttonInfo, VALUE = 'Probability of change (CoverCam)', $
     UVALUE = 'Detect changes', EVENT_PRO = 'covercam_gui', $
     REF_VALUE = 'NRS', POSITION = 'last',/SEPARATOR
 
