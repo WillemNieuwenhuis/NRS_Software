@@ -105,7 +105,7 @@ pro covercam_gui, event, GROUP_LEADER = wGroup, _EXTRA = _VWBExtra_
                 , uvalue = 1 $
                 , /integervalue $
                 , /all_events $
-                , event_func = 'covercam_handle_time_ft' $
+;                , event_func = 'covercam_handle_time_ft' $
               )
 
   covercam_time_to = fsc_inputfield(covercam_time_panel $
@@ -118,7 +118,7 @@ pro covercam_gui, event, GROUP_LEADER = wGroup, _EXTRA = _VWBExtra_
                 , uvalue = 36 $   ; use uvalue as memory for the value
                 , /integervalue $
                 , /all_events $
-                , event_func = 'covercam_handle_time_ft' $
+;                , event_func = 'covercam_handle_time_ft' $
               )
 
   covercam_sd_panel = widget_base(group $
