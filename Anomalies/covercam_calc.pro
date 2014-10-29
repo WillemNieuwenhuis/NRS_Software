@@ -1,3 +1,47 @@
+;+
+; :description:
+;    Calculate the magnitudes according to the CoverCam model: calculate values
+;    that exceed the average value per zone +/- the standard deviation in that zone.
+;    Depending on the abs_diff setting the difference is positive only (abs_diff = true)
+;    or the actual difference (abs_diff = fals)
+;
+; :params:
+;    inputfile : in, required
+;      Input timeseries stack
+;    refimage : in, required
+;      Input historical timeseries stack
+;    classfile : in, required
+;      Input zonal classification map
+;    ndvi_py : in, required
+;      Number of layers per year in input stacks
+;    sd_mult : in, required
+;      Standard deviation multiplication factor (1 to 3.5)
+;    pixmask : in, required
+;      Minimum number of pixels in zone before zone statistics are calculated
+;    fromtime : in, required
+;      Start band to include in the calculation (one-based)
+;    totime : in, required
+;      End band to include in the calculation (one-based)
+;    sel_year : in, required
+;      The year to consider for the calculation (one-based index); if -1 then
+;      all bands are considered
+;    abs_diff : in, optional, default = yes
+;      If set calculate only positive differences; is not set calculate the actual differences
+;    magname : in, required
+;      Output name of the magnitude output (stack)
+;
+;    prog_obj : in, optional
+;      A progress indicator object ('PROGRESSBAR'). If missing no progress
+;      will be displayed
+;    cancelled : out, optional
+;      If set: the opreation failed, or was interrupted by the user
+;
+; :author: nieuwenhuis
+; 
+; ; :history:
+;   oct 2014: created by extraction from eventhandler
+;
+;-
 pro covercam_calc, inputfile, refimage, classfile, ndvi_py, sd_mult, pixmask $
                 , fromtime, totime, sel_year $
                 , abs_diff $
@@ -43,6 +87,9 @@ pro covercam_calc, inputfile, refimage, classfile, ndvi_py, sd_mult, pixmask $
   nb = nrlayers
   nryears = nrlayers / ndvi_py
   
+  ftime = max([1, fromtime])
+  ttime = min([ndvi_py, totime])
+  fromtime = min([ftime, ttime], max = totime)
   ndvi_py = totime - fromtime + 1
   if sel_year eq -1 then sel_year = 1 else nryears = 1
   sel_year -= 1

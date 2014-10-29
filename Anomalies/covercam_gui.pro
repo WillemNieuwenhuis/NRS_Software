@@ -72,7 +72,7 @@ pro covercam_gui, event, GROUP_LEADER = wGroup, _EXTRA = _VWBExtra_
                 , xsize = text_small_width $
                 , /integervalue $
                 , /all_events $
-                , event_func = 'covercam_handle_NPY_change' $
+                , event_pro = 'covercam_handle_NPY_change' $
               )
               
   covercam_year_panel = widget_base(group $
@@ -102,7 +102,7 @@ pro covercam_gui, event, GROUP_LEADER = wGroup, _EXTRA = _VWBExtra_
                 , labelsize = label_width $
                 , value = '1' $
                 , xsize = text_small_width $
-                , uvalue = 1 $
+                , uvalue = 0 $  ; zero inidcates no user change yet
                 , /integervalue $
                 , /all_events $
 ;                , event_func = 'covercam_handle_time_ft' $
@@ -115,10 +115,10 @@ pro covercam_gui, event, GROUP_LEADER = wGroup, _EXTRA = _VWBExtra_
                 , labelsize = 0 $
                 , value = '36' $
                 , xsize = text_small_width $
-                , uvalue = 36 $   ; use uvalue as memory for the value
+                , uvalue = 0 $   ; use uvalue as memory for the value; 0 indicates no user change yet
                 , /integervalue $
                 , /all_events $
-;                , event_func = 'covercam_handle_time_ft' $
+                , event_func = 'covercam_handle_time_ft' $
               )
 
   covercam_sd_panel = widget_base(group $

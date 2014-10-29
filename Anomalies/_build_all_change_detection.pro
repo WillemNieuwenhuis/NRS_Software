@@ -15,6 +15,7 @@ pro _build_change_detection
   ; needs nrs_utils.sav, and nrs_basic_tools.sav
   files = ['covercam_gui.pro' $
            , 'covercam_gui_eventcb.pro' $
+           , 'covercam_calc.pro' $
            , 'covercam_menu.pro' $
            , 'nrs_ndvi_stddev.pro' $
            , 'nrs_ndvi_change_detection.pro' $
