@@ -23,15 +23,21 @@
 ; :Keywords:
 ;    magdata : in, out
 ;      Output magnitude values
+;    as_perc : in, default = false
+;      Calculate the magnitude as percentage, so (val - (avg + sd)) / (val - avg)
+;      If true the setting of abs_diff is ignored
 ;    abs_diff: in, default = true
 ;      If set calculate only positive differences; is not set calculate the actual differences
 ;
 ; :Author: nieuwenhuis
 ;-
 pro nrs_ndvi_magdata, ldata, cldata, segdata, poolsd, ndvi_py, lpy, magdata = magdata $
+                    , as_perc = as_perc $
                     , abs_diff = abs_diff
   compile_opt idl2, logical_predicate
   
+  abs_diff = keyword_set(abs_diff)
+  as_perc = keyword_set(as_perc)
   magdata[*] = 0.0
   diff = magdata - magdata   ; all zeroes
   clh = histogram(segdata, binsize = 1, omin = cmin, omax = cmax, reverse_indices = ri)
@@ -43,10 +49,13 @@ pro nrs_ndvi_magdata, ldata, cldata, segdata, poolsd, ndvi_py, lpy, magdata = ma
       cl = cldata[clx[0]]
       sd = poolsd[cl * ndvi_py + lpy]
 
-      sign = 1
-      if ~keyword_set(abs_diff) then sign = (ldata[clx] gt avg) * 2 - 1
       diff[clx] = abs(ldata[clx] - avg)   ; differences from avg in class
-      magdata[clx] = sign * ((diff[clx] - sd) > 0) ; only use magnitude outside the avg+/-sd*mult
+      if as_perc then begin
+        magdata[clx] = ((diff[clx] - sd) > 0) / diff[clx]
+      endif else begin
+        sign = abs_diff ? 1 : (ldata[clx] gt avg) * 2 - 1
+        magdata[clx] = sign * ((diff[clx] - sd) > 0) ; only use magnitude outside the avg+/-sd*mult
+       endelse
     endif
   endfor      
 end

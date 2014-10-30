@@ -118,6 +118,9 @@ pro covercam_handleGo, event
   fld = widget_info(event.top, find_by_uname = 'covercam_mask')
   widget_control, fld, get_value = pixmask_str
   
+  fld = widget_info(event.top, find_by_uname = 'covercam_asperc')
+  as_perc = widget_info(fld, /button_set)
+  
   fld = widget_info(event.top, find_by_uname = 'covercam_absdiff')
   abs_diff = widget_info(fld, /button_set)
   
@@ -162,6 +165,7 @@ pro covercam_handleGo, event
 
   covercam_calc, inputfile, refimage, classfile, ndvi_py, sd_mult, pixmask $
                       , fromtime, totime, sel_year $
+                      , as_perc = as_perc $
                       , abs_diff $
                       , magname $
                       , prog_obj = progressBar, cancelled = cancelled

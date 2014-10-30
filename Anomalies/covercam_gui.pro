@@ -157,6 +157,12 @@ pro covercam_gui, event, GROUP_LEADER = wGroup, _EXTRA = _VWBExtra_
 
   covercam_absdiff_panel = widget_base(group $
                 , title = 'Absolute differences', /col, /nonexclusive)
+  covercam_asperc = widget_button(covercam_absdiff_panel $
+                , uname = 'covercam_asperc'  $
+                , /align_left $
+                , value = 'Magnitudes as percentages' $
+                )
+
   covercam_absdiff = widget_button(covercam_absdiff_panel $
                 , uname = 'covercam_absdiff'  $
                 , /align_left $

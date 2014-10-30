@@ -25,6 +25,8 @@
 ;    sel_year : in, required
 ;      The year to consider for the calculation (one-based index); if -1 then
 ;      all bands are considered
+;    as_perc : in, optional, default = no
+;      Calculate the magnitude as percentage; if set to yes, abs_diff is ignored
 ;    abs_diff : in, optional, default = yes
 ;      If set calculate only positive differences; is not set calculate the actual differences
 ;    magname : in, required
@@ -44,6 +46,7 @@
 ;-
 pro covercam_calc, inputfile, refimage, classfile, ndvi_py, sd_mult, pixmask $
                 , fromtime, totime, sel_year $
+                , as_perc = as_perc $
                 , abs_diff $
                 , magname $
                 , prog_obj = progressBar, cancelled = cancelled
@@ -137,7 +140,8 @@ pro covercam_calc, inputfile, refimage, classfile, ndvi_py, sd_mult, pixmask $
       endif
       ldata = envi_get_data(fid = ndvi, dims = dims, pos = inp_layer)
       
-      nrs_ndvi_magdata, ldata, cldata, segdata, lut, ndvi_py, lpy, magdata = mag_layer, abs_diff = abs_diff
+      nrs_ndvi_magdata, ldata, cldata, segdata, lut, ndvi_py, lpy $
+        , magdata = mag_layer, as_perc = as_perc, abs_diff = abs_diff
       
       yearmag[*, lpy] = mag_layer
     endfor
