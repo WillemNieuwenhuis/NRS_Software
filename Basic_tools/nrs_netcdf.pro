@@ -458,11 +458,13 @@ pro nrs_nc_get_data, filename, out_name = base_name $
           
           nrs_nc_get_varatt, nc_id, gm_id, pole_lat = pole_lat, pole_lon = pole_lon
 
-          ; only rotate if needed
-          if ~(abs(pole_lat - 90) lt 0.000001) then begin
-            ncdf_varget, nc_id, var.px_id, lons 
-            ncdf_varget, nc_id, var.py_id, lats 
-            resam = make_array(ns, nl, type = dt)
+          ; only rotate / resample if needed
+          if n_elements(pole_lat) gt 0 then begin
+            if ~(abs(pole_lat - 90) lt 0.000001) then begin
+              ncdf_varget, nc_id, var.px_id, lons 
+              ncdf_varget, nc_id, var.py_id, lats 
+              resam = make_array(ns, nl, type = dt)
+            endif
           endif
         endif
       endif
