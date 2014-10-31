@@ -37,8 +37,6 @@ pro nrs_timeseries_define_buttons, buttonInfo
     
 end
     
-end
-
 ; Also add as ENVI 5 extensions
 pro nrs_timeseries_extensions_init
   compile_opt idl2
