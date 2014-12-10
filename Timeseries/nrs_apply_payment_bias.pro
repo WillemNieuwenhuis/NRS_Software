@@ -181,6 +181,7 @@ pro nrs_apply_payment_bias, image $
   
   fn_bias = getoutname(image, postfix = '_bfact', ext = '.dat')
   envi_write_envi_file, corr_factor $
+    , /no_open $
     , out_name = fn_bias $
     , interleave = 0 $  ; 0 == BSQ
     , nb = 2, nl = nl, ns = ns $
