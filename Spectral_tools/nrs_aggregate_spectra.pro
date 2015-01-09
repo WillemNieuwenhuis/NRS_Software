@@ -1,6 +1,8 @@
 ;+
 ; :description:
-;    Calculate an aggregated spectral profile for all locations in the input features
+;    Calculate an aggregated spectral profile for all locations in the input features.
+;    The output is a text table organised with one spectrum for each location in a column. 
+;    
 ;
 ; :params:
 ;    pnt_tbl : in, required
@@ -13,7 +15,7 @@
 ;      The function to use for the aggregation; only average is implemented
 ;    kernel : in, optional, default = 3
 ;      The size of the window (in pixels) around the location to include in the aggregation.
-;      Kernel size can be [3 .. 7].
+;      Kernel size can be [3 .. 11].
 ;    outname : out, optional
 ;      The name of the output table (CSV); if not specified will be
 ;      derived from the input image name
@@ -25,6 +27,7 @@
 ; :author: nieuwenhuis
 ; :history:
 ;   - jan 2014 - created
+;   - jan 2015 - now allows kernel sizes from 1 (single profile) to 11
 ;-
 pro nrs_aggregate_spectra, pnt_tbl, image $
                          , aggr_func = aggr_func $
@@ -33,8 +36,9 @@ pro nrs_aggregate_spectra, pnt_tbl, image $
                          , prog_obj = prog_obj, cancelled = cancelled
   compile_opt idl2, logical_predicate
 
+  cancelled = 1
   if n_elements(kernel) eq 0 then kernel = 3 $
-  else kernel = min([7, max([3, kernel])])  ; kernel = 3,5,7
+  else kernel = min([11, max([1, kernel])])  ; kernel = 1, 3,5,7, 9, 11
   kern2 = fix(kernel / 2)
 
   if n_elements(aggr_func) eq 0 then aggr_func = 'mean'
@@ -44,6 +48,10 @@ pro nrs_aggregate_spectra, pnt_tbl, image $
     void = error_message('Unsupported aggregation function')
     return
   endif
+
+  if kernel eq 1 then aggr_ix = 99  ; just single profile in kernel
+
+  cancelled = 0
   
   envi_open_file, image, r_fid = mapID, /no_realize, /no_interactive_query
   envi_file_query, mapID, nb = nb, nl = nl, ns = ns, data_ignore_value = undef
@@ -55,7 +63,7 @@ pro nrs_aggregate_spectra, pnt_tbl, image $
   
   ext = nrs_get_file_extension(pnt_tbl)
   if strlowcase(ext) eq '.shp' then begin
-    crd = nrs_read_shape_points(pnt_tbl)
+    crd = nrs_read_shape_points(pnt_tbl, hint_geo = isGeo)
     x = crd.x
     y = crd.y
   endif else begin
@@ -82,8 +90,8 @@ pro nrs_aggregate_spectra, pnt_tbl, image $
     if nrs_update_progress(prog_obj, i, pointCount, cancelled = cancelled) then return
 
     ; only points located inside the bounds of the image can be processed
-    if nrs_check_bounds(pixelX[i] - kern2, pixelY[i] - kern2, nl, ns) eq - 1 then continue
-    if nrs_check_bounds(pixelX[i] + kern2, pixelY[i] + kern2, nl, ns) eq - 1 then continue
+    if nrs_check_bounds(pixelX[i] - kern2, pixelY[i] - kern2, nl, ns) eq 0 then continue
+    if nrs_check_bounds(pixelX[i] + kern2, pixelY[i] + kern2, nl, ns) eq 0 then continue
 
     ; collect the entire kernel
     specTotal = fltarr(kernel, kernel, nb)
@@ -94,10 +102,11 @@ pro nrs_aggregate_spectra, pnt_tbl, image $
     
     spectotal = reform(spectotal, kernel * kernel, nb, /overwrite) 
     case aggr_ix of
-      0 : profiles[i, *] = min(spectotal, dim = 1)
-      1 : profiles[i, *] = max(spectotal, dim = 1)
-      2 : profiles[i, *] = mean(spectotal, dim = 1)
-      3 : profiles[i, *] = median(spectotal, dim = 1)
+      0  : profiles[i, *] = min(spectotal, dim = 1)
+      1  : profiles[i, *] = max(spectotal, dim = 1)
+      2  : profiles[i, *] = mean(spectotal, dim = 1)
+      3  : profiles[i, *] = median(spectotal, dim = 1)
+      99 : profiles[i, *] = spectotal   ; single profile, just copy
     endcase
     valid_profiles[i] = 1
   endfor
@@ -107,7 +116,7 @@ pro nrs_aggregate_spectra, pnt_tbl, image $
     return
   endif
   profiles = profiles[ix, *]
-  hdr = string([transpose(x), transpose(y)], format = '("(",f0.6,":",f0.6,")")')
+  hdr = string([transpose(x[ix]), transpose(y[ix])], format = '("(",f0.6,":",f0.6,")")')
   
   if n_elements(outname) eq 0 then outname = getOutname(image, postfix = '_prof', ext = '.csv')
   

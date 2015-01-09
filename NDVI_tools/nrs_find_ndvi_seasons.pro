@@ -36,7 +36,7 @@ pro nrs_find_ndvi_seasons, imagefile, shapefile, outputfile, start_date = start_
   
   has_undef = div ne 1.0e-34
   
-  openShapeFile, myshape, num_ent, ent_type, num_attr, attr_info, filename = shapefile
+  openShapeFile, shapefile, shape_obj = myshape, num_ent, ent_type, num_attr, attr_info
   if ent_type mod 10 ne 1 then begin
     res = dialog_message('Only point features are allowed', title = 'Error', /error)
     return
@@ -76,7 +76,7 @@ pro nrs_find_ndvi_seasons, imagefile, shapefile, outputfile, start_date = start_
     ; translate to pixel location; also check if the pixel position
     ; lies inside the map -> if not skip to the next feature
     envi_convert_file_coordinates, fid, pixelX, pixelY, coordX, coordY
-    if nrs_check_bounds(pixelX, pixelY, nl, ns) eq -1 then continue
+    if nrs_check_bounds(pixelX, pixelY, nl, ns) eq 0 then continue
     
     ; get the spectral values
     spectrum = envi_get_slice(fid = fid, line = pixelY, xs = pixelX, xe = pixelX, /bil)
@@ -128,8 +128,5 @@ pro nrs_find_ndvi_seasons, imagefile, shapefile, outputfile, start_date = start_
   ; Done, so remove the report window
   envi_report_init, base = tranq, /finish
 
-  ; Close any open resource
-  images = [fid]
-  shapes = [myShape]
-  closeAllResources, images, shapes
+  nrs_close_shapes, [shapes]
 end

@@ -78,7 +78,7 @@ pro nrs_aggregate_spectrum_gui, event
               )
   nrs_aggregate_spectrum_kernel_combo = widget_combobox(nrs_aggregate_spectrum_kernel_panel $
                 , uname = 'nrs_aggregate_spectrum_kernel_combo' $
-                , value = ['3', '5', '7'] $
+                , value = ['1', '3', '5', '7', '9', '11'] $
               )
 
   nrs_aggregate_spectrum_output_panel = widget_base(nrs_aggregate_spectrum_contentPanel, /frame, /col)

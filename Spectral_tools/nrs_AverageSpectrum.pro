@@ -109,8 +109,8 @@ pro nrs_average_spectra_single, points, mapID $
 		; translate to pixel location
 		envi_convert_file_coordinates, mapID, pixelX, pixelY, coordX, coordY
 		; only need to handle the point if it is i the current map
-		if nrs_check_bounds(pixelX - kern2, pixelY - kern2, lines, columns) eq - 1 then continue
-		if nrs_check_bounds(pixelX + kern2, pixelY + kern2, lines, columns) eq - 1 then continue
+		if nrs_check_bounds(pixelX - kern2, pixelY - kern2, lines, columns) eq 0 then continue
+		if nrs_check_bounds(pixelX + kern2, pixelY + kern2, lines, columns) eq 0 then continue
 
 		; calculate the average spectrum for the point location
 		; by looking in an area of kernel x kernel pixels
@@ -192,8 +192,8 @@ pro nrs_average_spectra_rank_single, points, mapID $
 		coordY = points[i].Y
 		envi_convert_file_coordinates, mapID, pixelX, pixelY, coordX, coordY
 
-		if nrs_check_bounds(pixelX - kern2, pixelY - kern2, lines, columns) eq - 1 then continue
-		if nrs_check_bounds(pixelX + kern2, pixelY + kern2, lines, columns) eq - 1 then continue
+		if nrs_check_bounds(pixelX - kern2, pixelY - kern2, lines, columns) eq 0 then continue
+		if nrs_check_bounds(pixelX + kern2, pixelY + kern2, lines, columns) eq 0 then continue
 
     rankColl[*, *] = 0.0D
 		lnCount = 0

@@ -3,13 +3,12 @@
 ;   Select a shapefile and open it, returning details through the keyword parameters
 ; 
 ; :Params:
-;   myshape
-;     Reference to the open shapefile object
+;   filename:  in
+;     filename of the shapefile
 ;     
 ; :Keywords:
-;   filename:  in, optional
-;     filename of the shapefile; if not specified, or the file does not exist
-;     a file open dialog is displayed.
+;   myshape: out
+;     Reference to the open shapefile object
 ;   num_ent: out
 ;     The number of features in the shape file
 ;   ent_type: out
@@ -20,23 +19,12 @@
 ;     Detailed information about all the attributes in the shapefile
 ;     
 ;-
-pro openShapefile, myshape, num_ent, ent_type, num_attr, attr_info, filename = filename
-  notFound = 1
-  if n_elements(filename) gt 0 then begin
-    notFound = 1 - (file_info(filename)).exists
-  endif
-  if notFound eq 1 then begin
-    ;Open the Shapefile
-    filter = [['*.shp'], ['ESRI shapefiles']]
-    filename = dialog_pickfile(title = "Open shape file", /read, filter = filter, $
-          default_extension = "shp")  ; make sure the shapefile has an extension
-    if strlen(filename) eq 0 then retall ; no name specified, leave application
-  endif
-
-  ; open the input shapefile
+pro nrs_openShapefile, filename, shape_obj = myshape, num_ent, ent_type, num_attr, attr_info
+  compile_opt idl2, logical_predicate
+  
   myshape = OBJ_NEW('IDLffShape', filename)
 
-    ; Get the number of entities and the entity type.
+  ; Get the number of entities and the entity type.
   myshape->IDLffShape::GetProperty, N_ENTITIES = num_ent, $
       ENTITY_TYPE = ent_type, N_ATTRIBUTES = num_attr
 
@@ -56,8 +44,14 @@ end
 ;     Open input shapefile object
 ;   newShape: out
 ;     The new shapefile (output)
+;     
+; :keywords:
+;   outputShapeName: in, optional
+;     The name of the new shapefile
 ;-
-pro createNewShapefile, inputShape, newShape
+pro createNewShapefile, inputShape, newShape, newname = outputShapeName
+  compile_opt idl2, logical_predicate
+
   inputShape->IDLffShape::GetProperty, FILENAME = inputName
   
   ; Get the number of entities and the entity type.
@@ -69,7 +63,8 @@ pro createNewShapefile, inputShape, newShape
     inputShape->IDLffShape::GetProperty, ATTRIBUTE_INFO = attr_info
   end
 
-  outputShapeName = getOutputShapeName(inputName)
+  if n_elements(outputShapeName) eq 0 then $
+    outputShapeName = getOutname(inputName, postfix = '_copy')
 
   ;Create a new shape file
   newshape = OBJ_NEW('IDLffShape', outputShapeName, /UPDATE, ENTITY_TYPE = ent_type)
@@ -97,6 +92,8 @@ end
 ;   Willem Nieuwenuis, 2007
 ;-
 pro copyProjectionFile, myshape, outputShape
+  compile_opt idl2, logical_predicate
+
   myshape->IDLffShape::getProperty, FILENAME = infile
   dotloc = strpos(infile, '.', /REVERSE_SEARCH)
   inputProjFile = strmid(infile, 0, dotloc) + '.prj'
@@ -120,13 +117,17 @@ end
 ; :params:
 ;   shape: in
 ;     Filename of shape file
+;     
+; :keywords:
+;   hint_geo : out
+;     indicate if the projection / coordinates is / are geograpic
 ;
 ; :author: nieuwenhuis
 ; :history:
 ;   - sept 2007: created
 ;   - jan 2014: function renamed and changed to handle only a single shape file 
 ;-
-function nrs_read_shape_points, shapes
+function nrs_read_shape_points, shapes, hint_geo = hint_geo
   compile_opt idl2, logical_predicate
   
   coordinate = {Coordinate, $
@@ -173,6 +174,21 @@ function nrs_read_shape_points, shapes
 
   obj_destroy, shape
 
+  maxx = max(coords.x, min = minx)
+  maxy = max(coords.y, min = miny)
+  hint_geo = ((abs(maxx) le 360.0 && abs(minx) le 360.0) $
+           && (abs(maxy) le 360.0 && abs(miny) le 360.0))
+
   return, coords
 end
 
+;----------
+; Cleanup open resources, close all shape objects
+pro nrs_close_shapes, shapes = shapes
+  compile_opt idl2, logical_predicate
+
+  for i = 0, n_elements(shapes) - 1 do begin
+    shapes[i]->idlffshape::close
+    obj_destroy, shapes[i]
+  endfor
+end
