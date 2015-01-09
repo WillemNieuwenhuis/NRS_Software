@@ -230,11 +230,6 @@ function getFloatNumber, ui_element
 	return, float(value[0])
 end
 
-pro handleClose, Event
-	; Close the application
-	widget_control, event.top, /destroy
-end
-
 pro handleReset, Event
 	widget_control, event.top, get_uvalue = state
 

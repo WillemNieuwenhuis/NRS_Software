@@ -51,7 +51,7 @@ pro prospect_gui_event, Event
 
     Widget_Info(wWidget, FIND_BY_UNAME='CancelButton'): begin
       	if( Tag_Names(Event, /STRUCTURE_NAME) eq 'WIDGET_BUTTON' )then $
-        	handleClose, Event
+        	widget_control, Event.top, /destroy
     end
     Widget_Info(wWidget, FIND_BY_UNAME='SoilSpectrumDefaultButton'): begin
       	if( Tag_Names(Event, /STRUCTURE_NAME) eq 'WIDGET_BUTTON' )then $
