@@ -1,12 +1,3 @@
-pro nrs_aggregate_spectrum_gui_extensions_init
-  compile_opt idl2
-  
-  e = envi(/current)
-  if e eq !NULL then return
-  
-  e.AddExtension, 'Aggregate spectrum', 'nrs_aggregate_spectrum_gui', PATH='Spectral'
-end
-
 pro nrs_aggregate_spectrum_gui_event, event
   compile_opt idl2
   
@@ -68,7 +59,7 @@ pro nrs_aggregate_spectrum_gui, event
               )
   nrs_aggregate_spectrum_aggr_func = widget_combobox(nrs_aggregate_spectrum_aggr_func_panel $
                 , uname = 'nrs_aggregate_spectrum_aggr_func' $
-                , value = ['Mean', 'Min', 'Max'] $
+                , value = ['Mean', 'Median', 'Min', 'Max'] $
               )
 
   nrs_aggregate_spectrum_kernel_panel = widget_base(nrs_aggregate_spectrum_mainPanel, /row)
@@ -82,6 +73,14 @@ pro nrs_aggregate_spectrum_gui, event
               )
 
   nrs_aggregate_spectrum_output_panel = widget_base(nrs_aggregate_spectrum_contentPanel, /frame, /col)
+  
+  nrs_aggregate_spectrum_table_type = cw_bgroup(nrs_aggregate_spectrum_output_panel $
+        , ['Spectrum as column', 'XY table'] $
+        , /col, /exclusive $
+        , set_value = 0 $
+        , uname = 'nrs_aggregate_spectrum_table_type' $
+        )
+
   nrs_aggregate_spectrum_outputFile = cw_dirfile(nrs_aggregate_spectrum_output_panel, uname = 'nrs_aggregate_spectrum_outputFile' $
         , style = 'file' $
         , title = 'Output table' $

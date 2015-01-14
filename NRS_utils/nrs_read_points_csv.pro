@@ -66,8 +66,13 @@ pro nrs_read_points_csv, table, x, y, data = asc, valid = valid  $
   x_ix = where(strmid(parts, 0, 1) eq 'x', cnt_x)
   y_ix = where(strmid(parts, 0, 1) eq 'y', cnt_y)
   
+  x = []
+  y = []
   hint_geo = (cnt_lat + cnt_lon) eq 2
-  if cnt_lat eq 0 || cnt_lon eq 0 then begin
+  if cnt_lat le 0 || cnt_lon le 0 then begin
+    if x_ix le 0 || y_ix le 0 then begin
+      return
+    endif
     lat_ix = y_ix
     lon_ix = x_ix
     cnt_lat = cnt_y
@@ -75,8 +80,6 @@ pro nrs_read_points_csv, table, x, y, data = asc, valid = valid  $
   endif
   ix = lindgen(field_count)
   count = field_count
-  x = []
-  y = []
   if cnt_lon ne 0 && cnt_lat ne 0 then begin
     x = transpose(asc.(lon_ix))
     y = transpose(asc.(lat_ix))

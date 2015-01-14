@@ -144,7 +144,9 @@ function nrs_read_shape_points, shapes, hint_geo = hint_geo
   shape->IDLffShape::GetProperty, n_entities = num_ent, $
       entity_type = ent_type, n_attributes = num_attr
 
-  if ent_type ne 1 then begin  ; 1 == point
+  pnt_types = [1, 11, 21]
+  ix = where(ent_type eq pnt_types, pt_cnt)
+  if pt_cnt eq 0 then begin
     obj_destroy, shape
     void = error_message('Only point features supported')
     return, []

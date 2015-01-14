@@ -1,3 +1,16 @@
+pro _auto_build_version, name = name
+  compile_opt idl2
+
+  format = '(c(cyi4.4,"-",cmoi2.2,"-",cdi2.2," ",cHi2.2,":",cmi2.2,":",csi2.2))'
+
+  openw, unit, name + '_version.pro', /get_lun
+  printf, unit, 'pro ' + name + '_version'
+  printf, unit, '  print, "' + name + ' build date: ' + string(systime(/julian), format = format) + '"'
+  printf, unit, 'end'
+  close, unit
+  free_lun, unit
+end
+
 pro _auto_build, files, sav_name, logfile = logfile, no_lib = no_lib
   routines = nrs_find_my_routines(/exclude_sav, files = files, no_lib = no_lib)
   rout_cnt = n_elements(routines.name)

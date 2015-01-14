@@ -15,7 +15,11 @@
 ;      The function to use for the aggregation; only average is implemented
 ;    kernel : in, optional, default = 3
 ;      The size of the window (in pixels) around the location to include in the aggregation.
-;      Kernel size can be [3 .. 11].
+;      Kernel size can be [1 .. 11].
+;    xytable : in, optional, default = no
+;      If true (yes) then the output will be an XY table with one location and spectrum
+;      per row. If false (no) then the table will be organised with one location
+;      and spectrum per column.
 ;    outname : out, optional
 ;      The name of the output table (CSV); if not specified will be
 ;      derived from the input image name
@@ -32,13 +36,14 @@
 pro nrs_aggregate_spectra, pnt_tbl, image $
                          , aggr_func = aggr_func $
                          , kernel = kernel $
+                         , xytable = xytable $
                          , outname = outname $
                          , prog_obj = prog_obj, cancelled = cancelled
   compile_opt idl2, logical_predicate
 
   cancelled = 1
   if n_elements(kernel) eq 0 then kernel = 3 $
-  else kernel = min([11, max([1, kernel])])  ; kernel = 1, 3,5,7, 9, 11
+  else kernel = min([11, max([1, kernel])])  ; kernel = 1, 3, 5, 7, 9, 11
   kern2 = fix(kernel / 2)
 
   if n_elements(aggr_func) eq 0 then aggr_func = 'mean'
@@ -64,10 +69,20 @@ pro nrs_aggregate_spectra, pnt_tbl, image $
   ext = nrs_get_file_extension(pnt_tbl)
   if strlowcase(ext) eq '.shp' then begin
     crd = nrs_read_shape_points(pnt_tbl, hint_geo = isGeo)
+    if n_elements(crd) eq 0 then begin
+      void = error_message('No points found')
+      cancelled = 1
+      return
+    endif
     x = crd.x
     y = crd.y
   endif else begin
     nrs_read_points_csv, pnt_tbl, x, y, hint_geo = isGeo
+    if n_elements(x) eq 0 then begin
+      void = error_message('No points found')
+      cancelled = 1
+      return
+    endif
   endelse
   
   pointCount = n_elements(x)
@@ -115,8 +130,15 @@ pro nrs_aggregate_spectra, pnt_tbl, image $
     void = error_message('None of the points (including kernel) overlap image')
     return
   endif
-  profiles = profiles[ix, *]
-  hdr = string([transpose(x[ix]), transpose(y[ix])], format = '("(",f0.6,":",f0.6,")")')
+  if keyword_set(xytable) then begin
+    dig = fix(alog10(nb)) + 1
+    form = '("band_",' + string(dig, format = '("i0", i0)') + ')'
+    hdr = ['X', 'Y', string(indgen(nb) + 1, format = form)]
+    profiles = [transpose(x[ix]), transpose(y[ix]), transpose(profiles[ix, *])]
+  endif else begin
+    hdr = string([transpose(x[ix]), transpose(y[ix])], format = '("(",f0.6,":",f0.6,")")')
+    profiles = profiles[ix, *]
+  endelse
   
   if n_elements(outname) eq 0 then outname = getOutname(image, postfix = '_prof', ext = '.csv')
   

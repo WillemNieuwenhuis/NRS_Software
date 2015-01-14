@@ -26,6 +26,9 @@ pro nrs_aggregate_spectrum_handleOK, event
   fld = widget_info(event.top, find_by_uname = 'nrs_aggregate_spectrum_input_table')
   widget_control, fld, get_value = pnt_tbl
   
+  val_fld = widget_info(event.top, find_by_uname = 'nrs_aggregate_spectrum_table_type')
+  widget_control, val_fld, get_value = table_type
+
   fld = widget_info(event.top, find_by_uname = 'nrs_aggregate_spectrum_outputFile')
   widget_control, fld, get_value = outname
   
@@ -57,11 +60,13 @@ pro nrs_aggregate_spectrum_handleOK, event
   nrs_aggregate_spectra, pnt_tbl, image $
                        , outname = outname $
                        , kernel = kern, aggr_func = aggr_func $
+                       , xytable = table_type $
                        , prog_obj = prog_obj, cancelled = cancelled
 
   if obj_valid(prog_obj) then $
-    prog_obj->Destroy
+    prog_obj->destroy
   
-  void = Dialog_Message('Finished', title='Spectrum Extraction', /information)
+  if ~cancelled then $
+    void = dialog_message('Finished', title='Spectrum extraction', /information)
 
 end
