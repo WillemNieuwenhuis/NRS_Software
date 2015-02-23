@@ -27,6 +27,9 @@ pro nrs_zonal_percentiles_handleok, event
   val_fld = widget_info(event.top, find_by_uname = 'nrs_zonal_percentiles_outputFile')
   widget_control, val_fld, get_value = outname
   
+  val_fld = widget_info(event.top, find_by_uname = 'nrs_zonal_percentiles_raster_button')
+  create_raster = widget_info(val_fld, /button_set)
+
   if strlen(strtrim(ref, 2)) eq 0 then begin
     void = error_message('Input stack not specified!', traceback = 0, /error)
     return
@@ -46,6 +49,7 @@ pro nrs_zonal_percentiles_handleok, event
   nrs_zonal_percentiles, ref, classfile, outname = outname $
     , ignore_value = ignore $
     , percentile = percentiles $
+    , create_raster = create_raster $
     , prog_obj = progressBar, cancelled = cancelled
   
   if obj_valid(progressBar) then $

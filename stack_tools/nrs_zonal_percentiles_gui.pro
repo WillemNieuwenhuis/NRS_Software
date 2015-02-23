@@ -67,6 +67,12 @@ pro nrs_zonal_percentiles_gui, event
     )
     
   nrs_zonal_percentiles_output_panel = widget_base(nrs_zonal_percentiles_contentPanel, /frame, /col)
+  nrs_zonal_percentiles_raster_base = widget_base(nrs_zonal_percentiles_output_panel, /nonexclusive, uname = 'nrs_stack_quartiles_use_folder_base')
+  nrs_zonal_percentiles_raster_button = widget_button(nrs_zonal_percentiles_raster_base $
+    , uname = 'nrs_zonal_percentiles_raster_button' $
+    , value = 'Create percentile raster(s)' $
+    )
+  
   nrs_zonal_percentiles_outputFile = cw_dirfile(nrs_zonal_percentiles_output_panel, uname = 'nrs_zonal_percentiles_outputFile' $
     , style = 'file' $
     , title = 'Output aggregation' $
