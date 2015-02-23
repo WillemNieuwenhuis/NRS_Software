@@ -19,7 +19,7 @@
 ;   postfix : in, optional, default = '_out'
 ;     A text that is appended to the filename part of the pattern, preserving any extension
 ;   ext : in, optional
-;     A new extension for the file
+;     A new extension for the file; it should include the dot
 ; 
 ; :Author:
 ;   Willem Nieuwenhuis

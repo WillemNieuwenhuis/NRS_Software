@@ -17,7 +17,7 @@
 ;      The coordinate system, -1 if undefined
 ;    has_unclassified : out
 ;      Return TRUE if the class image has a class <unclassified>, FALSE otherwise
-;    class_adjust : in, optional, default = yes
+;    class_adjust : in, optional, default = no
 ;      If set will decrement all class numbers in case the <unclassified> class is defined.
 ;      This class is always zero, so if the adjustment is activated all classes will be
 ;      decremented and the <unclassified> is not considered separately.

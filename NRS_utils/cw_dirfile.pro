@@ -68,6 +68,8 @@ pro on_cw_dirfile_btn, ev
   stateholder = widget_info(ev.handler, /child)
   widget_control, stateholder, get_uvalue = state
 
+  if !prompt ne 'ENVI> ' && state.style eq 'envi' then $
+    state.style = 'file'
   file = ''
   if state.cbid ne -1 then file = widget_info(state.cbid, /combobox_gettext)
   if state.txtid ne -1 then widget_control, state.txtid, get_value = file
