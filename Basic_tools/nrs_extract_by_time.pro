@@ -63,7 +63,7 @@ pro nrs_extract_by_time, point_table, image $
   nrs_read_points_csv, point_table, x, y, data = asc $
                      , hint_geo = hint_geo $
                      , valid = valid, nr_cols = nr_fields, header = header
-  if nr_fields[0] le 0 then begin
+  if ~valid then begin
     void = error_message('No data found in file', /error)
     return
   endif
