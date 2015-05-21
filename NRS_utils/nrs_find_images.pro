@@ -36,6 +36,7 @@
 ;   
 ;-
 function nrs_find_images, folder, pattern, extension = ext $
+                        , no_extension = no_extension $
                         , case_sens = case_sens, exclude_hdr = exclude_hdr
   compile_opt idl2, logical_predicate
 
@@ -47,7 +48,10 @@ function nrs_find_images, folder, pattern, extension = ext $
   patlist = strsplit(pattern, ',', /extract, count = pat_count)
   ; collect all image files
   folder = file_dirname(folder) + path_sep() + file_basename(folder)
-  file_mask = folder + path_sep() + '*.' + ext
+  if keyword_set(no_extension) then $
+    file_mask = folder + path_sep() + '*' $
+  else $
+    file_mask = folder + path_sep() + '*.' + ext
   raw_files = file_search(count = file_count, file_mask)
 
   if file_count le 0 then return, []
