@@ -317,7 +317,7 @@ pro inform_createInputParamPage, parent, statevalue
 
 	ChloroContentDescLabel = Widget_label(ChloroContentPanel, UNAME = 'ChloroContentDescLabel' $
 		, /ALIGN_LEFT $
-		, Value = 'Chlorophyll a+b content in µg/cm², default = 60')
+		, Value = 'Chlorophyll a+b content in ï¿½g/cmï¿½, default = 60')
 
 
 	; Equivalent water thickness parameter UI
@@ -338,7 +338,7 @@ pro inform_createInputParamPage, parent, statevalue
 
 	EquivWaterDescLabel = Widget_label(EquivWaterPanel, UNAME = 'EquivWaterDescLabel' $
 		, /ALIGN_LEFT $
-		, Value = 'Equivalent water thickness in g/cm², default = 0.025')
+		, Value = 'Equivalent water thickness in g/cmï¿½, default = 0.025')
 
 	; Dry matter content parameter UI
 	DryMatterContentPanel = Widget_base(LeafParameterPanel, UNAME = 'DryMatterContentPanel', /row)
@@ -358,7 +358,7 @@ pro inform_createInputParamPage, parent, statevalue
 
 	DryMatterContentDescLabel = Widget_label(DryMatterContentPanel, UNAME = 'DryMatterContentDescLabel' $
 		, /ALIGN_LEFT $
-		, Value = 'Dry matter content in g/cm², default = 0.025')
+		, Value = 'Dry matter content in g/cmï¿½, default = 0.025')
 
 	; Canopy
 	CanopyParameterPanel = Widget_Base(MainProspectPanel, UNAME = 'CanopyParameterPanel'  $
@@ -428,7 +428,7 @@ pro inform_createInputParamPage, parent, statevalue
 
 	LeafAreaIndexContentDescLabel = Widget_label(LeafAreaIndexContentPanel, UNAME = 'LeafAreaIndexContentDescLabel' $
 		, /ALIGN_LEFT $
-		, Value = 'Single tree leaf area index in m²/m², default = 7')
+		, Value = 'Single tree leaf area index in mï¿½/mï¿½, default = 7')
 
 	; LAI for understorey parameter UI
 	LAIUnderContentPanel = Widget_base(CanopyParameterPanel, UNAME = 'LAIUnderContentPanel', /row)
@@ -448,7 +448,7 @@ pro inform_createInputParamPage, parent, statevalue
 
 	LAIUnderContentDescLabel = Widget_label(LAIUnderContentPanel, UNAME = 'LAIUnderContentDescLabel' $
 		, /ALIGN_LEFT $
-		, Value = 'Leaf area index of understorey in m²/m², default = 0.1')
+		, Value = 'Leaf area index of understorey in mï¿½/mï¿½, default = 0.1')
 
 	; Stem Density parameter UI
 	StemDensityContentPanel = Widget_base(CanopyParameterPanel, UNAME = 'StemDensityContentPanel', /row)
@@ -929,7 +929,7 @@ pro	inform_createInverseSensitivityPage, parent_panel, statevalue
 	label_width = 100
 
 	invSensOutputPanel = widget_base(parent_panel, uname= 'invSensOutputPanel' $
-			, TITLE = 'Reverse Mode' $
+			, TITLE = 'Inverse Mode' $
 			, /col $
 		)
 

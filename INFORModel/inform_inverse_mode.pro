@@ -1,26 +1,35 @@
-; determine the optimal parameter set for the inform prospect model
-; using inverse mode.
-; The inverse mode iterates through the parameters in par_array (each
-; parameter a number of "steps" times between the min/max as specified
-; by the user; all other parameters remain fixed (also specified by user).
+;+
+; :description:
+;   determine the optimal parameter set for the inform prospect model
+;   using inverse mode.
+;   The inverse mode iterates through the parameters in par_array (each
+;   parameter a number of "steps" times between the min/max as specified
+;   by the user; all other parameters remain fixed (also specified by user).
 ;
-; For each parameter set the model is run and the output spectrum is
-; matched against the reference spectrum, with lsqfit. The parameter set
-; with the lowest error in the lsqfit is returned as the optimal set.
+;   For each parameter set the model is run and the output spectrum is
+;   matched against the reference spectrum, with lsqfit. The parameter set
+;   with the lowest error in the lsqfit is returned as the optimal set.
 ;
-; Parameters:
-;	reflectanceType:	Indicate which of the reflection spectra to use in the lsqfit
-;	steps:			The number of steps in which the 'active' parameters
-;					will be evaluated
-;	refspec:		The reference spectrum to match the model results against
-;					It has two columns: wavelength and reflectance
-;	par_array:		The array with active parameters during the iteration
-;	fix_array:		The list with all parameters and their current value (user specified)
-;	r_soil:			The soil spectrum needed for the model
+; :Params:
+;	  reflectanceType: in, required
+;	    Indicate which of the reflection spectra to use in the lsqfit
+;	  steps: in, required
+;	    The number of steps in which the 'active' parameters
+;     will be evaluated
+;	  refspec: in, required
+;     The reference spectrum to match the model results against
+;     It has two columns: wavelength and reflectance
+;	  par_array: in, required
+;     The array with active parameters during the iteration
+;	  fix_array: in, required
+;     The list with all parameters and their current value (user specified)
+;	  r_soil: in, required
+;	    The soil spectrum needed for the model
 ;
-; Return:
-;	Parameter array with optimal parameters and the error belonging to this set
-;	The error is the last element in the array.
+; :Returns:
+;	  Parameter array with optimal parameters and the error belonging to this set
+;	  The error is the last element in the array.
+;-
 function inform_inverse_mode, reflectanceType, steps, refspec, par_array, fix_array, r_soil
 	optimal_params = 0
 
