@@ -9,7 +9,7 @@
 ;
 ; :Keywords:
 ;    folder : in, optional
-;      Folder that contains all the images to stack; the folder keyword takes precedent
+;      Folder that contains all the images to stack; the folder keyword takes precedence
 ;      over list_file
 ;    list_file : in, optional
 ;      Can be either a single filename or an array of filenames
@@ -18,6 +18,11 @@
 ;      with all filenames of the files to stack.
 ;      
 ;      In case of a file list, it is treated as the actual list of files to stack
+;    allow_multi : in, optional, default = 0 (no)
+;      If set allow the stacking to include multi-band input image. It will include all bands
+;      except if also band_pos is specified.
+;    band_pos : in, optional, default = 0
+;      If specified and positive only select this band from an multi-band input image (zero-based)
 ;    extension : in, optional, default = '*' (all files)
 ;      Define the allowed data file extension
 ;    prog_obj : in, optional
@@ -28,6 +33,8 @@
 ; :Author: nieuwenhuis
 ;-
 pro nrs_stack_image, outname, folder = folder, list_file = list_file $
+                   , allow_multi = allow_multi $
+                   , band_pos = band_pos $
                    , extension = extension $
                    , prog_obj = prog_obj, cancelled = cancelled
   compile_opt idl2, logical_predicate
@@ -72,8 +79,8 @@ pro nrs_stack_image, outname, folder = folder, list_file = list_file $
   ans = -1
   anl = -1
   anb = 0
-  incMulti = 0
-  askMulti = 0
+  incMulti = keyword_set(allow_multi)
+  select_single = n_elements(band_pos) eq 1
   dims = -1
 
   nrs_set_progress_property, prog_obj, title = 'Checking image dimensions', /start
@@ -86,16 +93,13 @@ pro nrs_stack_image, outname, folder = folder, list_file = list_file $
                         , bnames = l_bnames, data_ignore_value = undef_loc
 
     if (n_elements(undef_loc) gt 0) && (n_elements(undef) eq 0) then undef = undef_loc
-     
-    if (~askMulti) and (nb gt 1) then begin
-      askMulti = 1
-      answer = dialog_message('Also include files with multiple layers?', Title = 'Stacking', /question)
-      incMulti = answer eq 'Yes'
-    endif
-    if askMulti && ~incMulti && (nb gt 1) then continue
-    anb += nb
+
+    if ~allow_multi && (nb gt 1) then continue
+    if select_single && (nb gt 1) then begin
+      anb++
+    endif else anb += nb
     
-    if nb eq 1 then l_bnames = file_basename(getOutname(lst[fn], postfix = '', ext = '.'))
+    if (nb eq 1) || select_single then l_bnames = file_basename(getOutname(lst[fn], postfix = '', ext = '.'))
     
     if n_elements(fids) eq 0 then begin
       fids = [fid]
@@ -135,10 +139,12 @@ pro nrs_stack_image, outname, folder = folder, list_file = list_file $
   for f = 0, nf - 1 do begin
     if nrs_update_progress(prog_obj, f, nf, cancelled = cancelled) then return
 
-    if incMulti eq 1 then envi_file_query, fids[f], nb = nb $
-    else nb = 1
+    nb = 1
+    if incMulti && ~select_single then $
+      envi_file_query, fids[f], nb = nb
     for b = 0, nb - 1 do begin
-      data[*] = envi_get_data(fid = fids[f], dims = dims, pos = b)
+      pos = select_single ? band_pos : b
+      data[*] = envi_get_data(fid = fids[f], dims = dims, pos = pos)
       writeu, unit, data
     endfor
     bcnt += nb
@@ -157,4 +163,16 @@ pro nrs_stack_image, outname, folder = folder, list_file = list_file $
           , map_info = mi $
           , interleave = 0 $
           , data_ignore_value = undef
+end
+
+pro nrs_stack_image_listlist, list_array, base_name = base_name $
+                            , allow_multi = allow_multi, band_pos = band_pos
+  compile_opt idl2, logical_predicate
+  
+  if n_elements(base_name) eq 0 then base_name = 'stack_'
+  
+  foreach lst, list_array do begin
+    name = getoutname(lst, prefix = base_name, ext = '.dat', postfix = '')
+    nrs_stack_image, name, list_file = lst, allow_multi = allow_multi, band_pos = band_pos
+  endforeach
 end
