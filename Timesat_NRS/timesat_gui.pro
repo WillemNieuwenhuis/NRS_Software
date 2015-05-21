@@ -4,6 +4,10 @@ pro timesat_gui_define_buttons, buttonInfo
     UVALUE = 'Timesat (NRS)', EVENT_PRO = 'timesat_menu', $
     REF_VALUE = 'NRS', POSITION = 'last',/SEPARATOR
 
+  envi_define_menu_button, buttonInfo, VALUE = 'Timesat batch', $
+    UVALUE = 'Timesat batch', EVENT_PRO = 'nrs_timesat_batch', $
+    REF_VALUE = 'NRS', POSITION = 'last',/SEPARATOR
+
 end
 
 pro timesat_gui_extensions_init

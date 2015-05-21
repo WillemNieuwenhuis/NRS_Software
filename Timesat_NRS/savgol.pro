@@ -71,9 +71,9 @@ function tmsat_savgol, y, w, win, forceUpperEnvelope, lastIterationLikeTIMESATfi
       ; Fit the polynomial if enough data values with non-zero weight
       if failleft eq 0 and failright eq 0 then begin
         ; preparing data slices as to construct the design matrix
-        s_wfit = wfit[m1:m2 - 1]
-        s_t = t[0:m2 - m1 - 1]
-        s_y = yfit[m1:m2 - 1]
+        s_wfit = wfit[m1 : m2 - 1]
+        s_t = t[0 : m2 - m1 - 1]
+        s_y = yfit[m1 : m2 - 1]
         
         ; Construct the design matrix A and the column matrix b
         A = fltarr(3, n_elements(s_wfit))

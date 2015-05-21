@@ -37,25 +37,89 @@ pro tmsat_printEstimatedTime, t1, t2, nelem = nelem
 	print, s_estim
 end
 
+;+
+; :description:
+;    Check if the array contains a contiguous stretch of zeros of length nn
+;    The array must contain only zeroes and ones!
+;
+; :params:
+;    ar : in, required
+;      The array to check
+;    nn : in, required
+;      the length of the sequence of zeroes
+;
+; :returns:
+;   1 (true): a sequence of at least nn zeroes is found
+;   0 (false): no sequence of at least nn zeroes is found
+; 
+; :history:
+;   - 23 march 2015: created
+;
+; :author: nieuwenhuis
+;-
+function nrs_find_missing_conservative, ar, nn
+  compile_opt idl2, logical_predicate
+  
+  offset = 0
+  while offset le n_elements(ar) - nn do begin
+    som = total(ar[[0 : nn - 1] + offset], /preserve)
+    if som eq 0 then return, 1
+    offset += som
+  endwhile
+  return, 0
+end
+
+;+
+; :description:
+;    Check if the array contains a contiguous stretch of zeros of length nn.
+;    The array must contain only zeroes and ones!
+;
+; :params:
+;    ar : in, required
+;      The array to check
+;    nn : in, required
+;      the length of the sequence of zeroes
+;
+; :returns:
+;   1 (true): a sequence of at least nn zeroes is found
+;   0 (false): no sequence of at least nn zeroes is found
+;
+; :history:
+;   - 23 march 2015: created
+;
+; :author: nieuwenhuis
+;-
+function nrs_find_missing, ari, nn
+  compile_opt idl2, logical_predicate
+  
+  aris = shift(ari, 1)
+  d = ari - aris
+  
+  return, max(d) gt nn
+
+end
+
 ; return cleaned up timeseries, filtered and without spikes
 function tmsat_handle_timeseries, y, win, nptperyear, spikecutoff, forceUpperEnvelope, lastIterationLikeTIMESATfit, missingdata
+  compile_opt idl2, logical_predicate
+  
 	nb = n_elements(y)
-	w = fltarr(nb) + 1
-	; The accepted range of values are 2:254 all other values are set to zero.
-	wzi = where(y lt 2)
-	if wzi[0] ne -1 then w[wzi] = 0
 
-	; Time-series with too many data values (>75%) with zero weight are not processed
-	missingdata = 0
-	if n_elements(where(w eq 0)) ge floor(3 * nb / 4) then missingdata = 1
-
-	ptyear3 = floor(nptperyear / 3)
-	for k = 0, nb - ptyear3 do begin
-		sk = indgen(ptyear3) + k
-		if abs(total(w[sk])) eq 0 then missingdata = 1
-	endfor
+  ; couple of checks on missing data
+  ; 1. The accepted range of values are 2:254
+	; 2. Skip time series with too many low values (>75%)
+	; 3. skip time series when more than 120 days of missing data
+	missingdata = 1
+	wzi = where(y lt 2, lt2_cnt)
+  if lt2_cnt lt floor(3 * nb / 4) then begin
+    w = bytarr(nb) + 1
+    if lt2_cnt gt 0 then w[wzi] = 0
+  	ptyear3 = floor(nptperyear / 3)
+  	missingdata = nrs_find_missing(w, ptyear3) ; 120 days assuming 36 images per year
+	endif
 
 	if missingdata eq 0 then begin
+	  ; w contains 0 for y < 2
 		; Identify spikes in the time-series and set the corresponding weights to zero
 		spikes = tmsat_spike(y, w, nptperyear, cutoff = spikecutoff)
 		ws = w
@@ -142,7 +206,7 @@ pro timesat_v11, src_filename, out_filename $
           displayEstimatedTime = 0
         endif
 
-        rmatrix[col, *] = y1[*, n_elements(win) - 1]
+        rmatrix[col, *] = y1[*, n_elements(win) - 1]  ; get only the last fitted function
 	    endfor ; col
 
       if dt ne 1 then begin
