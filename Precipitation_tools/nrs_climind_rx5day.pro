@@ -54,8 +54,11 @@ pro nrs_climind_rx5day, image, startday, endday, outname = outname $
   sy = yy[0]
   ey = yy[1]
   
-  if nb ne (endday - startday + 1) then return
-  
+  if nb ne (endday - startday + 1) then begin
+    void = error_message('Probably not daily data, quitting')
+    return
+  endif
+
   cancelled = 0
 
   nrs_set_progress_property, prog_obj, /start, title = 'Calculate RX5day / RX1day precipitation indices'
