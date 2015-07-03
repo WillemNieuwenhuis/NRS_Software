@@ -31,12 +31,20 @@
 ;     june 2011: WN, Added prefix keyword
 ;-
 function getOutname, pattern, basename = basename, prefix = prefix, postfix = postfix, ext = new_ext
+  compile_opt idl2, logical_predicate
+  
   if n_elements(prefix) eq 0 then prefix = ''
   if n_elements(postfix) eq 0 then postfix = '_out'
   path = file_dirname(pattern)
   name = file_basename(pattern)
+  name_bk = name
   if n_elements(basename) ne 0 then name = basename
   pos = strpos(name, '.', /reverse_search)
+  if pos lt 0 then begin
+    pos = strpos(name_bk, '.', /reverse_search)  ; use original extension
+    if n_elements(new_ext) eq 0 then new_ext = strmid(name_bk, pos)
+    pos = -1
+  endif
   ext = ''
   if pos gt 0 then begin
     ext = strmid(name, pos)
