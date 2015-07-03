@@ -89,12 +89,14 @@ pro nrs_stack_image, outname, folder = folder, list_file = list_file $
     if nrs_update_progress(prog_obj, fn, n_elements(lst), cancelled = cancelled) then return
     
     envi_open_file, lst[fn], r_fid = fid, /no_realize, /no_interactive_query
+    if fid eq -1 then continue
+    
     envi_file_query, fid, nb = nb, nl = nl, ns = ns, dims = dims $
                         , bnames = l_bnames, data_ignore_value = undef_loc
 
     if (n_elements(undef_loc) gt 0) && (n_elements(undef) eq 0) then undef = undef_loc
 
-    if ~allow_multi && (nb gt 1) then continue
+    if ~incMulti && (nb gt 1) then continue
     if select_single && (nb gt 1) then begin
       anb++
     endif else anb += nb
