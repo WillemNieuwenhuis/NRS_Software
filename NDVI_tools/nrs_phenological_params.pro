@@ -28,6 +28,7 @@ pro nrs_pheno_extract_abcd, slice, ns = ns, nr_years = nr_years $
 end
 
 pro nrs_phenological_params, image, basename = basename, alevel = alevel, blevel = blevel, maxlevel = maxlevel $
+                           , min_ndvi = min_ndvi $
                            , start_date = start_date, end_date = end_date $
                            , prog_obj = prog_obj, cancelled = cancelled
   compile_opt idl2, logical_predicate
@@ -65,6 +66,7 @@ pro nrs_phenological_params, image, basename = basename, alevel = alevel, blevel
   if n_elements(alevel) eq 0 then alevel = 0.1
   if n_elements(blevel) eq 0 then blevel = 0.1
   if n_elements(maxlevel) eq 0 then maxlevel = 0.9
+  if n_elements(min_ndvi) eq 0 then min_ndvi = 0.4
   
   caldat, sd, mm, dd, yy
   yearstr = string(yy + indgen(nr_years * 2) / 2, format = '(i4)')
@@ -73,14 +75,14 @@ pro nrs_phenological_params, image, basename = basename, alevel = alevel, blevel
 
   ; determine output filenames and open all
   if n_elements(basename) eq 0 then basename = image
-  fnout_par_a = getOutname(basename, postfix = '_sos', ext = '.dat')
-  fnout_par_b = getoutname(basename, postfix = '_eos', ext = '.dat')
-  fnout_par_c = getoutname(basename, postfix = '_c', ext = '.dat')
-  fnout_par_d = getoutname(basename, postfix = '_d', ext = '.dat')
-  fnout_par_e = getoutname(basename, postfix = '_peak', ext = '.dat')
-  fnout_par_f = getoutname(basename, postfix = '_amp', ext = '.dat')
-  fnout_par_g = getoutname(basename, postfix = '_los', ext = '.dat')
-  fnout_par_skew = getoutname(basename, postfix = '_skew', ext = '.dat')
+  fnout_par_a = getOutname(image, basename = basename, postfix = '_sos', ext = '.dat')
+  fnout_par_b = getoutname(image, basename = basename, postfix = '_eos', ext = '.dat')
+  fnout_par_c = getoutname(image, basename = basename, postfix = '_c', ext = '.dat')
+  fnout_par_d = getoutname(image, basename = basename, postfix = '_d', ext = '.dat')
+  fnout_par_e = getoutname(image, basename = basename, postfix = '_peak', ext = '.dat')
+  fnout_par_f = getoutname(image, basename = basename, postfix = '_amp', ext = '.dat')
+  fnout_par_g = getoutname(image, basename = basename, postfix = '_los', ext = '.dat')
+  fnout_par_skew = getoutname(image, basename = basename, postfix = '_skew', ext = '.dat')
   openw, fp_a, fnout_par_a, /get_lun  
   openw, fp_b, fnout_par_b, /get_lun
   openw, fp_c, fnout_par_c, /get_lun
@@ -105,33 +107,32 @@ pro nrs_phenological_params, image, basename = basename, alevel = alevel, blevel
     nan_ix = where(finite(slice[*, 0, 0], /nan) eq 1, nan_cnt)
     
     max_val = max(slice, max_ix, dim = 3)
-    fail = where(max_val le 0.4, fail_cnt)
+    fail = where(max_val le min_ndvi, fail_cnt)
 
     max_aix = reform(array_indices(slice, max_ix), 3, ns, nr_years * 2)
     ; the subscripts contains the band indices of the max values, turn them into doy
-    par_e = max_aix[2, *, *] * img_interval ;+ doy_offsets
+    par_e = max_aix[2, *, *] * img_interval
+    par_e = reform(par_e, ns, nr_years * 2, /over)  ; cleanup dimensions
+    par_e += rebin(transpose(doy_offsets), ns, nr_years * 2)
     ; correct for overflow of days past end of year
     ; wrap them around: DOY = 366 becomes DOY = 1 etc
-    par_e = ((par_e - 1) mod 365) + 1  ; we found par_e
+    par_e = ((par_e - 1) mod 365) + 1  ; we found par_e (ns x nr_years * 2)
 
-    max_pix = max_ix
+    ; now handle invalid seasons
+    max_pix = reform(max_aix[2, *, *], ns, nr_years * 2)  ; extract band indices (ns x nr_years * 2)
     if fail_cnt gt 0 then begin
-      ; indicate seasons without max
-      par_e[fail] = 0
-      max_ix[fail] = -1
+      par_e[fail] = 0 ; indicate seasons without max
       ; determine fake max in the middle of the season
       ; to be able to determine minimum values
-      max_pix[fail] = lindgen(n_elements(fail)) * ns + ns / 2
+      max_pix[fail] = intarr(n_elements(fail)) + img_ps / 2
     endif
-    
+
     ; find the min value per season, before the mid of season (peak)
     for s = 0, ns - 1 do begin
       for p = 0, nr_years * 2 - 1 do begin
-        cur_mx = max_aix[2, s, p]
-        if cur_mx gt 0 then begin
-          l_min_val[s, p] = min(slice[s, p, 0 : cur_mx], mx)
-          l_min_ix[s, p] = mx
-        endif else l_min_ix[s, p] = -1
+        cur_mx = max_pix[s, p]  ; will always be in range ( [0, nr_years * 2 >)
+        l_min_val[s, p] = min(slice[s, p, 0 : cur_mx], mx)
+        l_min_ix[s, p] = mx
       endfor
     endfor
     ; take the left minimum also for the right minimum of the previous season
@@ -156,9 +157,12 @@ pro nrs_phenological_params, image, basename = basename, alevel = alevel, blevel
               , doy_offsets $
               , ac = par_c, bd = par_d
 
+    ; corrections
     par_sos = par_sos > 0 ; no negative sos (should not happen anyway!)
     par_f = max_val - (l_min_val + r_min_val) / 2
     par_f = par_f > 0.0 ; make sure par_f is not negative 
+    par_g = fix(par_eos - par_sos)
+    par_g = par_g > 0 ; length of season always positiv
     par_skew = float(max_ix - l_min_ix) / (max_ix - r_min_ix)
     
     ; undo calculations for location with input NAN
@@ -172,6 +176,16 @@ pro nrs_phenological_params, image, basename = basename, alevel = alevel, blevel
       par_g[nan_ix, *] = -999
       par_skew[nan_ix, *] = -999
     endif
+    if fail_cnt gt 0 then begin
+      par_sos[fail, *] = -999
+      par_eos[fail, *] = -999
+      par_c[fail, *] = -999
+      par_d[fail, *] = -999
+      par_e[fail, *] = -999
+      par_f[fail, *] = -999
+      par_g[fail, *] = -999
+      par_skew[fail, *] = -999
+    endif
     ; now save the timesat indices
     writeu, fp_a, fix(par_sos) 
     writeu, fp_b, fix(par_eos)
@@ -179,15 +193,15 @@ pro nrs_phenological_params, image, basename = basename, alevel = alevel, blevel
     writeu, fp_d, fix(par_d)
     writeu, fp_e, fix(par_e)
     writeu, fp_f, par_f
-    writeu, fp_g, fix(par_eos - par_sos)
+    writeu, fp_g, fix(par_g)
     writeu, fp_skew, par_skew
   endfor
 
   close, fp_a, fp_b, fp_c, fp_d, fp_e, fp_f, fp_g, fp_skew
   free_lun, fp_a, fp_b, fp_c, fp_d, fp_e, fp_f, fp_g, fp_skew
   
-  types = [size(par_sos, /type), size(par_eos, /type), size(par_c, /type), size(par_d, /type) $
-         , size(par_e, /type), size(par_f, /type), size(par_sos, /type), size(par_skew, /type)]
+  types = [2, 2, 2, 2 $
+         , 2, 4, 2, 4]
   undefs = [-999.0, -999.0, -999.0, -999.0, -999.0, -999.0, -999.0, -999.0]
   fns = [fnout_par_a, fnout_par_b, fnout_par_c, fnout_par_d, fnout_par_e, fnout_par_f, fnout_par_g, fnout_par_skew]
   interleave = 1 ; BIL
