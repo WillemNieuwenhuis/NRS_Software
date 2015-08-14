@@ -1,3 +1,23 @@
+pro nrs_aggregate_spectra_select, kernel, kern_type, select = select
+  compile_opt idl2, logical_predicate
+
+  kern2 = fix(kernel / 2)
+  select = lonarr(3, kernel)
+  if kern_type eq 0 then begin
+    ; square
+    select[0, *] = kernel
+    select[1, *] = -kern2
+    select[2, *] = kern2
+  endif
+  if kern_type eq 1 then begin
+    ; circle
+    kk = indgen(kernel) - kern2
+    select[1, *] = - floor(sqrt(kern2 ^ 2 - kk ^ 2))
+    select[2, *] = floor(sqrt(kern2 ^ 2 - kk ^ 2))
+    select[0, *] = select[2, *] - select[1, *] + 1
+  endif
+end
+
 ;+
 ; :description:
 ;    Calculate an aggregated spectral profile for all locations in the input features.
@@ -16,6 +36,10 @@
 ;    kernel : in, optional, default = 3
 ;      The size of the window (in pixels) around the location to include in the aggregation.
 ;      Kernel size can be [1 .. 11].
+;    kern_type: in, optional, default = 0
+;      The type of kernel area: 0 = square; 1 = circle
+;      Note this will sample spectra around the central pixel, either as a square or as a circle,
+;      but the distances are calculated assuming all pixel are the same size
 ;    xytable : in, optional, default = no
 ;      If true (yes) then the output will be an XY table with one location and spectrum
 ;      per row. If false (no) then the table will be organised with one location
@@ -32,10 +56,11 @@
 ; :history:
 ;   - jan 2014 - created
 ;   - jan 2015 - now allows kernel sizes from 1 (single profile) to 11
+;   - aug 2015 - added kern_type keyword, allowing square or circular spectral sampling
 ;-
 pro nrs_aggregate_spectra, pnt_tbl, image $
                          , aggr_func = aggr_func $
-                         , kernel = kernel $
+                         , kernel = kernel, kern_type = kern_type $
                          , xytable = xytable $
                          , outname = outname $
                          , prog_obj = prog_obj, cancelled = cancelled
@@ -45,6 +70,7 @@ pro nrs_aggregate_spectra, pnt_tbl, image $
   if n_elements(kernel) eq 0 then kernel = 3 $
   else kernel = min([11, max([1, kernel])])  ; kernel = 1, 3, 5, 7, 9, 11
   kern2 = fix(kernel / 2)
+  if n_elements(kern_type) eq 0 then kern_type = 0 ; square
 
   if n_elements(aggr_func) eq 0 then aggr_func = 'mean'
   aggr_functions = ['min', 'max', 'mean', 'median']
@@ -100,6 +126,10 @@ pro nrs_aggregate_spectra, pnt_tbl, image $
 
   profiles = fltarr(pointCount, nb)
   valid_profiles = bytarr(pointCount)
+  
+  nrs_aggregate_spectra_select, kernel, kern_type, select = select
+  index = [0, reform(total(select[0, *], /cum, /preserve), kernel)]
+  specTotal = fltarr(total(select[0, *]), nb)
   nrs_set_progress_property, prog_obj, /start, title = 'Aggregate spectrum profile'
   for i = 0, pointCount - 1 do begin
     if nrs_update_progress(prog_obj, i, pointCount, cancelled = cancelled) then return
@@ -109,13 +139,16 @@ pro nrs_aggregate_spectra, pnt_tbl, image $
     if nrs_check_bounds(pixelX[i] + kern2, pixelY[i] + kern2, nl, ns) eq 0 then continue
 
     ; collect the entire kernel
-    specTotal = fltarr(kernel, kernel, nb)
-    for line = pixelY[i] - kern2, pixelY[i] + kern2 do begin
-      lp = line - (pixelY[i] - kern2)
-      spectotal[*, lp, *] = envi_get_slice(fid = mapID, line = line, xs = pixelX[i] - kern2, xe = pixelX[i] + kern2, /bil)
+    specTotal[*] = 0
+    lines = indgen(kernel) - kern2
+    for l = 0, kernel - 1 do begin
+      line = pixelY[i] + lines[l]
+      xs = pixelX[i] + select[1, l]
+      xe = pixelX[i] + select[2, l]
+      specTotal[index[l] : index[l + 1] - 1, *] = envi_get_slice(fid = mapID, line = line, xs = xs, xe = xe, /bil)
     endfor
     
-    spectotal = reform(spectotal, kernel * kernel, nb, /overwrite) 
+    ;spectotal = reform(spectotal, kernel * kernel, nb, /overwrite) 
     case aggr_ix of
       0  : profiles[i, *] = min(spectotal, dim = 1)
       1  : profiles[i, *] = max(spectotal, dim = 1)

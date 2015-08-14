@@ -35,6 +35,9 @@ pro nrs_aggregate_spectrum_handleOK, event
   fld = widget_info(event.top, find_by_uname = 'nrs_aggregate_spectrum_kernel_combo')
   kern = widget_info(fld, /combobox_gettext)
   
+  fld = widget_info(event.top, find_by_uname = 'nrs_aggregate_spectrum_kerntype_combo')
+  kerntype_str = widget_info(fld, /combobox_gettext)
+
   fld = widget_info(event.top, find_by_uname = 'nrs_aggregate_spectrum_aggr_func')
   aggr_func = widget_info(fld, /combobox_gettext)
 
@@ -50,6 +53,15 @@ pro nrs_aggregate_spectrum_handleOK, event
     return
   endif
   
+  kern_type_list = ['square', 'circle']
+  ix = where(strlowcase(kerntype_str[0]) eq kern_type_list, kt_cnt)
+  if kt_cnt eq 0 then begin
+    void = error_message('Unsupported kernel type: ' + kerntype_str, traceback = 0, /error)
+    return
+  endif
+  
+  kern_type = ix[0]
+
       ; initialise tranquilizer
   prog_obj = Obj_New("PROGRESSBAR", background = 'white', color = 'green' $
                         , ysize = 15, title = "Calculate stack statistics" $
@@ -59,6 +71,7 @@ pro nrs_aggregate_spectrum_handleOK, event
   ; calculate the spectrum
   nrs_aggregate_spectra, pnt_tbl, image $
                        , outname = outname $
+                       , kern_type = kern_type $
                        , kernel = kern, aggr_func = aggr_func $
                        , xytable = table_type $
                        , prog_obj = prog_obj, cancelled = cancelled

@@ -64,12 +64,22 @@ pro nrs_aggregate_spectrum_gui, event
 
   nrs_aggregate_spectrum_kernel_panel = widget_base(nrs_aggregate_spectrum_mainPanel, /row)
   nrs_aggregate_spectrum_kernel_label = widget_label(nrs_aggregate_spectrum_kernel_panel $
-                , value = 'Kernel size' $
-                , xsize = label_width $
+              , value = 'Kernel size' $
+              , xsize = label_width $
               )
   nrs_aggregate_spectrum_kernel_combo = widget_combobox(nrs_aggregate_spectrum_kernel_panel $
-                , uname = 'nrs_aggregate_spectrum_kernel_combo' $
-                , value = ['1', '3', '5', '7', '9', '11'] $
+              , uname = 'nrs_aggregate_spectrum_kernel_combo' $
+              , value = ['1', '3', '5', '7', '9', '11'] $
+              )
+
+  nrs_aggregate_spectrum_kerntype_panel = widget_base(nrs_aggregate_spectrum_mainPanel, /row)
+  nrs_aggregate_spectrum_kerntype_label = widget_label(nrs_aggregate_spectrum_kerntype_panel $
+                , value = 'Kernel type' $
+                , xsize = label_width $
+              )
+  nrs_aggregate_spectrum_kerntype_combo = widget_combobox(nrs_aggregate_spectrum_kerntype_panel $
+                , uname = 'nrs_aggregate_spectrum_kerntype_combo' $
+                , value = ['Square', 'Circle'] $
               )
 
   nrs_aggregate_spectrum_output_panel = widget_base(nrs_aggregate_spectrum_contentPanel, /frame, /col)
