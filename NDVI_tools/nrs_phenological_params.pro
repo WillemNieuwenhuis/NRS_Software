@@ -12,8 +12,8 @@ pro nrs_pheno_extract_abcd, slice, ns = ns, nr_years = nr_years $
   par_eos = intarr(ns, nr_years * 2)
   for s = 0, ns - 1 do begin
     for p = 0, nr_years * 2 - 1 do begin
-      ixl = where(dsos[s, p] lt slice[s, p, *], cnt_left)
-      ixr = where(deos[s, p] lt slice[s, p, *], cnt_right)
+      ixl = where(dsos[s, p] lt slice[s, *, p], cnt_left)
+      ixr = where(deos[s, p] lt slice[s, *, p], cnt_right)
       ; sos and eos are calculated assuming monotonous curves!
       ; so take first min for "start of season"
       ; and take last min for "end of season"
@@ -102,16 +102,16 @@ pro nrs_phenological_params, image, basename = basename, alevel = alevel, blevel
     slice = envi_get_slice(fid = fid, line = l, xs = 0, xe = ns - 1, pos = bix, /bil)
     ; reform to ns x nr_years * 2 x 23
     ; so split the years into two seasons
-    slice = reform(slice, ns, nr_years * 2, img_ps, /overwrite)
+    slice = reform(slice, ns, img_ps, nr_years * 2, /overwrite)
     ; remember nan values for masking later
     nan_ix = where(finite(slice[*, 0, 0], /nan) eq 1, nan_cnt)
     
-    max_val = max(slice, max_ix, dim = 3)
+    max_val = max(slice, max_ix, dim = 2)
     fail = where(max_val le min_ndvi, fail_cnt)
 
     max_aix = reform(array_indices(slice, max_ix), 3, ns, nr_years * 2)
     ; the subscripts contains the band indices of the max values, turn them into doy
-    par_e = max_aix[2, *, *] * img_interval
+    par_e = max_aix[1, *, *] * img_interval
     par_e = reform(par_e, ns, nr_years * 2, /over)  ; cleanup dimensions
     par_e += rebin(transpose(doy_offsets), ns, nr_years * 2)
     ; correct for overflow of days past end of year
@@ -119,7 +119,7 @@ pro nrs_phenological_params, image, basename = basename, alevel = alevel, blevel
     par_e = ((par_e - 1) mod 365) + 1  ; we found par_e (ns x nr_years * 2)
 
     ; now handle invalid seasons
-    max_pix = reform(max_aix[2, *, *], ns, nr_years * 2)  ; extract band indices (ns x nr_years * 2)
+    max_pix = reform(max_aix[1, *, *], ns, nr_years * 2)  ; extract band indices (ns x nr_years * 2)
     if fail_cnt gt 0 then begin
       par_e[fail] = 0 ; indicate seasons without max
       ; determine fake max in the middle of the season
@@ -131,7 +131,7 @@ pro nrs_phenological_params, image, basename = basename, alevel = alevel, blevel
     for s = 0, ns - 1 do begin
       for p = 0, nr_years * 2 - 1 do begin
         cur_mx = max_pix[s, p]  ; will always be in range ( [0, nr_years * 2 >)
-        l_min_val[s, p] = min(slice[s, p, 0 : cur_mx], mx)
+        l_min_val[s, p] = min(slice[s, 0 : cur_mx, p], mx)
         l_min_ix[s, p] = mx
       endfor
     endfor
