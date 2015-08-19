@@ -1,8 +1,8 @@
 function nrs_get_interval_mapping, int1, jd1, int2, jd2
   compile_opt idl2, logical_predicate
   
-  all_intervals = ['day', '8-day', '10-day', '16-day', 'month', 'year']
-  all_indays = [1, 8, 10, 16, 31, 365]
+  all_intervals = ['day', '8-day', '10-day', 'bi-monthly', '16-day', 'month', 'year']
+  all_indays = [1, 8, 10, 15, 16, 31, 365]
   ix1 = where(strlowcase(int1) eq all_intervals, cnt1)
   ix2 = where(strlowcase(int2) eq all_intervals, cnt1)
   
@@ -173,7 +173,7 @@ pro nrs_timed_aggregation, image $
   if n_elements(aggr_interval) gt 0 then nr_levels++
   if n_elements(aggr_interval2) gt 0 then nr_levels++
   if nr_levels gt 0 then begin
-    all_intervals = ['12 hours', 'day', '8-day', '10-day', '16-day', 'month', 'year']
+    all_intervals = ['12 hours', 'day', '8-day', '10-day', 'bi_monthly', '16-day', 'month', 'year']
     inter_ix = where(strlowcase(aggr_interval) eq all_intervals, cnt)
     if cnt eq 0 then begin
       ans = dialog_message('Level 1: Unsupported output period', title = 'Error', /error)
@@ -206,7 +206,7 @@ pro nrs_timed_aggregation, image $
     endif
   endif
   
-  all_functions = ['mean', 'sum', 'minimum', 'maximum', 'median']
+  all_functions = ['mean', 'stddev', 'sum', 'minimum', 'maximum', 'median']
   func_ix = where(strlowcase(aggr_func) eq all_functions, cnt)
   if cnt eq 0 then begin
     ans = dialog_message('Unsupported aggregation function (' + aggr_func + ')', title = 'Error', /error)
@@ -247,10 +247,11 @@ pro nrs_timed_aggregation, image $
             dim = size(data, /n_dim)
             case func_ix of
               0 : aggr = mean(data, dimension = dim)
-              1 : aggr = total(data, dim)
-              2 : aggr = min(data, dimension = dim)
-              3 : aggr = max(data, dimension = dim)
-              4 : aggr = median(data, dimension = dim)
+              1 : aggr = stddev(data, dimension = dim)
+              2 : aggr = total(data, dim)
+              3 : aggr = min(data, dimension = dim)
+              4 : aggr = max(data, dimension = dim)
+              5 : aggr = median(data, dimension = dim)
             endcase
             break
           end
@@ -262,10 +263,11 @@ pro nrs_timed_aggregation, image $
               dim = size(accu, /n_dim)
               case func_ix of
                 0 : aggr[*, t] = mean(accu, dimension = dim)
-                1 : aggr[*, t] = total(accu, dim)
-                2 : aggr[*, t] = min(accu, dimension = dim)
-                3 : aggr[*, t] = max(accu, dimension = dim)
-                4 : aggr[*, t] = median(accu, dimension = dim)
+                1 : aggr[*, t] = stddev(accu, dimension = dim)
+                2 : aggr[*, t] = total(accu, dim)
+                3 : aggr[*, t] = min(accu, dimension = dim)
+                4 : aggr[*, t] = max(accu, dimension = dim)
+                5 : aggr[*, t] = median(accu, dimension = dim)
               endcase
               
             endfor
