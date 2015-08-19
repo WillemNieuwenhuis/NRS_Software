@@ -64,8 +64,8 @@ pro nrs_get_days_indices, julian, interval, nr_obs = nr_obs, dmbands = dmbands, 
 end
 
 function nrs_get_period_from_range, sd, ed, nb, per_str = input_period
-  per_len = [0.25, 0.5, 1, 8, 10, 16, 30, 365]
-  per_str = ['6 hours', '12 hours', 'day', '8-day', '10-day', '16-day', 'month', 'year']
+  per_len = [0.25, 0.5, 1, 8, 10, 15, 16, 30, 365]
+  per_str = ['6 hours', '12 hours', 'day', '8-day', '10-day', 'bi-monthly', '16-day', 'month', 'year']
   input_period = (ed - sd + 1) / (nb - 1)   ; in days
   diff = abs(per_len - input_period)
   mn = min(diff, mn_ix)
@@ -383,6 +383,15 @@ pro nrs_get_dt_indices, julian, interval = interval, period = period $
                    dar[0] = sd
                    mar = 1 + (((corr + indgen(month_cnt * 3)) / 3) + (sm - 1)) mod 12
                    yar = sy + (((corr + indgen(month_cnt * 3)) / 3) + (sm - 1)) / 12
+                   jul_out = julday(mar, dar, yar)
+                 end
+      'bi-monthly' : begin
+                   period_out = 24
+                   corr = (sd - 1) / 10
+                   dar = (corr + (indgen(month_cnt * 2))) mod 2 * 15 + 1
+                   dar[0] = sd
+                   mar = 1 + (((corr + indgen(month_cnt * 2)) / 2) + (sm - 1)) mod 12
+                   yar = sy + (((corr + indgen(month_cnt * 2)) / 2) + (sm - 1)) / 12
                    jul_out = julday(mar, dar, yar)
                  end
       '16-day' : begin
