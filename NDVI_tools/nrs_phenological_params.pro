@@ -6,25 +6,33 @@ pro nrs_pheno_extract_abcd, slice, ns = ns, nr_years = nr_years $
             , ac = par_sos, bd = par_eos
   compile_opt idl2, logical_predicate
 
+  ; determine the threshold values 
   dsos = l_min_val + (max_val - l_min_val) * low_level
   deos = r_min_val + (max_val - r_min_val) * high_level
+  
   par_sos = intarr(ns, nr_years * 2)
   par_eos = intarr(ns, nr_years * 2)
   for s = 0, ns - 1 do begin
     for p = 0, nr_years * 2 - 1 do begin
-      ixl = where(dsos[s, p] lt slice[s, *, p], cnt_left)
-      ixr = where(deos[s, p] lt slice[s, *, p], cnt_right)
+      seas = slice[s, *, p]
+      mxval = max(seas, mxix)
+      
+      void = min(abs(seas[0 : mxix] - dsos[s, p]), ixl)
+      void = min(abs(seas[mxix : -1] - deos[s, p]), ixr)
       ; sos and eos are calculated assuming monotonous curves!
-      ; so take first min for "start of season"
-      ; and take last min for "end of season"
+      ; sos is determined from values before the max value,
+      ;   so take last min as "start of season"
+      ; eos is determined from values after the max value,
+      ;   so take first min as "end of season"
       par_sos[s, p] = ixl[0] * 8 + doy_offsets[p] ; turn index into DOY
-      par_eos[s, p] = ixr[-1] * 8 + doy_offsets[p]
+      par_eos[s, p] = (ixr[0] + mxix) * 8 + doy_offsets[p]
     endfor
   endfor
   ; correct for overflow of days past end of year
-  ; wrap them around: DOY = 366 becomes DOY = 1 etc
-  par_sos = ((par_sos - 1) mod 365) + 1
-  par_eos = ((par_eos - 1) mod 365) + 1
+  ; wrap them around: DOY = 369 becomes DOY = 1 etc
+  ; assumption: 8 day intervals!
+  par_sos = ((par_sos - 1) mod 368) + 1
+  par_eos = ((par_eos - 1) mod 368) + 1
 end
 
 pro nrs_phenological_params, image, basename = basename, alevel = alevel, blevel = blevel, maxlevel = maxlevel $
@@ -115,8 +123,9 @@ pro nrs_phenological_params, image, basename = basename, alevel = alevel, blevel
     par_e = reform(par_e, ns, nr_years * 2, /over)  ; cleanup dimensions
     par_e += rebin(transpose(doy_offsets), ns, nr_years * 2)
     ; correct for overflow of days past end of year
-    ; wrap them around: DOY = 366 becomes DOY = 1 etc
-    par_e = ((par_e - 1) mod 365) + 1  ; we found par_e (ns x nr_years * 2)
+    ; wrap them around: DOY = 369 becomes DOY = 1 etc
+    ; assumption: 8 day intervals!
+    par_e = ((par_e - 1) mod 368) + 1  ; we found par_e (ns x nr_years * 2)
 
     ; now handle invalid seasons
     max_pix = reform(max_aix[1, *, *], ns, nr_years * 2)  ; extract band indices (ns x nr_years * 2)
@@ -161,7 +170,7 @@ pro nrs_phenological_params, image, basename = basename, alevel = alevel, blevel
     par_sos = par_sos > 0 ; no negative sos (should not happen anyway!)
     par_f = max_val - (l_min_val + r_min_val) / 2
     par_f = par_f > 0.0 ; make sure par_f is not negative 
-    par_g = fix(par_eos - par_sos)
+    par_g = fix((par_eos - par_sos + 368) mod 368)  ; make sure to compensate when eos is in the following calendar year
     par_g = par_g > 0 ; length of season always positiv
     par_skew = float(max_ix - l_min_ix) / (max_ix - r_min_ix)
     
