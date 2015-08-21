@@ -1,7 +1,7 @@
 pro nrs_pheno_extract_abcd, slice, ns = ns, nr_years = nr_years $
             , low_level, high_level $
             , l_min_val, l_min_ix, r_min_val, r_min_ix $
-            , max_val $
+            , max_val, thres $
             , doy_offsets $
             , ac = par_sos, bd = par_eos
   compile_opt idl2, logical_predicate
@@ -16,23 +16,50 @@ pro nrs_pheno_extract_abcd, slice, ns = ns, nr_years = nr_years $
     for p = 0, nr_years * 2 - 1 do begin
       seas = slice[s, *, p]
       mxval = max(seas, mxix)
+      if mxval lt thres then continue
+
+      ; init with undef
+      par_sos[s, p] = -999
+      par_eos[s, p] = -999
       
-      void = min(abs(seas[0 : mxix] - dsos[s, p]), ixl)
-      void = min(abs(seas[mxix : -1] - deos[s, p]), ixr)
-      ; sos and eos are calculated assuming monotonous curves!
       ; sos is determined from values before the max value,
-      ;   so take last min as "start of season"
-      ; eos is determined from values after the max value,
-      ;   so take first min as "end of season"
-      par_sos[s, p] = ixl[0] * 8 + doy_offsets[p] ; turn index into DOY
-      par_eos[s, p] = (ixr[0] + mxix) * 8 + doy_offsets[p]
+      ; find the zero crossing closest to the season peak
+      ;   ..... left side
+      diffl = seas[0 : mxix] - dsos[s, p]
+      ixl = where(diffl lt 0, cntl)
+      ; find the smallest difference around the zero crossing
+      if cntl ge 2 then begin
+        offl = ixl[-1]
+        minl = min(abs(diffl[offl : offl + 1]), minlx)
+        par_sos[s, p] = (minlx + offl) * 8 + doy_offsets[p] ; turn index into DOY
+      endif
+      ;   ..... right side
+      diffr = seas[mxix : -1] - deos[s, p]
+      ixr = where(diffr lt 0, cntr)
+      ; find the smallest difference around the zero crossing
+      if cntr ge 2 then begin
+        i1 = ixr[0] - 1
+        i2 = ixr[0]
+        if (i2 eq 0) && (i1 eq -1) then begin
+          i2 = -1
+          i1 = 0
+        endif
+        minr = min(abs(diffr[i1 : i2]), minrx)
+        par_eos[s, p] = (minrx + mxix + i1) * 8 + doy_offsets[p]
+      endif
+      
     endfor
   endfor
   ; correct for overflow of days past end of year
   ; wrap them around: DOY = 369 becomes DOY = 1 etc
   ; assumption: 8 day intervals!
+  ixl = where(par_sos eq -999, cntl)
+  ixr = where(par_eos eq -999, cntr)
   par_sos = ((par_sos - 1) mod 368) + 1
   par_eos = ((par_eos - 1) mod 368) + 1
+  ; re-exclude invalid results
+  if cntl gt 0 then par_sos[ixl] = -999
+  if cntr gt 0 then par_eos[ixr] = -999
 end
 
 pro nrs_phenological_params, image, basename = basename, alevel = alevel, blevel = blevel, maxlevel = maxlevel $
@@ -154,7 +181,7 @@ pro nrs_phenological_params, image, basename = basename, alevel = alevel, blevel
     nrs_pheno_extract_abcd, slice, ns = ns, nr_years = nr_years $
               , alevel, blevel $
               , l_min_val, l_min_ix, r_min_val, r_min_ix $
-              , max_val $
+              , max_val, min_ndvi $
               , doy_offsets $
               , ac = par_sos, bd = par_eos
 
@@ -162,7 +189,7 @@ pro nrs_phenological_params, image, basename = basename, alevel = alevel, blevel
     nrs_pheno_extract_abcd, slice, ns = ns, nr_years = nr_years $
               , maxlevel, maxlevel $
               , l_min_val, l_min_ix, r_min_val, r_min_ix $
-              , max_val $
+              , max_val, min_ndvi $
               , doy_offsets $
               , ac = par_c, bd = par_d
 
