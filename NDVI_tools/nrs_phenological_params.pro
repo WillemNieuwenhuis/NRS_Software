@@ -34,6 +34,9 @@ pro nrs_pheno_extract_abcd, slice, ns = ns, nr_years = nr_years $
         par_sos[s, p] = (minlx + offl) * 8 + doy_offsets[p] ; turn index into DOY
       endif
       ;   ..... right side
+      if p lt nr_years * 2 - 1 then begin
+        seas = slice[s, *, p : p + 1] ; extend the window to make certain to find the EOS
+      endif
       diffr = seas[mxix : -1] - deos[s, p]
       ixr = where(diffr lt 0, cntr)
       ; find the smallest difference around the zero crossing
