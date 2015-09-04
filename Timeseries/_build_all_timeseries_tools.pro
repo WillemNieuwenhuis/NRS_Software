@@ -13,9 +13,9 @@ pro _build_all_timeseries_tools
            , 'nrs_harmonic_inv_gui.pro' $
            , 'nrs_harmonic_inv_gui_eventcb.pro' $
            , 'nrs_timeseries_menu.pro' $
-           , 'nrs_timed_aggregation.pro' $
-           , 'nrs_timed_aggregation_gui.pro' $
-           , 'nrs_timed_aggregation_gui_eventcb.pro' $
+           , 'nrs_timed_grouping.pro' $
+           , 'nrs_timed_grouping_gui.pro' $
+           , 'nrs_timed_grouping_gui_eventcb.pro' $
            , 'nrs_time_interpol_gui_eventcb.pro' $
            , 'nrs_time_interpol_gui.pro' $
            , 'nrs_time_interpolate.pro' $

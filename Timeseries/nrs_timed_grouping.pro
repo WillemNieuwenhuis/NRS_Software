@@ -16,6 +16,36 @@ function nrs_get_interval_mapping, int1, jd1, int2, jd2
           }
 end
 
+;+
+; :description:
+;    Calculate the number of output bands for time-based grouping. For each of the output bands
+;    determine the list of input bands required to calculate the aggregate value
+;    
+; :returns:
+;    An array of array pointers. Each item in the array corresponds with an output
+;    band and contains exactly one array with the list of associated input bands. 
+;
+; :params:
+;    sd : in, required
+;      The start julian date / time
+;    ed : in, required
+;      The end julian date / time
+;    per : in, optional
+;      The input interval between bands in days
+;    input_period : in, required
+;      The input interval between bands as string
+;    aggr_interval : in, required
+;      The output interval as string; must be the shortest interval if
+;      also aggr_interval2 is specified
+;    aggr_interval2 : in, optional
+;      The optional second output interval as string
+;
+; :keywords:
+;    bnames : out, optional
+;      Suggested names for the output bands 
+;
+; :author: nieuwenhuis
+;-
 function nrs_get_cross_index, sd, ed, per, input_period, aggr_interval, aggr_interval2, bnames = bnames
   compile_opt idl2, logical_predicate
   
@@ -29,10 +59,10 @@ function nrs_get_cross_index, sd, ed, per, input_period, aggr_interval, aggr_int
   ; for input intervals less than one day:
   ; adjust the input times and position them in the middle of the intervals
   tim_int = jul_in[1] - jul_in[0]
-  if tim_int lt 1.0 then $
-    jul_in -= (jul_in[1] - jul_in[0]) / 2
+;  if tim_int lt 1.0 then $
+;    jul_in -= (jul_in[1] - jul_in[0]) / 2
 
-  ; get the indices for the output image stack
+  ; get the indices for the output periods, but ungrouped
   ; shortest period first
   if n_elements(aggr_interval) gt 0 then begin
     nrs_get_dt_indices, jul_in, period = aggr_interval $
@@ -48,14 +78,19 @@ function nrs_get_cross_index, sd, ed, per, input_period, aggr_interval, aggr_int
 
   strput, aggr_interval, strupcase(strmid(aggr_interval, 0, 1)) ; capitalize first character
   
-  ; for one level
+  ; determine all input band indices per output band to be grouped
+  ; for 1 level
   if level1 then begin
-    num_periods = n_elements(indices)
-    indices = [indices, n_elements(jul_in)]  ; add first position after the array
-    p_ar = ptrarr(num_periods)
-    st_p = syi le 0 ? 0 : npy[0] - syi
+    nrs_get_days_indices, jul_out, doy = doy  ; get doy for all output bands
+    h = histogram(doy, rev = ri)
+    num_periods = n_elements(indices) ; all possible periods
+    indices = [indices, n_elements(jul_in)]  ; append closing position to the array
+    out_periods = max(npy)  ; number of final periods in output
+    p_ar = ptrarr(out_periods)
+    st_p = syi le 0 ? 0 : npy[0] - syi  ; offset of first period in num_periods
     npy_cnt = n_elements(npy)
-    for p = 0, num_periods - 1 do begin
+    npy_cum = [0, total(npy, /cum)]
+    for p = 0, out_periods - 1 do begin ; p counts along all output periods
       arr = []
       six = p
       npy_ix = 0
@@ -64,41 +99,54 @@ function nrs_get_cross_index, sd, ed, per, input_period, aggr_interval, aggr_int
         six += npy[npy_ix]
         if npy_cnt gt 1 then npy_ix++
       endwhile
-      pix = (st_p + p) mod npy
-      if ptr_valid(p_ar[pix]) then ptr_free, p_ar[pix]
+      ; calculate the output bin for the current period
+      ; is flexible enough to deal with leap days/years
+      pdist = (st_p + p) - npy_cum
+      pix = where(pdist ge 0, pcnt)  
+      pix = fix(min(pdist[pix]))
+      if ptr_valid(p_ar[pix]) then begin
+        ptr_free, p_ar[pix]  ; should not come here
+      endif
       p_ar[pix] = ptr_new(arr)
     endfor
 
     sy = 1
-    
-    nrdig = fix(alog10(num_periods)) + 1
-    if npy eq 1 then begin
+
+    nrdig = fix(alog10(out_periods)) + 1
+    if npy[0] eq 1 then begin
       caldat, sd, m, d, sy
       form = '("Year: ",i04)'
-    endif else if npy eq 12 then form = '("Month: ",i02)' $
-    else form = '("' + aggr_interval + ': ",i0' + string(nrdig, format = '(i0)') + ')'
-    bnames = string(indgen(num_periods) + sy, format = form)
+    endif else if aggr_interval eq 'Month' then form = '("Month: ",i02)' $
+    else begin
+      form = '("' + aggr_interval + ': ",i0' + string(nrdig, format = '(i0)') + ')'
+    endelse
+    bnames = string(indgen(out_periods) + sy, format = form)
   endif
 
-  ; for 2 levels; only year is expected and handled
+  ; for two levels; only year is expected and handled as second level
   if level2 then begin
     num_periods = n_elements(indices)
-    indices = [indices, n_elements(jul_in)]  ; add first position after the array
+    indices = [indices, n_elements(jul_in)]  ; append closing position to the array
     p_ar = ptrarr(num_periods)
     for p = 0, num_periods - 1 do begin
       ps = indices[p]
       pe = indices[p + 1]
       arr = indgen(pe - ps) + ps
-      if ptr_valid(p_ar[p]) then ptr_free, p_ar[p]
+      if ptr_valid(p_ar[p]) then begin
+        ptr_free, p_ar[p]  ; should not come here
+      endif
       p_ar[p] = ptr_new(arr)
     endfor
 
     caldat, jul_out, mm, dd, yy
     st_p = syi lt 0 ? 0 : num_periods - syi
     bn = ((indgen(n_elements(yy)) + st_p) mod num_periods) + 1
-    if num_periods eq 12 then form = '("Month.Year: ",i03,".",i04)' $
-    else form = '("' + aggr_interval + '.Year: ",i03,".",i04)'
-    bnames = string([transpose(bn), transpose(yy)], format = form)
+    if aggr_interval eq 'Month' then form = '("Year.Month: ",i04,".",i04)' $
+    else begin
+      bn = jul_out - julday(1, 1, yy) + 1
+      form = '("Year.' + aggr_interval + ': ,i03,".",i04)'
+    endelse
+    bnames = string([transpose(yy), transpose(bn)], format = form)
   endif
 
   return, p_ar
@@ -145,7 +193,7 @@ end
 ;
 ; :Author: nieuwenhuis
 ;-
-pro nrs_timed_aggregation, image $
+pro nrs_timed_grouping, image $
                    , start_date, end_date $
                    , aggr_func $
                    , aggr_level1 = aggr_interval $
@@ -173,7 +221,7 @@ pro nrs_timed_aggregation, image $
   if n_elements(aggr_interval) gt 0 then nr_levels++
   if n_elements(aggr_interval2) gt 0 then nr_levels++
   if nr_levels gt 0 then begin
-    all_intervals = ['12 hours', 'day', '8-day', '10-day', 'bi_monthly', '16-day', 'month', 'year']
+    all_intervals = ['1 hour', '2 hours', '3 hours', '6 hours', '12 hours', 'day', '8-day', '10-day', 'bi_monthly', '16-day', 'month', 'year']
     inter_ix = where(strlowcase(aggr_interval) eq all_intervals, cnt)
     if cnt eq 0 then begin
       ans = dialog_message('Level 1: Unsupported output period', title = 'Error', /error)
@@ -186,9 +234,9 @@ pro nrs_timed_aggregation, image $
         return
       endif
       if inter_ix eq inter_ix2 then begin
-        ans = dialog_message('Duplicate period, ignoring', title = 'Warning')
+        void = dialog_message('Duplicate period, ignoring', title = 'Warning')
         nr_levels--
-      endif else if inter_ix > inter_ix2 then begin
+      endif else if inter_ix gt inter_ix2 then begin
         ; swap periods, so level 1 is the shorter period
         h = inter_ix2
         inter_ix2 = inter_ix
@@ -238,8 +286,12 @@ pro nrs_timed_aggregation, image $
   openw, unit, outname, /get_lun
 
   for l = 0, nl - 1 do begin
-;    if l mod 10 eq 0 then $
-      if nrs_update_progress(prog_obj, l, nl, cancelled = cancelled) then return
+    if nrs_update_progress(prog_obj, l, nl, cancelled = cancelled) then begin
+      close, unit
+      free_lun, unit
+      file_delete, outname, /allow_nonexist, /quiet
+      return
+    endif
   
     data = envi_get_slice(fid = fid, line = l, xs = 0, xe = ns - 1, /bil)
     switch nr_levels of

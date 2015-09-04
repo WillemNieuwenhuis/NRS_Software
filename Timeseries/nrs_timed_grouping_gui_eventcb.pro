@@ -1,14 +1,14 @@
-pro nrs_timed_aggregation_handle_input, event
+pro nrs_timed_grouping_handle_input, event
   compile_opt idl2, logical_predicate
   
-  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_aggregation_refstack')
+  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_grouping_refstack')
   widget_control, val_fld, get_value = target
 
   target_str = strtrim(target, 2)
   if strlen(target_str) eq 0 then return
 
   basename = getOutname(target_str, postfix = '_taggr', ext = '.dat')
-  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_aggregation_outputFile')
+  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_grouping_outputFile')
   widget_control, val_fld, get_value = outfile
   outfile_str = strtrim(outfile, 2)
   if strlen(outfile_str) eq 0 then $
@@ -18,10 +18,10 @@ pro nrs_timed_aggregation_handle_input, event
   if fid eq -1 then return
   envi_file_query, fid, nb = nb
   
-  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_aggregation_start_date')
+  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_grouping_start_date')
   widget_control, val_fld, get_value = str_sd
 
-  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_aggregation_end_date')
+  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_grouping_end_date')
   widget_control, val_fld, get_value = str_ed
   
   val_fld = widget_info(event.top, find_by_uname = 'nrs_period_aggr_input_period_label')
@@ -38,55 +38,55 @@ pro nrs_timed_aggregation_handle_input, event
   widget_control, val_fld, set_value = 'Input period: ' + input_period
 end
 
-pro nrs_timed_aggregation_toggle_levels, event
+pro nrs_timed_grouping_toggle_levels, event
   compile_opt idl2, logical_predicate
   
-  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_aggregation_lvl1_button')
+  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_grouping_lvl1_button')
   isOn1 = widget_info(val_fld, /button_set)
   
-  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_aggregation_lvl2_button')
+  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_grouping_lvl2_button')
   isOn2 = widget_info(val_fld, /button_set)
   widget_control, val_fld, sensitiv = isOn1
   
-  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_aggregation_level1_combo')
+  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_grouping_level1_combo')
   widget_control, val_fld, sensitiv = isOn1
   
-  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_aggregation_level2_combo')
+  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_grouping_level2_combo')
   widget_control, val_fld, sensitiv = (isOn1 && isOn2)
 end
 
-pro nrs_timed_aggregation_handleOK, event
+pro nrs_timed_grouping_handleOK, event
   compile_opt idl2, logical_predicate
 
-  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_aggregation_refstack')
+  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_grouping_refstack')
   widget_control, val_fld, get_value = ref
   ref = strtrim(ref, 2)
 
-  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_aggregation_outputFile')
+  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_grouping_outputFile')
   widget_control, val_fld, get_value = outname
   
-  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_aggregation_start_date')
+  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_grouping_start_date')
   widget_control, val_fld, get_value = start_date
 
-  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_aggregation_end_date')
+  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_grouping_end_date')
   widget_control, val_fld, get_value = end_date
   
-  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_aggregation_indices_combo')
+  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_grouping_indices_combo')
   aggr_func = widget_info(val_fld, /combobox_gettext)
   
-  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_aggregation_lvl1_button')
+  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_grouping_lvl1_button')
   isOn1 = widget_info(val_fld, /button_set)
   
-  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_aggregation_lvl2_button')
+  val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_grouping_lvl2_button')
   isOn2 = widget_info(val_fld, /button_set)
 
   if isOn1 then begin
-    val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_aggregation_level1_combo')
+    val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_grouping_level1_combo')
     aggr_interval = widget_info(val_fld, /combobox_gettext)
   endif
   
   if isOn2 then begin
-    val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_aggregation_level2_combo')
+    val_fld = widget_info(event.top, find_by_uname = 'nrs_timed_grouping_level2_combo')
     aggr_interval2 = widget_info(val_fld, /combobox_gettext)
   endif
 
@@ -107,7 +107,7 @@ pro nrs_timed_aggregation_handleOK, event
                         , /fast_loop $
                         )
   
-  nrs_timed_aggregation, ref $
+  nrs_timed_grouping, ref $
                    , start_date, end_date $
                    , aggr_func $
                    , aggr_level1 = aggr_interval $
