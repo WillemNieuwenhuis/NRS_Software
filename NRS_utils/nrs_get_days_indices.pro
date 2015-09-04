@@ -63,9 +63,32 @@ pro nrs_get_days_indices, julian, interval, nr_obs = nr_obs, dmbands = dmbands, 
 
 end
 
+;+
+; :description:
+;    Determine the time interval between bands in days
+;
+; :params:
+;    sd : in, required
+;      Start julian date / time
+;    ed : in, required
+;      End julian date / time
+;    nb : in, required
+;      The number of bands between the start and end date / time
+;
+; :returns:
+;   The interval in days; interval less than one day are indicated as a fraction
+;
+; :keywords:
+;    per_str : out
+;      The interval expressed as string
+;
+; :author: nieuwenhuis
+;-
 function nrs_get_period_from_range, sd, ed, nb, per_str = input_period
-  per_len = [0.25, 0.5, 1, 8, 10, 15, 16, 30, 365]
-  per_str = ['6 hours', '12 hours', 'day', '8-day', '10-day', 'bi-monthly', '16-day', 'month', 'year']
+  compile_opt idl2, logical_predicate
+  
+  per_len = [0.0416667, 0.083333, 0.125, 0.25, 0.5, 1, 8, 10, 15, 16, 30, 365]
+  per_str = ['1 hour', '2 hours', '3 hours', '6 hours', '12 hours', 'day', '8-day', '10-day', 'bi-monthly', '16-day', 'month', 'year']
   input_period = (ed - sd + 1) / (nb - 1)   ; in days
   diff = abs(per_len - input_period)
   mn = min(diff, mn_ix)
@@ -452,3 +475,90 @@ pro nrs_get_dt_indices, julian, interval = interval, period = period $
   endelse
 end
 
+pro nrs_get_groups, julian, period, groups = groups
+  compile_opt idl2, logical_predicate
+
+  docrop = keyword_set(crop)
+  doclip = ~docrop and keyword_set(clip)
+  docrop = docrop or ~doclip
+
+  caldat, julian, mm, md, my, mh, mmn, ms
+
+  nb = n_elements(julian)
+  in_period = (julian[-1] - julian[0]) / nb
+
+  sy = my[0]
+  sm = mm[0]
+  sd = md[0]
+  ey = my[nb - 1]
+  em = mm[nb - 1]
+  ed = md[nb - 1]
+  th = mh[0]
+  tm = mmn[0]
+  ts = ms[0]
+  year_cnt = ey - sy + 1
+  month_cnt = (ey - sy) * 12 + (em - sm) + 1
+
+  case strlowcase(period) of
+;    'time'   : begin
+;      nrs_days_per_year, [julian[0], julian[-1]], dybands = period_out
+;      new_nb = (long(julian[nb - 1] - julian[0]) + 1) * mult
+;      jul_out = julday(sm, sd, sy, th, tm, ts) + findgen(new_nb) / mult
+;    end
+    'day'    : begin
+      nrs_days_per_year, [julian[0], julian[-1]], dybands = period_out
+      new_nb = long(julian[nb - 1] - julian[0]) + 1
+      jul_out = julday(sm, sd, sy) + lindgen(new_nb)
+    end
+    '8-day'  : begin
+      period_out = 46
+      nrs_get_days_from, julian, 8, 46, jul_out = jul_out, crop = crop, clip = clip
+    end
+    '10-day' : begin
+      period_out = 36
+      corr = (sd - 1) / 10
+      dar = (corr + (indgen(month_cnt * 3))) mod 3 * 10 + 1
+      dar[0] = sd
+      mar = 1 + (((corr + indgen(month_cnt * 3)) / 3) + (sm - 1)) mod 12
+      yar = sy + (((corr + indgen(month_cnt * 3)) / 3) + (sm - 1)) / 12
+      jul_out = julday(mar, dar, yar)
+    end
+    'bi-monthly' : begin
+      period_out = 24
+      corr = (sd - 1) / 10
+      dar = (corr + (indgen(month_cnt * 2))) mod 2 * 15 + 1
+      dar[0] = sd
+      mar = 1 + (((corr + indgen(month_cnt * 2)) / 2) + (sm - 1)) mod 12
+      yar = sy + (((corr + indgen(month_cnt * 2)) / 2) + (sm - 1)) / 12
+      jul_out = julday(mar, dar, yar)
+    end
+    '16-day' : begin
+      period_out = 23
+      nrs_get_days_from, julian, 16, 23, jul_out = jul_out, crop = crop, clip = clip
+    end
+    'month' : begin
+      period_out = 12
+      if docrop and (ed gt 1) then month_cnt++
+      dar = intarr(month_cnt) + 1
+      mar = 1 + (indgen(month_cnt) + (sm - 1)) mod 12
+      yar = sy + (indgen(month_cnt) + (sm - 1)) / 12
+      if docrop and (ed gt 1) then begin
+        dar[[0, month_cnt - 1]] = [sd, ed]
+        mar[[0, month_cnt - 1]] = [sm, em]
+        yar[[0, month_cnt - 1]] = [sy, ey]
+      endif
+      jul_out = julday(mar, dar, yar)
+    end
+    ;      '3-month' : begin
+    ;                  mar = 1 + (indgen(month_cnt) + (sm - 1)) mod 12
+    ;                  yar = sy + (indgen(month_cnt) + (sm - 1)) / 12
+    ;                  jul_out = julday(mar, 1, yar)
+    ;                end
+    'year'  : begin
+      period_out = 1
+      if docrop and (ed gt 1) then year_cnt++
+      jul_out = julday(1, 1, sy + indgen(year_cnt))
+      jul_out[[0,year_cnt - 1]] = julian[[0, nb - 1]]
+    end
+  endcase
+end
