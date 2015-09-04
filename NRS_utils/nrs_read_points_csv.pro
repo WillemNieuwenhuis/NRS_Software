@@ -32,13 +32,23 @@
 ;      Indicates if the table could be read succesfully
 ;    hint_geo : out, optional
 ;      Indicates if any coordinates found are geographic (hint_geo = 1) or metric (hint_geo = 0).
+;    attr_fields : in, optional
+;      String array with the names of the fields to extract data from
+;    attr_value : out
+;      Array with attribute data for all fields in attr_fields. It contains only data for
+;      existing fields. See also attr_valid.
+;      All data is returned either as string or as number.
+;    attr_valid: out
+;      Indicates which of the fields in attr_fields could be found and are extracted in attr_value 
 ;
 ; :author: nieuwenhuis
 ; 
 ; :history:
 ; - august 2013: WN, created
+; - august 2015: WN, added attribute data collection
 ;-
 pro nrs_read_points_csv, table, x, y, data = asc, valid = valid  $
+                       , attr_fields = attr_fields, attr_value = attr, attr_valid = attr_valid $
                        , hint_geo = hint_geo $
                        , nr_cols = field_count, nr_recs = nrrec, header = header
   compile_opt idl2, logical_predicate
@@ -52,7 +62,7 @@ pro nrs_read_points_csv, table, x, y, data = asc, valid = valid  $
   valid = field_count ge 2
   if ~valid then return
   
-  nrrec = n_elements(asc.field1)
+  nrrec = n_elements(asc.(0))
   
   hdr = strlowcase(header)
   typ = size(hdr, /type)
@@ -65,6 +75,21 @@ pro nrs_read_points_csv, table, x, y, data = asc, valid = valid  $
   lon_ix = where(strmid(parts, 0, 3) eq 'lon', cnt_lon)
   x_ix = where(strmid(parts, 0, 1) eq 'x', cnt_x)
   y_ix = where(strmid(parts, 0, 1) eq 'y', cnt_y)
+  
+  atix = intarr(n_elements(attr_fields))
+  for i = 0, n_elements(attr_fields) - 1 do begin
+    atix[i] = where(strlowcase(attr_fields[i]) eq parts)
+  endfor
+  av = where(atix ge 0, val_attr_cnt)
+  if val_attr_cnt gt 0 then begin
+    atix = atix[av]
+    attr = strarr(val_attr_cnt, nrrec)
+    attr_valid = bytarr(n_elements(attr_fields))
+    attr_valid[av] = 1
+    for i = 0,  val_attr_cnt - 1 do begin
+      attr[i, *] = transpose(asc.(atix[i]))
+    endfor
+  endif
   
   x = []
   y = []
