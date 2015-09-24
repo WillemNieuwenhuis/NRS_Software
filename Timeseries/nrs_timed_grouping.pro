@@ -52,23 +52,23 @@ function nrs_get_cross_index, sd, ed, per, input_period, aggr_interval, aggr_int
   level2 = n_elements(aggr_interval2) gt 0
   level1 = ~level2 && (n_elements(aggr_interval) gt 0)
   
-  ; get the indices for the input image stack
-  nrs_get_dt_indices, [sd, ed], period = input_period $
-                      , julian_out = jul_in, indices = ind_in
-
-  ; for input intervals less than one day:
-  ; adjust the input times and position them in the middle of the intervals
-  tim_int = jul_in[1] - jul_in[0]
-;  if tim_int lt 1.0 then $
-;    jul_in -= (jul_in[1] - jul_in[0]) / 2
+  ; get the julian day for the input image stack (fractions indicate time of day)
+  nrs_get_dt_indices, [sd, ed], period = input_period, julian_out = jul_in $
+                    , bins = in_bins, time_mult = in_mult
 
   ; get the indices for the output periods, but ungrouped
   ; shortest period first
-  if n_elements(aggr_interval) gt 0 then begin
-    nrs_get_dt_indices, jul_in, period = aggr_interval $
+  nrs_get_dt_indices, jul_in, period = aggr_interval $
                       , julian_out = jul_out $
-                      , indices = indices, start_year_index = syi, num_period = npy
-  endif
+                      , indices = indices, ri = rev $
+                      , bins = out_bins $   ; for each day of year (DOY) in input give output bin number
+                      , time_mult = out_mult $
+                      , start_year_index = syi, num_period = npy
+
+  ; always calculate indices per year; needed for level1
+  nrs_get_dt_indices, jul_in, period = 'year' $
+                      , julian_out = jo_y, /clip $
+                      , indices = ind_y, start_year_index = syi_y, num_period = num_y
 
   ; second period, if any
   if n_elements(aggr_interval2) gt 0 then $
@@ -81,35 +81,31 @@ function nrs_get_cross_index, sd, ed, per, input_period, aggr_interval, aggr_int
   ; determine all input band indices per output band to be grouped
   ; for 1 level
   if level1 then begin
-    nrs_get_days_indices, jul_out, doy = doy  ; get doy for all output bands
-    h = histogram(doy, rev = ri)
-    num_periods = n_elements(indices) ; all possible periods
-    indices = [indices, n_elements(jul_in)]  ; append closing position to the array
-    out_periods = max(npy)  ; number of final periods in output
-    p_ar = ptrarr(out_periods)
-    st_p = syi le 0 ? 0 : npy[0] - syi  ; offset of first period in num_periods
-    npy_cnt = n_elements(npy)
-    npy_cum = [0, total(npy, /cum)]
-    for p = 0, out_periods - 1 do begin ; p counts along all output periods
-      arr = []
-      six = p
-      npy_ix = 0
-      while six lt n_elements(indices) - 1 do begin
-        arr = [arr, indgen(indices[six + 1] - indices[six]) + indices[six]]
-        six += npy[npy_ix]
-        if npy_cnt gt 1 then npy_ix++
-      endwhile
-      ; calculate the output bin for the current period
-      ; is flexible enough to deal with leap days/years
-      pdist = (st_p + p) - npy_cum
-      pix = where(pdist ge 0, pcnt)  
-      pix = fix(min(pdist[pix]))
-      if ptr_valid(p_ar[pix]) then begin
-        ptr_free, p_ar[pix]  ; should not come here
-      endif
-      p_ar[pix] = ptr_new(arr)
-    endfor
+    leap_corr = indgen(366)
+    leap_corr[60:365] = indgen(365 - 60 + 1) + 61   ; LUT to translate nonleap year doy to leapyear DOY
 
+    ; calculate DOY of all input bands (ignore time)
+    caldat, jul_in, months, days, years, hh, mm, ss
+    doy_in = julday(months, days, years) - julday(1, 1, years) + 1
+    leap = (((years mod 4) eq 0) and ((years mod 100) ne 0)) or ((years mod 400) eq 0)
+    
+    ; calculate input band DOY to date index
+    doy = doy_in
+    nonleap = where(leap eq 0, cnt_leap)
+    if cnt_leap gt 0 then doy[nonleap] = leap_corr[doy_in[nonleap]]
+    if out_mult gt 1 then begin
+      ; prepare sub-day output period lookup
+      out_bins = out_bins * out_mult / in_mult ; in_mult must be larger than out_mult!
+    endif
+
+    togroup = out_bins[doy - 1]
+    h = histogram(togroup, binsize = 1,  omin = omin, rev = ri) ; the o-vector in ri now contains the groups
+    out_periods = n_elements(h)
+    p_ar = ptrarr(out_periods)
+    for i = 0, n_elements(h) - 1 do begin
+      p_ar[i] = ptr_new(ri[ri[i] : ri[i + 1] - 1]) 
+    endfor
+    
     sy = 1
 
     nrdig = fix(alog10(out_periods)) + 1
