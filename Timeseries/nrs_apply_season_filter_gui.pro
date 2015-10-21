@@ -17,7 +17,7 @@ pro nrs_apply_season_filter_gui_event, event
   
 end
 
-pro nrs_apply_season_filter_gui, GROUP_LEADER = wGroup, _EXTRA = _VWBExtra_
+pro nrs_apply_season_filter_gui, event, GROUP_LEADER = wGroup, _EXTRA = _VWBExtra_
   state = { $
     parent:   long(0) $
   }

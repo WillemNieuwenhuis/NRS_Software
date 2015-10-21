@@ -54,7 +54,7 @@ function nrs_get_cross_index, sd, ed, per, input_period, aggr_interval, aggr_int
   
   ; get the julian day for the input image stack (fractions indicate time of day)
   nrs_get_dt_indices, [sd, ed], period = input_period, julian_out = jul_in $
-                    , bins = in_bins, time_mult = in_mult
+                    , bins = in_bins, time_mult = in_mult, /start_only
 
   ; get the indices for the output periods, but ungrouped
   ; shortest period first
@@ -81,24 +81,28 @@ function nrs_get_cross_index, sd, ed, per, input_period, aggr_interval, aggr_int
   ; determine all input band indices per output band to be grouped
   ; for 1 level
   if level1 then begin
-    leap_corr = indgen(366)
-    leap_corr[60:365] = indgen(365 - 60 + 1) + 61   ; LUT to translate nonleap year doy to leapyear DOY
-
-    ; calculate DOY of all input bands (ignore time)
-    caldat, jul_in, months, days, years, hh, mm, ss
-    doy_in = julday(months, days, years) - julday(1, 1, years) + 1
-    leap = (((years mod 4) eq 0) and ((years mod 100) ne 0)) or ((years mod 400) eq 0)
-    
-    ; calculate input band DOY to date index
-    doy = doy_in
-    nonleap = where(leap eq 0, cnt_leap)
-    if cnt_leap gt 0 then doy[nonleap] = leap_corr[doy_in[nonleap]]
-    if out_mult gt 1 then begin
-      ; prepare sub-day output period lookup
-      out_bins = out_bins * out_mult / in_mult ; in_mult must be larger than out_mult!
-    endif
-
-    togroup = out_bins[doy - 1]
+    if aggr_interval eq 'Year' then begin
+      togroup = rev
+    endif else begin
+      leap_corr = indgen(366)
+      leap_corr[60:365] = indgen(365 - 60 + 1) + 61   ; LUT to translate nonleap year doy to leapyear DOY
+  
+      ; calculate DOY of all input bands (ignoring time, is handled separately below)
+      caldat, jul_in, months, days, years
+      doy_in = julday(months, days, years) - julday(1, 1, years) + 1
+      leap = (((years mod 4) eq 0) and ((years mod 100) ne 0)) or ((years mod 400) eq 0)
+      
+      ; calculate input band DOY to date index
+      doy = doy_in
+      nonleap = where(leap eq 0, cnt_leap)
+      if cnt_leap gt 0 then doy[nonleap] = leap_corr[doy_in[nonleap]]
+      if out_mult gt 1 then begin
+        ; prepare sub-day output period lookup
+        out_bins = out_bins * out_mult / in_mult ; in_mult must be larger than out_mult!
+      endif
+  
+      togroup = out_bins[doy - 1]
+    endelse
     h = histogram(togroup, binsize = 1,  omin = omin, rev = ri) ; the o-vector in ri now contains the groups
     out_periods = n_elements(h)
     p_ar = ptrarr(out_periods)
