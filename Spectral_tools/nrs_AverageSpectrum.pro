@@ -160,21 +160,26 @@ end
 ; :keywords:
 ;    kernel : in, optional, default = 7
 ;      size of the window around the location in pixels (default 7 x 7). Is limited to 3, 5 or 7
+;    kernel_type : in, optional, default = 0
+;      The shape of the kernel: 0 = square, 1 = circle
 ;
 ; :author: nieuwenhuis
 ; :history:
-;   <li>sept 2007 - created
-;   <li>may 2013  - renamed; added kernel keyword
+;   - sept 2007 - created
+;   - may 2013  - renamed; added kernel keyword
+;   - august 2015 - added kernel_type keyword
 ;-
 pro nrs_average_spectra_rank_single, points, mapID $
                  , avgSpectra, pntCount, pointIDs $
                  , tranq, mapCount, tranq_map, threshold $
-                 , kernel = kernel
+                 , kernel = kernel $
+                 , kernel_type = kernel_type
   compile_opt idl2, logical_predicate
 
   if n_elements(kernel) eq 0 then kernel = 7 $
   else kernel = min([7, max([3, kernel])])  ; kernel = 3,5,7
   kern2 = fix(kernel / 2)
+  if n_elements(kernel_type) eq 0 then kernel_type = 0
   
 	envi_file_query, mapID, nb = nb, nl = lines, ns = columns
 

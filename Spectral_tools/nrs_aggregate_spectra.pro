@@ -1,23 +1,3 @@
-pro nrs_aggregate_spectra_select, kernel, kern_type, select = select
-  compile_opt idl2, logical_predicate
-
-  kern2 = fix(kernel / 2)
-  select = lonarr(3, kernel)
-  if kern_type eq 0 then begin
-    ; square
-    select[0, *] = kernel
-    select[1, *] = -kern2
-    select[2, *] = kern2
-  endif
-  if kern_type eq 1 then begin
-    ; circle
-    kk = indgen(kernel) - kern2
-    select[1, *] = - floor(sqrt(kern2 ^ 2 - kk ^ 2))
-    select[2, *] = floor(sqrt(kern2 ^ 2 - kk ^ 2))
-    select[0, *] = select[2, *] - select[1, *] + 1
-  endif
-end
-
 ;+
 ; :description:
 ;    Calculate an aggregated spectral profile for all locations in the input features.
