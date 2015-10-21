@@ -1,12 +1,12 @@
-function nrs_find_sav_routines, savefile, csv_file = csv_file
+function nrs_find_sav_routines, savefile, csv_file = csv_file, append = append
   compile_opt idl2
 
-  sav_obj = obj_new('IDL_Savefile',savefile)
+  sav_obj = obj_new('IDL_Savefile', savefile)
   proc = sav_obj->Names(/proc)
   func = sav_obj->Names(/func)
   
   if n_elements(csv_file) gt 0 then begin
-    openw, lun, csv_file, /GET_LUN
+    openw, lun, csv_file, /GET_LUN, append = append
     printf, lun, 'Type,name'
     printf, lun, proc, format = '("procedure,",a)'
     printf, lun, func, format = '("function,",a)'
@@ -15,6 +15,32 @@ function nrs_find_sav_routines, savefile, csv_file = csv_file
     free_lun, lun
   endif
   return, [proc, func]
+end
+
+pro nrs_find_sav_routines_batch, folder, csv_file
+  compile_opt idl2, logical_predicate
+
+  if n_elements(folder) eq 0 then return
+  if n_elements(csv_file) eq 0 then return
+  
+  folder = file_dirname(folder) + path_sep() + file_basename(folder)
+  file_mask = folder + path_sep() + '*.sav'
+  raw_files = file_search(count = file_count, file_mask)
+
+  if file_count le 0 then return
+  
+  openw, lun, csv_file, /GET_LUN
+  printf, lun, 'name, value'
+  printf, lun, 'folder,', folder
+  
+  for f = 0, file_count - 1 do begin
+    list = nrs_find_sav_routines(raw_files[f])
+    for l = 0, n_elements(list) - 1 do $
+      printf, lun, file_basename(raw_files[f]),',',list[l] 
+  endfor
+  
+  close, lun
+  free_lun, lun
 end
 
 pro nrs_routines_in_sav_gui_define_buttons, button_info

@@ -255,17 +255,21 @@ end
 ;    clip : in
 ;      Clip the range by only fitting calculated days within the input range. the start and end
 ;      days are not added or replacing the start / end positions. Overruled by <i>crop</i>
+;    start_only : in
+;      Include only the start dates of each period. If set this will overrule crop and clip
 ;
 ; :Author: nieuwenhuis
 ;-
 pro nrs_get_days_from, julian, period, periods_per_year, jul_out = jul_out $
                      , crop = crop $
-                     , clip = clip
+                     , clip = clip $
+                     , start_only = start_only
   compile_opt idl2, logical_predicate
 
+  dostart = keyword_set(start_only)
   docrop = keyword_set(crop)
-  doclip = ~docrop and keyword_set(clip)
-  docrop = docrop or ~doclip
+  doclip = ~dostart and ~docrop and keyword_set(clip)
+  docrop = ~dostart and (docrop or ~doclip)
   
   nb = n_elements(julian)
   caldat, julian[[0, nb - 1]], mm, dd, yy
@@ -282,6 +286,7 @@ pro nrs_get_days_from, julian, period, periods_per_year, jul_out = jul_out $
   sx = s_cnt eq 0 ? 0 : sx[s_cnt - 1]
   ex = e_cnt eq 0 ? n_elements(jul_n) : ex[0]
   if doclip then ex = ex - 1
+  if dostart then ex = ex - 1
   jul_out = jul_n[sx : ex]
   new_nb = n_elements(jul_out)
   if docrop then jul_out[[0, new_nb - 1]] = julian[[0, nb - 1]] ; crop
@@ -319,6 +324,21 @@ end
 ;      The output (starting) dates as julian dates
 ;    indices : out
 ;      List of indices into the input array. The indices match date/time in output with input
+;    bins : out
+;      List of indices: For an output period of one day or larger it contains for each day of year
+;      the corresponding output time period; the bins list contains 366 indices.
+;      <p>    
+;      For sub-day output periods it contains for each day of year the corresponding output
+;      time period; it contains 366 times the number of sub-periods indices. The index in the array
+;      is calculated as DOY x number of sub-day periods + sub-day period index.
+;      <p>
+;      Note that the number of indices in this list does not need to match the number of output periods!
+;    time_mult : out
+;      This is used with the bins array. For output periods larger than or equal to a day this will
+;      be set to one, indicating the time resolution of bins is one day.
+;      <p>
+;      It will be set to a larger value than one in case the output time resolution is smaller than
+;      one day. In that case this keyword is set to the number of time periods per day.
 ;    start_year_index : out
 ;      Index of the first occurrence of 1 jan in the list of output dates;
 ;      is -1 if 1 jan is not in the dates
@@ -327,6 +347,8 @@ end
 ;      from the start date of the range
 ;    num_period : out
 ;      Output number of periods per year
+;    period_start : in
+;      Include only the start dates of each period. If set this will overrule crop and clip
 ;    crop : in
 ;      Crop the range to include / replace the start and end days; this is the default
 ;      It overrules <i>clip</i>
@@ -344,19 +366,22 @@ pro nrs_get_dt_indices, julian, interval = interval, period = period $
                       , julian_out = jul_out $
                       , crop = crop $
                       , clip = clip $
+                      , start_only = start_only $
                       , indices = indices $
+                      , bins = bins, time_mult = mult $
                       , ri = ri $
                       , start_year_index = start_year_index $
                       , offset = offset $
                       , num_period = period_out
   compile_opt idl2, logical_predicate
 
+  dostart = keyword_set(start_only)
   docrop = keyword_set(crop)
-  doclip = ~docrop and keyword_set(clip)
-  docrop = docrop or ~doclip
+  doclip = ~dostart and ~docrop and keyword_set(clip)
+  docrop = ~dostart and (docrop or ~doclip)
 
   caldat, julian, mm, md, my, mh, mmn, ms
-
+  
   nb = n_elements(julian)
   in_period = (julian[-1] - julian[0]) / nb 
   
@@ -372,6 +397,8 @@ pro nrs_get_dt_indices, julian, interval = interval, period = period $
   year_cnt = ey - sy + 1
   month_cnt = (ey - sy) * 12 + (em - sm) + 1
   
+  period_in = period
+  mult = 1
   if n_elements(interval) gt 0 then begin
     period_out = 365.0 / interval 
     new_nb = long((julian[nb - 1] - julian[0]) / interval) + 1
@@ -381,23 +408,26 @@ pro nrs_get_dt_indices, julian, interval = interval, period = period $
     mular = [24, 12, 8, 6, 4, 2]
     ix = where(period eq timar, cnt_tim)
     if cnt_tim eq 1 then begin
-      period = 'time'
+      period_in = 'time'
       mult = (mular[ix])[0]
     endif
-    case strlowcase(period) of
+    case strlowcase(period_in) of
       'time'   : begin
                    nrs_days_per_year, [julian[0], julian[-1]], dybands = period_out
-                   new_nb = (long(julian[nb - 1] - julian[0]) + 1) * mult
+                   new_nb = long( (julian[nb - 1] - julian[0]) * mult + 1)
                    jul_out = julday(sm, sd, sy, th, tm, ts) + findgen(new_nb) / mult
+                   bins = lindgen(366 * mult)
                  end
       'day'    : begin
                    nrs_days_per_year, [julian[0], julian[-1]], dybands = period_out
                    new_nb = long(julian[nb - 1] - julian[0]) + 1
                    jul_out = julday(sm, sd, sy) + lindgen(new_nb)
+                   bins = lindgen(366) + 1
                  end
       '8-day'  : begin
                    period_out = 46 
-                   nrs_get_days_from, julian, 8, 46, jul_out = jul_out, crop = crop, clip = clip
+                   nrs_get_days_from, julian, 8, 46, jul_out = jul_out, start_only = dostart, crop = docrop, clip = doclip
+                   bins = (lindgen(366) / 8) + 1
                  end
       '10-day' : begin
                    period_out = 36 
@@ -407,6 +437,10 @@ pro nrs_get_dt_indices, julian, interval = interval, period = period $
                    mar = 1 + (((corr + indgen(month_cnt * 3)) / 3) + (sm - 1)) mod 12
                    yar = sy + (((corr + indgen(month_cnt * 3)) / 3) + (sm - 1)) / 12
                    jul_out = julday(mar, dar, yar)
+                   bins = [10, 10, 11, 10, 10, 9, 10, 10, 11, 10, 10, 10, 10, 10, 11, 10, 10, 10 $
+                         , 10, 10, 11, 10, 10, 11, 10, 10, 10, 10, 10, 11, 10, 10, 10, 10, 10, 11]
+                   h = histogram(total(bins, /cum) - 1, /binsize, rev = ri, min = 0)
+                   bins = ri[0 : n_elements(h) - 1] - ri[0]
                  end
       'bi-monthly' : begin
                    period_out = 24
@@ -416,10 +450,14 @@ pro nrs_get_dt_indices, julian, interval = interval, period = period $
                    mar = 1 + (((corr + indgen(month_cnt * 2)) / 2) + (sm - 1)) mod 12
                    yar = sy + (((corr + indgen(month_cnt * 2)) / 2) + (sm - 1)) / 12
                    jul_out = julday(mar, dar, yar)
+                   bins = [15, 16, 15, 14, 15, 16, 15, 15, 15, 16, 15, 15, 15, 16, 15, 16, 15, 15, 15, 16, 15, 15, 15, 16]
+                   h = histogram(total(bins, /cum) - 1, /binsize, rev = ri, min = 0)
+                   bins = ri[0 : n_elements(h) - 1] - ri[0]
                  end
       '16-day' : begin
                   period_out = 23 
-                  nrs_get_days_from, julian, 16, 23, jul_out = jul_out, crop = crop, clip = clip
+                  nrs_get_days_from, julian, 16, 23, jul_out = jul_out, start_only = dostart, crop = docrop, clip = doclip
+                  bins = (lindgen(366) / 16) + 1
                 end
       'month' : begin
                   period_out = 12
@@ -433,6 +471,9 @@ pro nrs_get_dt_indices, julian, interval = interval, period = period $
                     yar[[0, month_cnt - 1]] = [sy, ey]
                   endif 
                   jul_out = julday(mar, dar, yar)
+                  bins = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+                  h = histogram(total(bins, /cum) - 1, /binsize, rev = ri, min = 0)
+                  bins = ri[0 : n_elements(h) - 1] - ri[0]
                 end
 ;      '3-month' : begin
 ;                  mar = 1 + (indgen(month_cnt) + (sm - 1)) mod 12
@@ -443,7 +484,8 @@ pro nrs_get_dt_indices, julian, interval = interval, period = period $
                   period_out = 1
                   if docrop and (ed gt 1) then year_cnt++
                   jul_out = julday(1, 1, sy + indgen(year_cnt))
-                  jul_out[[0,year_cnt - 1]] = julian[[0, nb - 1]]
+                  bins = lonarr(366)
+;                  jul_out[[0,year_cnt - 1]] = julian[[0, nb - 1]]
                 end
     endcase
   endelse
@@ -475,14 +517,31 @@ pro nrs_get_dt_indices, julian, interval = interval, period = period $
   endelse
 end
 
+;+
+; :description:
+;    Determine the output bin number for each input band
+;
+; :params:
+;    julian
+;    period
+;
+; :keywords:
+;    groups
+;
+; :author: nieuwenhuis
+;-
 pro nrs_get_groups, julian, period, groups = groups
   compile_opt idl2, logical_predicate
 
   docrop = keyword_set(crop)
   doclip = ~docrop and keyword_set(clip)
   docrop = docrop or ~doclip
-
+  
+  dpy = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+  leap_corr = indgen(366)
+  leap_corr[60:365] = indgen(365 - 60 + 1) + 61   ; LUT to translate nonleap year doy to leapyear doy
   caldat, julian, mm, md, my, mh, mmn, ms
+  
 
   nb = n_elements(julian)
   in_period = (julian[-1] - julian[0]) / nb
