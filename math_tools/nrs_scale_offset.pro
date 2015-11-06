@@ -38,6 +38,8 @@
 ;     21 Feb 2012: nieuwenhuis, created
 ;     24 Oct 2013: nieuwenhuis, added data_type keyword
 ;                               Internally use highest precision to perform the calculation
+;     3 Nov 2015: nieuwenhuis, use generic ENVI data read function, instead of raw data read
+;                              function, because this did not work for complex input formats. 
 ;-
 pro nrs_scale_offset, img_name, outname = outname $
                     , scale = scale, offset = offset, off_before_scale = offset_before_scale $
@@ -64,7 +66,8 @@ pro nrs_scale_offset, img_name, outname = outname $
                  , bnames = bnames, data_type = dt_in
   mi = envi_get_map_info(fid = fid, undefined = csy_undef)
   if csy_undef then delvar, mi
-;  envi_file_mng, fid, /remove
+
+  meta = envi_set_inheritance(fid, dims, /full)
   
   dtx = where(dt_in eq [1, 2, 3, 4, 5, 6, 9, 12, 13, 14, 15], dt_cnt)
   if n_elements(dt_out) eq 0 then dt_out = 0; 4  ; assume float
@@ -84,8 +87,7 @@ pro nrs_scale_offset, img_name, outname = outname $
 
   nrs_set_progress_property, prog_obj, /start, title = 'Applying scale / offset'
   
-  ; open the input and output files
-  openr, unit_in, img_name, /get_lun
+  ; open the output file
   openw, unit, outname, /get_lun
 
   limits = nrs_minmax_from_datatype(dt_out)
@@ -102,10 +104,10 @@ pro nrs_scale_offset, img_name, outname = outname $
       return
     endif
     
-    readu, unit_in, data_in
+    data_in = envi_get_data(fid = fid, dims = dims, pos = b) 
     ix = where(data_in eq nodata, count)
     ; make sure to perform calculations in the higher precision data type
-    if dt_in lt dt_out then data = fix(data_in, type = dt_out) $
+    if dt_out ge 4 and dt_out lt 10 then data = fix(data_in, type = dt_out) $
     else data = data_in
     
     if obs then begin
@@ -125,19 +127,48 @@ pro nrs_scale_offset, img_name, outname = outname $
     
     writeu, unit, data_out
   endfor
-  close, unit_in
   close, unit
-  free_lun, unit_in
   free_lun, unit
   
   envi_setup_head, fname = outname $
         , data_type = dt_out $
         , /write $
-        , xstart = xs, ystart = ys $
-        , interleave = interleave $
+        , interleave = 0 $  ; 0 = BSQ
         , nb = nb, nl = nl, ns = ns $
         , bnames = bnames $
-        , map_info = mi $
-        , data_ignore_value = nodata_out
+        , data_ignore_value = nodata_out $
+        , inherit = meta
 end
 
+pro nrs_scale_offset_batch, input_list
+  compile_opt idl2, logical_predicate
+
+  prog_outer = obj_new("PROGRESSBAR", background = 'white', color = 'green' $
+    , ysize = 15, title = "Batch apply scale and offset" $
+    , /fast_loop $
+    )
+  nrs_set_progress_property, prog_outer, /start, title = 'Batch applying scale / offset'
+  
+  file_list = []
+  openr, lun, input_list, /get_lun
+  line = '' ; force reading text file
+  while ~eof(lun) do begin
+    readf, lun, line
+    if strlen(line) gt 0 then begin
+      fi = file_info(line)
+      if fi.exists then file_list = [file_list, line]
+    endif
+  endwhile
+  free_lun, lun
+  
+  file_count = n_elements(file_list)
+  for f = 0, file_count - 1 do begin
+    void = nrs_update_progress(prog_outer, f, file_count, cancelled = cancelled)
+    
+    fn = file_list[f]
+    fnout = getOutname(fn, postfix = '_rad', ext = '.dat')
+    nrs_scale_offset, fn, outname = fnout, data_type = 4, scale = 0.01
+  endfor
+  
+  prog_outer->destroy
+end
