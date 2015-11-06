@@ -1,4 +1,6 @@
 pro nrs_extract_time_gui_event, event
+  compile_opt idl2, logical_predicate
+
   wTarget = (widget_info(Event.id,/NAME) eq 'TREE' ?  widget_info(Event.id, /tree_root) : event.id)
   wWidget =  Event.top
 
@@ -17,6 +19,8 @@ pro nrs_extract_time_gui_event, event
 end
 
 pro nrs_extract_time_gui, event
+  compile_opt idl2, logical_predicate
+
   label_width = 100
   label_wide_width = 150
   text_width =  60
@@ -56,7 +60,7 @@ pro nrs_extract_time_gui, event
                 , title = 'Start date' $
                 , labelalign = 1 $
                 , labelsize = label_width $
-                , unittext = '(dd-mm-yyyy)' $
+                , unittext = '( dd-mm-yyyy )' $
                 , value = '' $
                 , xsize = text_small_width $
                 , /all_events $
@@ -67,22 +71,38 @@ pro nrs_extract_time_gui, event
                 , title = 'End date' $
                 , labelalign = 1 $
                 , labelsize = label_width $
-                , unittext = '(dd-mm-yyyy)' $
+                , unittext = '( dd-mm-yyyy )' $
                 , value = '' $
                 , xsize = text_small_width $
                 , /all_events $
               )
-  
-  nrs_extract_time_fieldname = fsc_inputfield(nrs_extract_time_mainPanel $
-                , uname = 'nrs_extract_time_fieldname' $
-                , title = 'Field name' $
-                , labelalign = 1 $
-                , labelsize = label_width $
-                , value = '' $
-                , xsize = text_width $
-                , /all_events $
+
+  nrs_extract_time_time_track_panel = widget_base(group, /nonexclusive, /col)
+  nrs_extract_time_time_track = widget_button(nrs_extract_time_time_track_panel $
+                     , value = 'Locations have time track', uname = 'nrs_extract_time_time_track')
+
+  nrs_extract_time_buffer_panel = widget_base(group, uname = 'nrs_extract_time_buffer_panel')
+  nrs_extract_time_buffer = fsc_inputfield(nrs_extract_time_buffer_panel $
+              , uname = 'nrs_extract_time_buffer' $
+              , title = 'Buffer' $
+              , labelalign = 1 $
+              , labelsize = label_width $
+              , unittext = '( m )' $
+              , value = '' $
+              , xsize = text_small_width $
+              , /all_events $
               )
-  
+
+;  nrs_extract_time_fieldname = fsc_inputfield(nrs_extract_time_mainPanel $
+;                , uname = 'nrs_extract_time_fieldname' $
+;                , title = 'Field name' $
+;                , labelalign = 1 $
+;                , labelsize = label_width $
+;                , value = '' $
+;                , xsize = text_width $
+;                , /all_events $
+;              )
+;  
   nrs_extract_time_output_panel = widget_base(nrs_extract_time_contentPanel, /frame, /col)
   nrs_extract_time_outputFile = cw_dirfile(nrs_extract_time_output_panel, uname = 'nrs_extract_time_outputFile' $
         , style = 'file' $
@@ -99,6 +119,8 @@ pro nrs_extract_time_gui, event
   widget_control, /realize, nrs_extract_time_contentpanel
 
   ; Initialize stuff
+  widget_control, nrs_extract_time_buffer_panel, sensitiv = 0
+  widget_control, nrs_extract_time_time_track, set_button = 0
 
   XManager, 'nrs_extract_time_gui', nrs_extract_time_contentPanel, /no_block
 end

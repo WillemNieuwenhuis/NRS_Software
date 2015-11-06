@@ -1,8 +1,8 @@
 pro _build_basic_tools
   compile_opt idl2
 
-  _auto_build_version, name = 'basic_tools'
-  resolve_routine, 'basic_tools_version'
+;  _auto_build_version, name = 'basic_tools'
+;  resolve_routine, 'basic_tools_version'
   
   files = [ $
              'nrs_area_numbering.pro' $
