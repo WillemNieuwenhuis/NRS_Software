@@ -16,6 +16,8 @@
 ; - 0, if the pixel lies outside of the image
 ;-
 function nrs_check_bounds, x, y, lines, columns
+  compile_opt idl2
+
   if (x ge 0) and (x lt columns) and $
      (y ge 0) and (y lt lines) then return, 1
   return, 0
@@ -39,11 +41,33 @@ end
 ;   Y coordinate is changed to be within [0, lines - 1]
 ;-
 pro nrs_crop_bounds, x, y, lines, columns
+  compile_opt idl2
+
   if x lt 0 then x = 0
   if x gt columns then x = columns - 1
   if y lt 0 then y = 0
   if y gt lines then y = lines - 1
 end
+
+function nrs_remove_out_bounds, x, y, lines, columns
+  compile_opt idl2, logical_predicate
+
+  xx = x
+  if size(x, /n_dim) eq 2 then begin
+    yy = reform(x[1, *], n_elements(x[1, *]))
+    xx = reform(x[0, *], n_elements(x[1, *]))
+  endif
+  
+  ix = where((xx ge 0 and xx lt columns) and (yy ge 0 and yy lt lines), cnt)
+  
+  out = []
+  if cnt gt 0 then begin
+    out = transpose(reform([xx[ix], yy[ix]], cnt, 2))
+  endif
+  
+  return, out
+end
+
 
 ;+
 ; :Description:
@@ -86,3 +110,4 @@ function nrs_clip_to_bounds, _v, vlim
   
   return, v
 end
+

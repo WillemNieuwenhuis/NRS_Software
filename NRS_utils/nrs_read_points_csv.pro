@@ -55,6 +55,8 @@ pro nrs_read_points_csv, table, x, y, data = asc, valid = valid  $
   
 ;  line_data = nrs_read_table(table, col_count = field_count, header = header, valid = valid)
  
+  do_attr = keyword_set(attr_fields)
+  
   asc = nrs_read_csv(table, header = header, date_sep = '-/', time_sep = ':')
   field_count = n_tags(asc)
  
@@ -76,19 +78,21 @@ pro nrs_read_points_csv, table, x, y, data = asc, valid = valid  $
   x_ix = where(strmid(parts, 0, 1) eq 'x', cnt_x)
   y_ix = where(strmid(parts, 0, 1) eq 'y', cnt_y)
   
-  atix = intarr(n_elements(attr_fields))
-  for i = 0, n_elements(attr_fields) - 1 do begin
-    atix[i] = where(strlowcase(attr_fields[i]) eq parts)
-  endfor
-  av = where(atix ge 0, val_attr_cnt)
-  if val_attr_cnt gt 0 then begin
-    atix = atix[av]
-    attr = strarr(val_attr_cnt, nrrec)
-    attr_valid = bytarr(n_elements(attr_fields))
-    attr_valid[av] = 1
-    for i = 0,  val_attr_cnt - 1 do begin
-      attr[i, *] = transpose(asc.(atix[i]))
+  if do_attr then begin
+    atix = intarr(n_elements(attr_fields))
+    for i = 0, n_elements(attr_fields) - 1 do begin
+      atix[i] = where(strlowcase(attr_fields[i]) eq parts)
     endfor
+    av = where(atix ge 0, val_attr_cnt)
+    if val_attr_cnt gt 0 then begin
+      atix = atix[av]
+      attr = strarr(val_attr_cnt, nrrec)
+      attr_valid = bytarr(n_elements(attr_fields))
+      attr_valid[av] = 1
+      for i = 0,  val_attr_cnt - 1 do begin
+        attr[i, *] = transpose(asc.(atix[i]))
+      endfor
+    endif
   endif
   
   x = []
@@ -105,9 +109,10 @@ pro nrs_read_points_csv, table, x, y, data = asc, valid = valid  $
   endif
   ix = lindgen(field_count)
   count = field_count
+
   if cnt_lon ne 0 && cnt_lat ne 0 then begin
-    x = transpose(asc.(lon_ix))
-    y = transpose(asc.(lat_ix))
+    x = asc.(lon_ix)
+    y = asc.(lat_ix)
   endif
   
   maxx = max(x, min = minx)
