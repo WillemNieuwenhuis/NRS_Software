@@ -9,6 +9,8 @@ pro nrs_interpolate_to_payment, image, classfile, table_5, table_25 $
   
   cancelled = 1
   
+  debug = keyword_set(debug)
+  
   if n_params() ne 4 then begin
     ans = dialog_message('Not enough parameters to continue', title = 'Error', /error)
     return
@@ -118,7 +120,7 @@ pro nrs_interpolate_to_payment, image, classfile, table_5, table_25 $
       endif
     endfor
     ix = where(out_data le 5, cntle5)
-    iy = where((out_data gt 5) && (out_data le 10), cntle10)
+    iy = where((out_data gt 5) and (out_data le 10), cntle10)
     if cntle5 gt 0 then out_data[ix] = 0
     if cntle10 gt 0 then out_data[iy] = 10
    
