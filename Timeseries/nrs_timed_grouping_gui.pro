@@ -118,7 +118,7 @@ pro nrs_timed_grouping_gui, event
 
   nrs_timed_grouping_indices_combo = widget_combobox(nrs_timed_grouping_indices_panel $
                 , uname = 'nrs_timed_grouping_indices_combo' $
-                , value = ['Sum', 'Mean', 'Minumum', 'Maximum', 'Median'] $ ;, 'Standard deviation', 'Mode'] $
+                , value = ['Sum', 'Mean', 'Stddev', 'Minimum', 'Maximum', 'Median', 'CV'] $ ;, 'Standard deviation', 'Mode'] $
               )
 
   nrs_timed_grouping_output_panel = widget_base(nrs_timed_grouping_contentPanel, /frame, /col)

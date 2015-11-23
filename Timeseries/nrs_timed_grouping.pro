@@ -254,7 +254,7 @@ pro nrs_timed_grouping, image $
     endif
   endif
   
-  all_functions = ['mean', 'stddev', 'sum', 'minimum', 'maximum', 'median']
+  all_functions = ['mean', 'stddev', 'sum', 'minimum', 'maximum', 'median', 'cv']
   func_ix = where(strlowcase(aggr_func) eq all_functions, cnt)
   if cnt eq 0 then begin
     ans = dialog_message('Unsupported aggregation function (' + aggr_func + ')', title = 'Error', /error)
@@ -304,6 +304,10 @@ pro nrs_timed_grouping, image $
               3 : aggr = min(data, dimension = dim)
               4 : aggr = max(data, dimension = dim)
               5 : aggr = median(data, dimension = dim)
+              6 : begin
+                    void = moment(data, dimension = dim, sdev = sdv, mean = avg)
+                    aggr = sdv / avg
+                  end
             endcase
             break
           end
@@ -320,6 +324,10 @@ pro nrs_timed_grouping, image $
                 3 : aggr[*, t] = min(accu, dimension = dim)
                 4 : aggr[*, t] = max(accu, dimension = dim)
                 5 : aggr[*, t] = median(accu, dimension = dim)
+                6 : begin
+                  void = moment(accu, dimension = dim, sdev = sdv, mean = avg)
+                  aggr[*, t] = sdv / avg
+                end
               endcase
               
             endfor
