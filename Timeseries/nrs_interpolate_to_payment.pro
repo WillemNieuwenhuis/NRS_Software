@@ -58,8 +58,8 @@ pro nrs_interpolate_to_payment, image, classfile, table_5, table_25 $
   cancelled = 0
   
   classes = lut05.(0) ; // or lut25.(0), they should be identical; the region classes
-  perc05 = intarr(n_elements(lut05.(0)), field_count - 1)
-  perc25 = intarr(n_elements(lut25.(0)), field_count - 1)
+  perc05 = fltarr(n_elements(lut05.(0)), field_count - 1)
+  perc25 = fltarr(n_elements(lut25.(0)), field_count - 1)
   for c = 1, field_count - 1 do begin
     perc05[*, c - 1] = lut05.(c)
     perc25[*, c - 1] = lut25.(c)
@@ -90,6 +90,7 @@ pro nrs_interpolate_to_payment, image, classfile, table_5, table_25 $
   bind = (indgen(nb) + offset[0]) mod img_per_year
   yind = yy + ((indgen(nb) + offset[0]) / img_per_year)
   out_data = bytarr(ns, nl)
+  data = fltarr(ns, nl)
   for band = 0, nb - 1 do begin
     out_data[*] = 0
     if nrs_update_progress(prog_obj, band, nb, cancelled = cancelled) then begin
@@ -104,17 +105,17 @@ pro nrs_interpolate_to_payment, image, classfile, table_5, table_25 $
       ptr_free, mask
       return
     endif
-    data = envi_get_data(fid = fid, dims = dims, pos = band)
+    data[*, *] = envi_get_data(fid = fid, dims = dims, pos = band)
     dx = where(data eq 0, dcnt) ; detect the unclassified values
     
     ; calculate percentage based on the 5% and 25% value bounds
-    bix = bind[band]  ; period index
+    bix = bind[band]  ; index of band number to table record (class record)
     for cli = 0, nr_classes - 1 do begin
       cur_cl = classes[cli]
       if count_ar[cli] gt 0 then begin
         ix = *mask[cli] ; get the value indices for this class (cur_cl at index cli)
         ; clip all data values witin the 5% and 25% percentile 
-        data[ix] = byte((data[ix] > perc05[cli, bix]) < perc25[cli, bix])
+        data[ix] = (data[ix] > perc05[cli, bix]) < perc25[cli, bix]
         ; apply linear stretch
         out_data[ix] = byte(100.0 * (perc25[cli, bix] - data[ix]) / (perc25[cli, bix] - perc05[cli, bix]))
       endif

@@ -55,7 +55,7 @@ pro nrs_interpolate_to_payment_gui, event, GROUP_LEADER = wGroup, _EXTRA = _VWBE
     )
     
   nrs_interpolate_to_payment_season_p5table = cw_dirfile(nrs_interpolate_to_payment_inputPanel $
-    , title = '5% percentile table' $
+    , title = 'Low percentile table' $
     , style = 'file' $
     , xsize = text_width $
     , xtitlesize = label_width $
@@ -63,7 +63,7 @@ pro nrs_interpolate_to_payment_gui, event, GROUP_LEADER = wGroup, _EXTRA = _VWBE
     )
     
   nrs_interpolate_to_payment_season_p25table = cw_dirfile(nrs_interpolate_to_payment_inputPanel $
-    , title = '25% percentile table' $
+    , title = 'High percentile table' $
     , style = 'file' $
     , xsize = text_width $
     , xtitlesize = label_width $

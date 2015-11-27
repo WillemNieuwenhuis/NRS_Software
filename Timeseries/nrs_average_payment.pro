@@ -140,14 +140,17 @@ pro nrs_average_season_payment, image, classfile, season_table $
   nrs_set_progress_property, prog_obj, /start, title = 'Calculate averages per growing season'
 
   ; calculate the season indices
-  seas_p1 = lonarr(nb_eval, nr_classes) ; contains one for all bands in the season (per class)
+  ; Do this by repeating the grow season for the entire time series
+  seas_p1 = bytarr(nb_eval, nr_classes) ; contains one (1) for all bands in the season (per class)
   cnt_p1 = lonarr(nr_classes) ; the length of the season for each class
-  lb = last_band mod img_per_year
+  lb = last_band mod img_per_year   ; map to the range of number of bands per year
   for cli = 0, nr_classes - 1 do begin
     cl = classes[cli]
-    data = reform(tbl_data[cli, *], n_elements(tbl_data[cli, *]), /overwrite)
+    data = reform(tbl_data[cli, *], n_elements(tbl_data[cli, *]), /overwrite) ; remove redundant dimensions
     p1 = reform(rebin(data, img_per_year, nr_years), img_per_year * nr_years)
     if ~only_full_year then begin
+      ; add appropriate season info at start and end ...
+      ;   ... when the entire time series needs to be handled
       p1 = [data[first_band : -1], p1, data[0 : lb - 1]]
     endif
     seas_p1[*, cli] = p1
@@ -155,20 +158,21 @@ pro nrs_average_season_payment, image, classfile, season_table $
     cnt_p1[cli] = in_seascnt
   endfor
 
-  out_undef = !values.f_nan ;255.0
+  out_undef = !values.f_nan 
   outname = getoutname(image, postfix = '_gra', ext = '.dat')
-  data_out = fltarr(ns, nl, nr_years) + out_undef ; use 255 as undef value
+  data_out = fltarr(ns, nl, nr_years) + out_undef
 
   ; pass through data line by line
-  pos = indgen(last_band - first_band + 1) + first_band   ; in case of complete years
-  if ~only_full_year then pos = indgen(nb)  
+  pos = indgen(last_band - first_band + 1) + first_band   ; in case of complete years only
+  if ~only_full_year then pos = indgen(nb) ; entire time series
 
+  data = fltarr(ns, n_elements(pos))
   for line = 0, nl - 1 do begin
     if nrs_update_progress(prog_obj, line, nl, cancelled = cancelled) then begin
       return
     endif
 
-    data = envi_get_slice(fid = fid, line = line, xs = 0, xe = ns - 1, pos = pos, /bil)
+    data[*, *] = envi_get_slice(fid = fid, line = line, xs = 0, xe = ns - 1, pos = pos, /bil)
     uix = where(data eq undef, ucnt)  ; mark the undefined values, to exclude them from the aggregation
     ; dimension of data is 2D : ns, img_per_year * nr_years
     ; this now matches with seas_p1
@@ -182,13 +186,14 @@ pro nrs_average_season_payment, image, classfile, season_table $
       if cnt_p1[cli] gt 0 then begin
         sp = rebin(transpose(seas_p1[*, cli]), loc_cnt, nb_eval) ; adjust dim to loc_cnt, nb_eval
         select = data[ix, *] * sp  ; dimensions of data[ix, *] and select : loc_cnt, nb_eval
-        ; now claculate the average percentage, but only based on the
+        ; now calculate the average percentage, but only based on the
         ; bands in the growing season
         if only_full_year then begin
           select = reform(select, loc_cnt, img_per_year, nr_years, /overwrite)
           itr = total(select, 2, /nan) / cnt_p1[cli]  ; dimensions of itr : loc_cnt, nr_years
           data_out[ix, line, *] = itr
         endif else begin
+          ; Special handling required for the tail and end of the time series
           ; handle the complete years first
           whole = reform(select[ix, first_band : last_band - 1], loc_cnt, img_per_year, nr_years, /overwrite)
           itr = total(whole, 2, /nan) / cnt_p1[cli]
