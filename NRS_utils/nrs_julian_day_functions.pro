@@ -60,9 +60,11 @@ function nrs_split_datetime, date, time
   dt_arr = intarr(6)
   parts = strsplit(date, '-/', /extract, count = nr_dt)
   dt_arr[0 : nr_dt - 1] = fix(parts)
-  if strlen(time) gt 0 then begin 
-    parts = strsplit(time, ':', /extract, count = nr_tm)
-    dt_arr[3 : 3 + nr_tm - 1] = fix(parts)
+  if n_elements(time) gt 0 then begin
+    if strlen(time) gt 0 then begin 
+      parts = strsplit(time, ':', /extract, count = nr_tm)
+      dt_arr[3 : 3 + nr_tm - 1] = fix(parts)
+    endif
   endif
   
   return, dt_arr 
