@@ -1,17 +1,24 @@
 function nrs_datetime_from_string, date_str, time_str
   compile_opt idl2, logical_predicate
 
+  date_only = n_elements(time_str) eq 0 
   nr_dates = n_elements(date_str)
   dt_arr = intarr(6, nr_dates)
-  if n_elements(time_str) eq 0 then time_str = strarr(nr_dates) + '12:00:00'
+;  if n_elements(time_str) eq 0 then time_str = strarr(nr_dates) + '12:00:00'
   for i = 0, nr_dates - 1 do begin
-    dt_arr[*, i] = nrs_split_datetime(date_str[i], time_str[i])
+    if date_only then $
+      dt_arr[*, i] = nrs_split_datetime(date_str[i]) $
+    else $
+      dt_arr[*, i] = nrs_split_datetime(date_str[i], time_str[i])
   endfor
   
   dmy = nrs_dmy_mapping(dt_arr)
 
-  return, reform(julday(dt_arr[dmy[1], *], dt_arr[dmy[0], *], dt_arr[dmy[2], *] $
-                      , dt_arr[3, *], dt_arr[4, *], dt_arr[5, *]) $
+  if date_only then $
+    return, reform(julday(dt_arr[dmy[1], *], dt_arr[dmy[0], *], dt_arr[dmy[2], *]), nr_dates) $
+  else $
+    return, reform(julday(dt_arr[dmy[1], *], dt_arr[dmy[0], *], dt_arr[dmy[2], *] $
+                 , dt_arr[3, *], dt_arr[4, *], dt_arr[5, *]) $
                  , nr_dates)
 end
 
@@ -205,7 +212,7 @@ pro nrs_extract_by_time, point_table, image $
   
   cancelled = 0
   
-  entire = keyword_set(entire) || (nr_fields lt 4)
+  entire = keyword_set(entire) || (nr_fields lt 3)
   
   envi_file_query, fid, ns = ns, nl = nl, nb = nb, dims = dims, data_type = dt
   
@@ -237,22 +244,28 @@ pro nrs_extract_by_time, point_table, image $
   nr_points = n_elements(x)
   if entire then begin
     msg_title = 'Extracting values'
-    vals = make_array(nr_points, nb, type = dt)
+    vals = fltarr(nr_points, nb)
     tim_ix = lindgen(nb) + 1
     field_names = string(tim_ix, format = '("band_",i0)')
     header = [header, field_names]
   endif else begin
     ; calculate time_mapping to timeseries bands
-    times = nrs_datetime_from_string(asc.field3, asc.field4)
-    tim_ix = fix(nb * (times - sp) / (ep - sp)) < (nb - 1)
+    if n_tags(asc) eq 3 then begin
+      times = nrs_datetime_from_string(asc.field3)
+    end else begin
+      times = nrs_datetime_from_string(asc.field3, asc.field4)
+    endelse
+    tim_ix = fix(nb * (times - sp) / (ep - sp + 1))
     msg_title = 'Extracting values by time'
-    vals = make_array(nr_points, type = dt)
+    vals = fltarr(nr_points)
     ; calc fieldnames
     ext = nrs_get_file_extension(image)
     if n_elements(fieldname) eq 0 then fieldname = file_basename(image, ext)
     bn = fieldname + '_bandnr'
     header = [header, bn, fieldname]
-  endelse  
+  endelse
+  invalid = where((tim_ix lt 0) or (tim_ix ge nb), cnt_inv)  
+  tim_ix = (tim_ix < (nb - 1) > 0)
   
   nrs_set_progress_property, prog_obj, /start, title = msg_title
   pos_ent = indgen(nb)
@@ -277,7 +290,7 @@ pro nrs_extract_by_time, point_table, image $
         endelse
       endfor
       vals[i, *] /= count
-    endif else begin
+    endif else begin  ; no buffer
       if entire then begin
         vals[i, *] = envi_get_slice(fid = fid, line = pixelY[i], xs = pixelX[i], xe = pixelX[i], pos = pos_ent)
       endif else begin
@@ -285,6 +298,10 @@ pro nrs_extract_by_time, point_table, image $
       endelse
     endelse
   endfor
+  if cnt_inv gt 0 then begin
+    if entire then vals[*, invalid] = !values.f_nan $
+    else vals[invalid] = !values.f_nan
+  endif
   
   if entire then begin
     outdata = asc
