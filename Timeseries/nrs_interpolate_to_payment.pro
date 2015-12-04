@@ -109,12 +109,12 @@ pro nrs_interpolate_to_payment, image, classfile, table_5, table_25 $
     dx = where(data eq 0, dcnt) ; detect the unclassified values
     
     ; calculate percentage based on the 5% and 25% value bounds
-    bix = bind[band]  ; index of band number to table record (class record)
+    bix = bind[band]  ; index of band number to class record
     for cli = 0, nr_classes - 1 do begin
       cur_cl = classes[cli]
       if count_ar[cli] gt 0 then begin
         ix = *mask[cli] ; get the value indices for this class (cur_cl at index cli)
-        ; clip all data values witin the 5% and 25% percentile 
+        ; clip all data values to within the 5% and 25% percentile
         data[ix] = (data[ix] > perc05[cli, bix]) < perc25[cli, bix]
         ; apply linear stretch
         out_data[ix] = byte(100.0 * (perc25[cli, bix] - data[ix]) / (perc25[cli, bix] - perc05[cli, bix]))

@@ -115,7 +115,7 @@ pro nrs_average_season_payment, image, classfile, season_table $
     last_date = dec31_end
     first_band = year_start
     last_band = year_end
-    if jan1_start ge sd then start_yy = start_yy + 1
+    if jan1_start gt sd then start_yy = start_yy + 1
     if dec31_end lt ed then end_yy = end_yy - 1
   endif
 
