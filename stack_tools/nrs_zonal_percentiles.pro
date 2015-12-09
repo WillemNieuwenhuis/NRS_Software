@@ -350,7 +350,7 @@ pro nrs_zonal_percentiles_group, image, classfile $
 
       envi_setup_head, fname = pnames[pix] $
         , data_type = dt $
-        , ns = ns, nl = nl, nb = nb $
+        , ns = ns, nl = nl, nb = nbOut $
         , interleave = 0 $  ; 0 == BSQ
         , bnames = bnames $
         , /write $
@@ -367,7 +367,7 @@ pro nrs_zonal_percentiles_group, image, classfile $
   if czeroes gt 0 then out_table[zeroes] = ''
   out_table = reform(out_table, nbOut, n_elements(percentile) * nr_class, /overwrite)
 
-  header = strjoin(['Percentile,Class', string(indgen(nb) + 1, format = '("Band_", i0)')], ',')
+  header = strjoin(['Percentile,Class', string(indgen(nbOut) + 1, format = '("Band_", i0)')], ',')
   cli = string((indgen(nr_class * n_elements(percentile)) mod nr_class) + 1, format = '(i0)')
   pin = string(fix(percentile[indgen(nr_class * n_elements(percentile)) / nr_class] * 100), format = '(i0)')
   openw, lun, outname, /GET_LUN

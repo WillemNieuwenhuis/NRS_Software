@@ -126,7 +126,7 @@ pro nrs_interpolate_to_payment, image, classfile, table_5, table_25 $
     if cntle10 gt 0 then out_data[iy] = 10
    
     ; keep previously discovered unclassified values
-    if dcnt gt 0 then out_data[dx] = 0
+    if dcnt gt 0 then out_data[dx] = !values.f_nan
     
     if debug then begin
       out_data_d = byte(out_data * 1.50 + 50)
