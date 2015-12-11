@@ -7,6 +7,10 @@ pro _build_basic_tools
   files = [ $
              'nrs_area_numbering.pro' $
            , 'nrs_basic_tools_define_buttons.pro' $
+           , 'nrs_bayesian_classify_eventCB.pro' $
+           , 'nrs_bayesian_classify_gui.pro' $
+           , 'nrs_bayesian_classify.pro' $
+           , 'nrs_bayesian_rule.pro' $
            , 'nrs_classify_r2.pro' $
            , 'nrs_classify_r2_gui.pro' $
            , 'nrs_classify_r2_gui_eventcb.pro' $
