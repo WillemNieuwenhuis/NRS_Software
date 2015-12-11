@@ -3,6 +3,10 @@ pro nrs_basic_tools_define_buttons, buttonInfo
     uvalue = 'Classify R2', event_pro = 'nrs_classify_r2_gui', $
     ref_value = 'NRS', position = 'first'
 
+  envi_define_menu_button, buttoninfo, value = 'Bayesian classification (table)', $
+    uvalue = 'Bayesian classification (table)', event_pro = 'nrs_bayesian_classify_gui', $
+    ref_value = 'NRS', position = 'first'
+
   envi_define_menu_button, buttoninfo, value = 'Model performance', $
     uvalue = 'Model performance', event_pro = 'nrs_model_perf_gui', $
     ref_value = 'NRS', position = 'first'
