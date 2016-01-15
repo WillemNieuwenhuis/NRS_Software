@@ -124,7 +124,7 @@ pro nrs_average_season_payment, image, classfile, season_table $
     ans = dialog_message('No data available for evaluation', title = 'Error', /error)
     return
   endif
-  nr_years = (last_date - first_date) / 365
+  nr_years = (last_date - first_date + 1) / 365
   nb_eval = last_band - first_band + 1
 
   ; seasons table contains values zero and one: zero = out of growing season, one = in growing season
