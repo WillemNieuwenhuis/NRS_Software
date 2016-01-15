@@ -25,6 +25,9 @@
 ;      If specified and positive only select this band from an multi-band input image (zero-based)
 ;    extension : in, optional, default = '*' (all files)
 ;      Define the allowed data file extension
+;    band_names : in, optional
+;      Names of the bands; the length of the list of names must match exactly with the
+;      number of bands, otherwise the filenames of the stacked bands are used.
 ;    prog_obj : in, optional
 ;      A ProgressBar object to indicate progress
 ;    cancelled : out, optional
@@ -36,6 +39,7 @@ pro nrs_stack_image, outname, folder = folder, list_file = list_file $
                    , allow_multi = allow_multi $
                    , band_pos = band_pos $
                    , extension = extension $
+                   , band_names = band_names $
                    , prog_obj = prog_obj, cancelled = cancelled
   compile_opt idl2, logical_predicate
   
@@ -155,6 +159,8 @@ pro nrs_stack_image, outname, folder = folder, list_file = list_file $
   endfor
   close, unit
   free_lun, unit
+  
+  if n_elements(band_names) eq bcnt then bnames = band_names
   
   envi_setup_head, fname = outname $
           , data_type = dt $
