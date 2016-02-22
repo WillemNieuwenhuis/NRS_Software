@@ -45,7 +45,11 @@ function nrs_find_images, folder, pattern, extension = ext $
   exclude_hdr = keyword_set(exclude_hdr)
   
   case_sens = (n_elements(case_sens) eq 0) || keyword_set(case_sens)
-  patlist = strsplit(pattern, ',', /extract, count = pat_count)
+  patlist = []
+  pat_count = 0
+  if (n_elements(pattern) gt 0) then if (strlen(strtrim(pattern, 2)) gt 0) then $
+    patlist = strsplit(pattern, ',', /extract, count = pat_count)
+    
   ; collect all image files
   folder = file_dirname(folder) + path_sep() + file_basename(folder)
   if keyword_set(no_extension) then $
@@ -62,6 +66,7 @@ function nrs_find_images, folder, pattern, extension = ext $
     if exclude_hdr then begin
       if strlowcase(nrs_get_file_extension(raw_files[i])) eq '.hdr' then continue
     endif
+    if pat_count eq 0 then include[i] = 1
     for p = 0, pat_count - 1 do begin
       if stregex(raw_files[i], patlist[p], fold_case = ~case_sens) ge 0 then begin
         include[i] = 1
