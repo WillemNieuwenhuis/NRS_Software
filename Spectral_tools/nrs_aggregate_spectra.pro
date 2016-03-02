@@ -143,17 +143,20 @@ pro nrs_aggregate_spectra, pnt_tbl, image $
     void = error_message('None of the points (including kernel) overlap image')
     return
   endif
+  index = make_array(pointCount, type = size(x, /type))
+  index[*] = indgen(pointCount) + 1
   if keyword_set(xytable) then begin
     dig = fix(alog10(nb)) + 1
     form = '("band_",' + string(dig, format = '("i0", i0)') + ')'
-    hdr = ['X', 'Y', string(indgen(nb) + 1, format = form)]
-    profiles = [transpose(x[ix]), transpose(y[ix]), transpose(profiles[ix, *])]
+    hdr = ['Index', 'X', 'Y', string(indgen(nb) + 1, format = form)]
+    profiles = [transpose(index[ix]), transpose(x[ix]), transpose(y[ix]), transpose(profiles[ix, *])]
   endif else begin
     hdr = string([transpose(x[ix]), transpose(y[ix])], format = '("(",f0.6,":",f0.6,")")')
-    profiles = profiles[ix, *]
+    profiles = transpose([transpose(index[ix]), transpose(profiles[ix, *])])
   endelse
   
   if n_elements(outname) eq 0 then outname = getOutname(image, postfix = '_prof', ext = '.csv')
   
+  if cnt eq 1 then profiles = reform(profiles, n_elements(hdr), 1, /overwrite)
   write_csv, outname, header = hdr, profiles
 end
