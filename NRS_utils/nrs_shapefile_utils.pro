@@ -107,6 +107,30 @@ pro copyProjectionFile, myshape, outputShape
   file_copy, inputProjFile, outputProjFile, /overwrite
 end
 
+pro nrs_read_shape_attributes, shapefile, att_names = att_names
+  compile_opt idl2, logical_predicate
+
+  if strlowcase(nrs_get_file_extension(shapefile)) ne '.shp' then begin
+;    void = error_message('No shapefile specified', traceback = 0)
+    return
+  endif
+
+  ; open the input shapefile
+  shape = obj_new('IDLffShape', shapefile)
+
+  ; Get the number of entities and the entity type.
+  shape->idlffshape::getproperty, n_entities = num_ent, $
+    entity_type = ent_type, n_attributes = num_attr
+
+  att_names = []
+  if num_attr gt 0 then begin
+    shape->idlffshape::getproperty, attribute_info = attr_info
+    att_names = attr_info.name
+  endif
+
+  obj_destroy, shape
+end
+
 ;+
 ; :description:
 ;   read the point locations from a shape file
