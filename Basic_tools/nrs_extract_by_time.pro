@@ -204,7 +204,7 @@ pro nrs_extract_by_time, point_table, image $
                      , hint_geo = hint_geo $
                      , valid = valid, nr_cols = nr_fields, header = header
   if ~valid then begin
-    void = error_message('No data found in file', /error)
+    void = error_message('No data found in file', /error, traceback=0)
     return
   endif
   
