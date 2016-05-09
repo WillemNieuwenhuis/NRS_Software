@@ -13,7 +13,7 @@
 ;
 ; :keywords:
 ;    prob_data : out
-;      The probability lookup table as 2-D matrix
+;      The probability lookup table as 2-D matrix; this will be empty if the file is not found
 ;    class_names : out
 ;      The class names of all the probabilities
 ;
@@ -24,6 +24,12 @@
 pro nrs_bayesian_load_prob, tbl, prob_data = prob_data, class_names = class_names
   compile_opt idl2, logical_predicate
 
+  fi = file_info(tbl)
+  if ~fi.exists then begin
+    prob_data = []
+    return
+  endif
+  
   data = nrs_read_csv(tbl, header = class_names)
   nrcolumns = n_tags(data)
   class_names = class_names[1:-1]
@@ -127,15 +133,24 @@ pro nrs_bayesian_classify, evidence, prob_folder, prior = prior, outname = outna
   nrEvid = n_elements(prob_tables)
   all_prob = replicate(prob_struct, nrEvid)
   cn = []
+  valid = bytarr(nrEvid)
   for t = 0, nrEvid - 1 do begin
     nrs_bayesian_load_prob, prob_tables[t], prob_data = pd, class_names = cn
+    valid[t] = n_elements(pd) gt 0
+    if ~valid[t] then continue
+    
     all_prob[t].ename = evi_names[t]
     all_prob[t].prob = ptr_new(pd)
     all_prob[t].thematic = 0
   endfor
+  ix = where(valid, cnt)
+  if cnt ne nrEvid then begin
+    void = error_message('Not all conditional probabilities could be loaded (do all evidences match their filenames?)', trace = 0)
+    return
+  endif
   
   if n_elements(cn) eq 0 then begin
-    void = error_message('No conditional probabilities found, nothing to do')
+    void = error_message('No conditional probabilities found, nothing to do', trace = 0)
     return
   endif
   
