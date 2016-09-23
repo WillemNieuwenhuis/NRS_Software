@@ -72,8 +72,17 @@ pro nrs_atmo_prep_rapideye, image, sundist, solar_illumination
 
 end
 
-; all data on illumination elevation angle and sun distance are from:
-; 'parse RapidEye metadata.xlsx'
+;+
+; :description:
+;   Batch run of Raw RapidEye 3A to top of atmosphere preprocessing.
+;   All data on illumination elevation angle and sun distance are from:
+;   'parse RapidEye metadata.xlsx'
+;   
+;   The run is separated into sections for UK, NL and both DE sites
+;
+; :history:
+;   - January 2016: created, WN
+;-
 pro nrs_atmo_prep_batch
   compile_opt idl2, logical_predicate
 
@@ -174,6 +183,14 @@ pro nrs_atmo_prep_batch
   
 end
 
+;+
+; :description:
+;    Stack the atmospheric corrected images in the original order 
+;    For the UK site
+;
+; :author: nieuwenhuis
+; :history:
+;   - January 2016: created, WN
 pro nrs_atmo_post_stack_UK
   compile_opt idl2, logical_predicate
 
@@ -250,9 +267,12 @@ end
 
 ;+
 ; :description:
-;    Stack the atmospheric corrceted images in the original order 
+;    Stack the atmospheric corrected images in the original order
+;    For the NL site 
 ;
 ; :author: nieuwenhuis
+; :history:
+;   - January 2016: created, WN
 ;-
 pro nrs_atmo_post_stack_NL
   compile_opt idl2, logical_predicate
@@ -335,6 +355,14 @@ pro nrs_atmo_post_stack_NL
   endfor
 end
 
+;+
+; :description:
+;    Stack the atmospheric corrected images in the original order 
+;    For both the DE sites 
+;
+; :author: nieuwenhuis
+; :history:
+;   - January 2016: created, WN
 pro nrs_atmo_post_stack_DE
   compile_opt idl2, logical_predicate
 
@@ -495,6 +523,8 @@ end
 ;    Note: the reflectances will be cropped to zero (for negative values)
 ;
 ; :author: nieuwenhuis
+; :history:
+;   - January 2016: created, WN
 ;-
 pro nrs_atmo_post_mask_resize_batch
   compile_opt idl2, logical_predicate
@@ -612,6 +642,20 @@ pro nrs_atmo_post_mask_resize_batch
   nrs_atmo_post_mask_resize, files, masks
 end
 
+;+
+; :description:
+;    Resize a mask image to the same resolution as the actual RapidEye images
+;    mask = 50 x 50 , original = 5 x 5 (all meters)
+;    Then apply the mask to a atmospherically corrected image
+;    Note: negative reflectances will be cropped to zero
+;
+; :params:
+;    files  : in, required
+;    masks
+;
+; :author: nieuwenhuis
+; :history:
+;   - January 2016: created, WN
 pro nrs_atmo_post_mask_resize, files, masks
   compile_opt idl2, logical_predicate
 

@@ -173,6 +173,7 @@ pro timesat_v11, src_filename, out_filename $
       void = nrs_update_progress(progressBar, row, nr)
 
 	    rmatrix = envi_get_slice(fid = fid, /bil, line = row, xs = 0, xe = nc - 1)
+	    ; if needed stretch input values to byte range
 	    if dt ne 1 then begin
 	      cnt_undef = 0
 	      if has_undef then uix = where(rmatrix eq undef, cnt_undef)
@@ -190,6 +191,7 @@ pro timesat_v11, src_filename, out_filename $
 	    	  endif
 				endif
 
+        ; perform the actual filtering
         y = reform(rmatrix[col, *], nb)
         t3 = systime(1)
         y1 = tmsat_handle_timeseries(y, win, nptperyear, spikecutoff, forceUpperEnvelope, lastIterationLikeTIMESATfit, missing_data)
