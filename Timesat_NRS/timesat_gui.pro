@@ -1,7 +1,7 @@
 ; Add a menu item to the supervised classification menu
-pro timesat_gui_define_buttons, buttonInfo
+pro timesat_nrs_define_buttons, buttonInfo
   envi_define_menu_button, buttonInfo, VALUE = 'Timesat (NRS)', $
-    UVALUE = 'Timesat (NRS)', EVENT_PRO = 'timesat_menu', $
+    UVALUE = 'Timesat (NRS)', EVENT_PRO = 'timesat_gui', $
     REF_VALUE = 'NRS', POSITION = 'last',/SEPARATOR
 
   envi_define_menu_button, buttonInfo, VALUE = 'Timesat batch', $
@@ -10,7 +10,7 @@ pro timesat_gui_define_buttons, buttonInfo
 
 end
 
-pro timesat_gui_extensions_init
+pro timesat_nrs_extensions_init
   compile_opt idl2
   
   e = envi(/current)
@@ -40,18 +40,8 @@ pro timesat_gui_event, event
 	endcase
 
 end
-;
-; Empty stub procedure used for autoloading.
-;
-pro timesat_gui, GROUP_LEADER = wGroup, _EXTRA = _VWBExtra_
-	tmsat_mainPanel, GROUP_LEADER = wGroup, _EXTRA = _VWBExtra_
-end
 
-pro timesat_menu, event
-	tmsat_mainPanel
-end
-
-pro tmsat_mainPanel, GROUP_LEADER = wGroup, _EXTRA = _VWBExtra_
+pro timesat_gui, event
   compile_opt idl2, logical_predicate
   
 	label_width = 75

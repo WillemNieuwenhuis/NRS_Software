@@ -1,11 +1,7 @@
-pro prospect_gui_define_buttons, buttonInfo
+pro nrs_prospect_define_buttons, buttonInfo
 	envi_define_menu_button, buttonInfo, VALUE = 'InforM prospect', $
 		UVALUE = 'InforM prospect', EVENT_PRO = 'prospect_gui', $
 		REF_VALUE = 'NRS', POSITION = 'last'
-end
-
-pro prospect_gui, Event
-	inform_gui
 end
 
 pro prospect_gui_event, Event
@@ -111,7 +107,7 @@ pro prospect_gui_event, Event
 
 end
 
-pro mainPanel, GROUP_LEADER=wGroup, _EXTRA=_VWBExtra_
+pro prospect_gui, event
 	statevalue = {                       $
 			parent:             long(0), $
 			leafStructure:		long(0), $
@@ -1080,9 +1076,3 @@ pro drawColor, drawer, color
   	Erase, Color = color
 end
 
-;
-; Empty stub procedure used for autoloading.
-;
-pro inform_gui, GROUP_LEADER = wGroup, _EXTRA = _VWBExtra_
-	mainPanel, GROUP_LEADER = wGroup, _EXTRA = _VWBExtra_
-end
