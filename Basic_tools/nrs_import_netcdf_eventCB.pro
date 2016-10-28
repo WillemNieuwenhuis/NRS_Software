@@ -9,6 +9,7 @@ pro nrs_import_netcdf_handleOK, event
 
   fld = widget_info(event.top, find_by_uname = 'nrs_import_netcdf_outfolder')
   widget_control, fld, get_value = outfolder
+  outfolder = strtrim(outfolder[0], 2)
 
   progressBar = Obj_New("PROGRESSBAR", background = 'white', color = 'green', ysize = 15 $
                         , title = 'Importing netCDF files to ENVI')

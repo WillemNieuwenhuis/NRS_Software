@@ -85,12 +85,16 @@ pro nrs_winter_ndvi_beck, image_name, outname $
     valid = slice[*, winp, *]
     ix = where(valid gt 0.0, cnt)
     if (cnt gt 0) and (cnt lt n_elements(valid)) then begin
-      case am of
-        1 : minmax = min(valid, dim = 3) > 0
-        2 : minmax = mean(valid, dim = 3) > 0
-        3 : minmax = median(valid, dim = 3) > 0
-        else : minmax = max(valid, dim = 3) > 0
-      endcase
+      if nr_years gt 1 then begin
+        case am of
+          1 : minmax = min(valid, dim = 3) > 0
+          2 : minmax = mean(valid, dim = 3) > 0
+          3 : minmax = median(valid, dim = 3) > 0
+          else : minmax = max(valid, dim = 3) > 0
+        endcase
+      endif else begin
+        minmax = valid > 0
+      endelse
       
       ndx19 = 2
       ndx20 = 3
