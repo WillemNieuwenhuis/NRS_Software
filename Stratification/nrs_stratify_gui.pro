@@ -1,4 +1,4 @@
-pro nrs_stratify_gui_define_buttons, button_info
+pro nrs_stratify_define_buttons, button_info
   compile_opt IDL2
 
   envi_define_menu_button, button_info, value = 'NDVI Stratification', $
@@ -6,13 +6,17 @@ pro nrs_stratify_gui_define_buttons, button_info
     ref_value = 'NRS', position = 'last', /separator
 end
 
-pro nrs_stratify_gui_extensions_init
+pro nrs_stratify_extensions_init
   compile_opt idl2
   
   e = envi(/current)
   if e eq !NULL then return
   
   e.AddExtension, 'Stratification', 'nrs_stratify_gui', path='NRS'
+end
+
+pro nrs_stratify
+  compile_opt idl2
 end
 
 pro nrs_stratify_gui_event, Event

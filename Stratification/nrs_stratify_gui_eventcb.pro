@@ -1172,7 +1172,7 @@ pro nrs_stratify_calculate, event
     
       envi_file_query, fid, nb = nb, nl = nl
       
-  	  nrs_stratify, ref, steps, matrix = matrix, cancelled = cancelled, prog_obj = prog_obj
+  	  nrs_stratify_timeseries, ref, steps, matrix = matrix, cancelled = cancelled, prog_obj = prog_obj
   	  
       if cancelled eq 1 then return
       

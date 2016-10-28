@@ -1,7 +1,7 @@
 pro _build_water_index
   ; Timeseries routines
   files = [ $
-             'nrs_water_index.pro' $
+             'nrs_do_water_index.pro' $
            , 'nrs_water_index_ratio.pro' $
            , 'nrs_water_index_tcwi.pro' $
            , 'nrs_water_index_gui.pro' $ 

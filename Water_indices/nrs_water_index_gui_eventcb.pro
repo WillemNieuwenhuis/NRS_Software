@@ -45,7 +45,7 @@ pro nrs_water_index_handleOK, event
                         , /fast_loop $
                         )
   
-  nrs_water_index, ref $
+  nrs_do_water_index, ref $
                    , water_index $
                    , outname = outname $
                    , prog_obj = progressBar, cancelled = cancelled

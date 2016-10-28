@@ -1,4 +1,4 @@
-pro nrs_water_index, image, water_index, outname = outname $
+pro nrs_do_water_index, image, water_index, outname = outname $
                   , prog_obj = prog_obj, cancelled = cancelled
   compile_opt idl2, logical_predicate
   

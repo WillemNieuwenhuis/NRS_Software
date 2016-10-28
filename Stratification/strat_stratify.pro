@@ -93,7 +93,7 @@ end
 ; :History:
 ;   sept 2012: Stratification in latitude
 ;-
-pro nrs_stratify, image, steps, matrix = matrix, cancelled = cancelled, prog_obj = prog_obj 
+pro nrs_stratify_timeseries, image, steps, matrix = matrix, cancelled = cancelled, prog_obj = prog_obj 
   compile_opt idl2, logical_predicate
 
   cancelled = 1
