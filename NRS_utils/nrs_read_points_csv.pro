@@ -99,7 +99,7 @@ pro nrs_read_points_csv, table, x, y, data = asc, valid = valid  $
   y = []
   hint_geo = (cnt_lat + cnt_lon) eq 2
   if cnt_lat le 0 || cnt_lon le 0 then begin
-    if x_ix le 0 || y_ix le 0 then begin
+    if cnt_x le 0 || cnt_y le 0 then begin
       return
     endif
     lat_ix = y_ix
