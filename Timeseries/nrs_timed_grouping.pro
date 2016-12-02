@@ -59,7 +59,7 @@ function nrs_get_cross_index, sd, ed, per, input_period, aggr_interval, aggr_int
   ; get the indices for the output periods, but ungrouped
   ; shortest period first
   nrs_get_dt_indices, jul_in, period = aggr_interval $
-                      , julian_out = jul_out $
+                      , julian_out = jul_out, /clip $
                       , indices = indices, ri = rev $
                       , bins = out_bins $   ; for each day of year (DOY) in input give output bin number
                       , time_mult = out_mult $
@@ -140,11 +140,11 @@ function nrs_get_cross_index, sd, ed, per, input_period, aggr_interval, aggr_int
 
     caldat, jul_out, mm, dd, yy
     st_p = syi lt 0 ? 0 : num_periods - syi
-    bn = ((indgen(n_elements(yy)) + st_p) mod num_periods) + 1
-    if aggr_interval eq 'Month' then form = '("Year.Month: ",i04,".",i04)' $
+    bn = ((indgen(n_elements(yy)) + st_p) mod npy) + 1
+    if aggr_interval eq 'Month' then form = '("Year.Month: ",i04,".",i03)' $
     else begin
       bn = jul_out - julday(1, 1, yy) + 1
-      form = '("Year.' + aggr_interval + ': ,i03,".",i04)'
+      form = '("Year.' + aggr_interval + ': ,i04,".",i03)'
     endelse
     bnames = string([transpose(yy), transpose(bn)], format = form)
   endif
