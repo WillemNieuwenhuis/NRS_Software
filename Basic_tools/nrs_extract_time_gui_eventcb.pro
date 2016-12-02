@@ -72,8 +72,8 @@ pro nrs_extract_time_handleOK, event
   fld = widget_info(event.top, find_by_uname = 'nrs_extract_time_buffer')
   widget_control, fld, get_value = buffer_str
   
-  fld = widget_info(event.top, find_by_uname = 'nrs_extract_time_buffer_panel')
-  do_buffer = widget_info(fld, /sensitive)
+;  fld = widget_info(event.top, find_by_uname = 'nrs_extract_time_buffer_panel')
+;  do_buffer = widget_info(fld, /sensitive)
   
   fld = widget_info(event.top, find_by_uname = 'nrs_extract_time_time_track')
   entire = ~widget_info(fld, /button_set)
@@ -105,14 +105,14 @@ pro nrs_extract_time_handleOK, event
       return
     endif
   endif
+  
   on_ioerror, NO_BUFFER 
-  if do_buffer then begin
+  if strlen(buffer_str) gt 0 then begin
     buffer = float(buffer_str)
     goto, OK
   endif
   
   NO_BUFFER:  ; no warning when buffer is not a number
-    do_buffer = 0
     void = temporary(buffer)  ; undefine buffer
   
   OK:

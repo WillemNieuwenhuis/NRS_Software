@@ -245,8 +245,8 @@ pro nrs_extract_by_time, point_table, image $
   if entire then begin
     msg_title = 'Extracting values'
     vals = fltarr(nr_points, nb)
-    tim_ix = lindgen(nb) + 1
-    field_names = string(tim_ix, format = '("band_",i0)')
+    tim_ix = lindgen(nb)
+    field_names = string(tim_ix + 1, format = '("band_",i0)')
     header = [header, field_names]
   endif else begin
     ; calculate time_mapping to timeseries bands
