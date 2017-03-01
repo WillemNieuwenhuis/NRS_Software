@@ -7,6 +7,10 @@ pro nrs_prototype_define_buttons, buttonInfo
     uvalue = 'Batch zonal fraction', event_pro = 'nrs_zonal_batch_gui', $
     ref_value = 'Prototype', position = 'last' ;,/separator
 
+  envi_define_menu_button, buttonInfo, value = 'RS4EBV Convert ASCII to tif', $
+    uvalue = 'RS4EBV Convert ASCII to tif', event_pro = 'nrs_import_ascii_RSEBV_gui', $
+    ref_value = 'Prototype', position = 'last' ;,/separator
+
 end
 
 pro nrs_prototype_extensions_init
