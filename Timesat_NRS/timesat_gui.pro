@@ -19,6 +19,11 @@ pro timesat_nrs_extensions_init
   e.AddExtension, 'Timesat (NRS)', 'timesat_gui';, PATH='Spatial'
 end
 
+; compatibility with ENVI 5.x
+pro timesat_nrs
+  compile_opt idl2
+end
+
 pro timesat_gui_event, event
 	wTarget = (widget_info(Event.id,/NAME) eq 'TREE' ?  $
 	  	widget_info(Event.id, /tree_root) : event.id)
