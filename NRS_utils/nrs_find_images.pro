@@ -41,6 +41,7 @@ function nrs_find_images, folder, pattern, extension = ext $
   compile_opt idl2, logical_predicate
 
   if ~keyword_set(ext) then ext = 'hdf'
+  if strpos(ext, '.') eq 0 then ext = strmid(ext, 1)
   
   exclude_hdr = keyword_set(exclude_hdr)
   
