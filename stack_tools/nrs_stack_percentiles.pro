@@ -29,7 +29,7 @@ pro nrs_stack_percentiles, image, outname = outname, exact = exact $
   envi_file_query, fid, dims = dims, nb = nb, nl = nl, ns = ns, data_type = dt
   inherit = envi_set_inheritance(fid, dims, /full)
   
-  if n_elements(outname) eq 0 then outname = getoutname(image, postfix = '_per', ext = '.dat')
+  if n_elements(outname) eq 0 then outname = getoutname(image, postfix = '_perc', ext = '.dat')
 
   hasIgnore = n_elements(ignore_value) gt 0
   if hasIgnore then ignore_value = (fix(ignore_value, type = dt, /print))[0]
@@ -60,8 +60,8 @@ pro nrs_stack_percentiles, image, outname = outname, exact = exact $
     cnt_val[valids] = 1
     agg_val = total(cnt_val, 2) ; determine valid band values per pixel
     nb_mat = rebin(agg_val, ns, perc_count)
-    py = long(nb_mat * pperc)  ; calc the index of the percentile based on actual non-nan values, per pixel
-    pai = px + py * ns
+    py = long(nb_mat * pperc)
+    pai = px + py * ns   ; calc the index of the percentile based on actual non-nan values, per pixel
 
     ; sort the data per pixel, NAN values are stored at the end of the data
     ix = sort(data)
@@ -71,11 +71,14 @@ pro nrs_stack_percentiles, image, outname = outname, exact = exact $
 
     outdata[*] = sorted[pai]  ; select the percentile value per pixel for all percentiles
     
-    writeu, out_unit, outdata ; write it as BIL
+    if size(outdata, /type) ne dt then $
+      writeu, out_unit, fix(outdata, type = dt) $
+    else $
+      writeu, out_unit, outdata ; write it as BIL
   endfor
   
   envi_setup_head, fname = outname $
-        , data_type = size(outdata, /type) $
+        , data_type = dt $
         , ns = ns, nl = nl, nb = n_elements(percentile) $
         , interleave = 1 $  ; BIL
         , bnames = bnames $
