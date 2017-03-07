@@ -14,14 +14,35 @@
 ; :Keywords:
 ;    cancelled : out
 ;      Indicate if the user aborts
+;    console : in, optional
+;      When set print progress percentage to the console, when the progressBar is NULL.
+;      The steps are displayed in 10% increments (more than 10 steps) or percentages rounded
+;      to 10% increments (less than 10 steps)
 ;
 ; :Author: Willem
+; 
 ;-
-function nrs_update_progress, progressBar, pos, tot, cancelled = cancelled
-  cancelled = 0
-  if n_elements(progressBar) eq 0 then return, cancelled
+function nrs_update_progress, progressBar, pos, tot, cancelled = cancelled, console = console
+  compile_opt idl2, logical_predicate
   
-  progressBar -> Update, 100.0 * (pos + 1) / tot, text = 'Progress: ' + string(pos + 1, format = '(i0)') + ' of ' + string(tot, format = '(i0)')
+  cancelled = 0
+  if n_elements(progressBar) eq 0 then begin
+    if keyword_set(console) then begin
+      vp1 = 10.0 * (pos) / tot
+      vp2 = 10.0 * (pos + 1) / tot
+      if (fix(vp2) - fix(vp1)) gt 0 then begin  
+        print, 10 * fix(10.0 * (pos + 1) / tot), format = '(i0,"%")'
+      endif
+    endif
+    
+    return, cancelled
+  endif
+  
+  vp1 = 1000.0 * (pos) / tot
+  vp2 = 1000.0 * (pos + 1) / tot
+  if (fix(vp2) - fix(vp1)) gt 0 then $
+    progressBar -> Update, 100.0 * (pos + 1) / tot, text = 'Progress: ' + string(pos + 1, format = '(i0)') + ' of ' + string(tot, format = '(i0)')
+    
   cancelled = progressBar -> CheckCancel()
   if cancelled eq 1 then begin
     progressBar -> Destroy
