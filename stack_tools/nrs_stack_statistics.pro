@@ -1,11 +1,40 @@
-pro nrs_stack_statistics, fid, outname = outname $
+;+
+; :Description:
+;    Calculate stack statistics. Calculated are: Mean, Stddev, CV, Min, Max.
+;    The statistics are calculated in the Z-direction (usually the time dimension)
+;
+; :Params:
+;    stack : in, required
+;      Full filename of the input stack
+;
+; :Keywords:
+;    outname  : out, optional
+;      Full name of the output statistics; if not specified the output name is derived from the input name
+;    ignore_undef : in, optional, default = no
+;      If set: ignore the data specified undef value during the calculation. Is overruled by ignore_value
+;    ignore_value : in, optional
+;      If specified: exclude this value from the calculation and overrule the data specified ignore_value
+;    prog_obj : in, optional
+;      A ProgressBar object to indicate progress
+;    cancelled : out, optional
+;      If set, the user stopped the process
+;
+; :Author: nieuwenhuis
+;-
+pro nrs_stack_statistics, stack, outname = outname $
                         , ignore_undef = ignore_undef $
+                        , ignore_value = ignore_value $ 
                         , prog_obj = prog_obj, cancelled = cancelled
   compile_opt idl2, logical_predicate
 
   cancelled = 1
-  
-  if fid eq -1 then return
+
+  envi_open_file, stack, r_fid = fid, /no_realize, /no_interactive_query
+
+  if fid eq -1 then begin
+    void = error_message('Input reference stack could not be opened!', traceback = 0, /error)
+    return
+  endif
 
   nrs_set_progress_property, prog_obj, title = 'Calculate stack statistics', /start
   
@@ -14,9 +43,20 @@ pro nrs_stack_statistics, fid, outname = outname $
   cancelled = 0
   
   envi_file_query, fid, dims = dims, ns = ns, nl = nl, nb = nb, data_type = dt, fname = fname, data_ignore_value = undef
-  has_undef = (size(undef, /type) eq dt) or ( (size(undef, /type) eq 5) and undef ne 1e34)
   mi = envi_get_map_info(fid = fid, undefined = csy_undef)
   if csy_undef then void = temporary(mi)
+
+  ; deal with internal undef or user specified undef. User defined gets preference
+  ; check internal undef
+  chktype = size(undef, /type)
+  no_undef = ((chktype eq 4) or (chktype eq 5)) and (undef eq 1e-34)
+  ignore_undef = ignore_undef && ~no_undef
+  ; User specified undef:
+  hasIgnore = (n_elements(ignore_value) gt 0) && (strlen(ignore_value) gt 0)
+  if hasIgnore then begin
+    undef = (fix(ignore_value, type = dt, /print))[0]
+    ignore_undef = 1
+  endif
 
   if n_elements(outname) eq 0 then $
     outname = getoutname(fname, postfix = '_stat', ext = '.dat')
@@ -26,7 +66,9 @@ pro nrs_stack_statistics, fid, outname = outname $
   pos = indgen(nb)
   for l = 0, nl - 1 do begin
     if nrs_update_progress(prog_obj, l, nl, cancelled = cancelled) then return
-    slice = envi_get_slice(fid = fid, line = l, xs = 0, xe = ns - 1, pos = pos)   
+    
+    ; read a slice and convert to float for undef handling
+    slice = float(envi_get_slice(fid = fid, line = l, xs = 0, xe = ns - 1, pos = pos))   
     if ignore_undef then begin 
       uix = where(slice eq undef, cnt_undef)
       if cnt_undef gt 0 then begin

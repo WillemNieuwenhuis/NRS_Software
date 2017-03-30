@@ -39,6 +39,14 @@ pro nrs_stack_statistics_gui, event
                 , event_pro = 'nrs_stack_statistics_handle_input' $
               )
 
+  nrs_stack_statistics_ignore = fsc_inputfield(nrs_stack_statistics_mainPanel $
+    , uname = 'nrs_stack_statistics_ignore' $
+    , title = 'Ignore value' $
+    , labelalign = 1 $
+    , labelsize = label_width $
+    , xsize = text_medium_width $
+    )
+
   nrs_stack_statistics_output_panel = widget_base(nrs_stack_statistics_contentPanel, /frame, /col)
   nrs_stack_statistics_outputFile = cw_dirfile(nrs_stack_statistics_output_panel, uname = 'nrs_stack_statistics_outputFile' $
         , style = 'file' $

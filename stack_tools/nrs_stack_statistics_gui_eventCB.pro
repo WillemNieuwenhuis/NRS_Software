@@ -14,20 +14,19 @@ pro nrs_stack_statistics_handleOK, event
   val_fld = widget_info(event.top, find_by_uname = 'nrs_stack_statistics_refstack')
   widget_control, val_fld, get_value = ref
 
+  val_fld = widget_info(event.top, find_by_uname = 'nrs_stack_statistics_ignore')
+  widget_control, val_fld, get_value = ignore_value
+
   val_fld = widget_info(event.top, find_by_uname = 'nrs_stack_statistics_outputFile')
   widget_control, val_fld, get_value = outname
-  
-  if strlen(strtrim(ref, 2)) eq 0 then begin
+
+  ref = strtrim(ref, 2)
+  if strlen(ref) eq 0 then begin
     void = error_message('Input reference stack not specified!', traceback = 0, /error)
     return
   endif
-  
-  envi_open_file, ref, r_fid = fid_ref, /no_realize, /no_interactive_query
-  
-  if fid_ref eq -1 then begin
-    void = error_message('Input reference stack could not be opened!', traceback = 0, /error)
-    return
-  endif
+
+  ignore_value = ignore_value[0]
   
     ; initialise tranquilizer
   progressBar = Obj_New("PROGRESSBAR", background = 'white', color = 'green' $
@@ -35,7 +34,8 @@ pro nrs_stack_statistics_handleOK, event
                         , /fast_loop $
                         )
   
-  nrs_stack_statistics, fid_ref, outname = outname, /ignore_undef, prog_obj = progressBar, cancelled = cancelled
+  nrs_stack_statistics, ref, outname = outname, ignore_value = ignore_value, /ignore_undef $
+                      , prog_obj = progressBar, cancelled = cancelled
   
   if obj_valid(progressBar) then progressBar->Destroy
 end
