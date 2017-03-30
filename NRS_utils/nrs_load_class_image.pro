@@ -41,16 +41,16 @@ pro nrs_load_class_image, fid, cldata = cldata, cnames = cnames, num_classes = n
   
   ; handle presence of 'Unclassified' in main classified map
   has_unclassified = (where(strlowcase(cnames) eq 'unclassified') ne -1)
-  if nrclass eq 0 then begin
-    ix = where(cldata lt 32000, count)
-    nrclass = max(cldata[ix])
-  endif else begin
-    if keyword_set(class_adjust) then begin
-      if has_unclassified then begin
-        nrclass--
-        cldata -= 1
-      endif
+  ; determine the number of classes
+  ix = where(cldata lt 32000, count)
+  nrclass = max(cldata[ix]) + 1
+  
+  ; move the classes, by removing class 0 (which is no data) and shifting the other classes one down.
+  if keyword_set(class_adjust) then begin
+    if has_unclassified then begin
+      nrclass--
+      cldata -= 1
     endif
-  endelse
+  endif
 end
 

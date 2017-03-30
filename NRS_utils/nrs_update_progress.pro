@@ -1,7 +1,7 @@
 ;+
 ; :Description:
 ;    Update the status of the progress indicator (ProgressBar object) and check if the user
-;    aborts.
+;    aborts. The range is split into 1000 steps.
 ;
 ; :Params:
 ;    progressBar : in
@@ -62,3 +62,4 @@ pro nrs_set_progress_property, prog_obj, _extra = _extra, start = start, xs = xs
       prog_obj->SetProperty, _extra = _extra
   endif
 end
+
