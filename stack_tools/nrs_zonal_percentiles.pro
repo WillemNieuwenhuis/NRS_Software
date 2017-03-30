@@ -170,8 +170,9 @@ pro nrs_zonal_percentiles, image, classfile $
   if czeroes gt 0 then out_table[zeroes] = ''
   out_table = reform(out_table, nb, n_elements(percentile) * nr_class, /overwrite)
   
+  cl_inc = has_unclassified ? 1 : 0
   header = strjoin(['Percentile,Class', string(indgen(nb) + 1, format = '("Band_", i0)')], ',')
-  cli = string((indgen(nr_class * n_elements(percentile)) mod nr_class) + 1, format = '(i0)')
+  cli = string((indgen(nr_class * n_elements(percentile)) mod nr_class) + cl_inc, format = '(i0)')
   pin = string(fix(percentile[indgen(nr_class * n_elements(percentile)) / nr_class] * 100), format = '(i0)')
   openw, lun, outname, /GET_LUN
   printf, lun, header
@@ -186,7 +187,7 @@ end
 
 ;+
 ; :description:
-;    Calculate percentiles per zone on an image stack. The output is stored in a table.
+;    Calculate percentiles per zone on an image stack grouped per year. The output is stored in a table.
 ;    Optionally for each percentile a raster band is created.
 ;
 ; :params:
@@ -204,6 +205,8 @@ end
 ;      The percentile (in percentage) to calculate; this can be a comma-separated list of percentiles
 ;    ignore_value : in, optional
 ;      Indicate the missing value in the data in the image stack
+;    img_per_period : in, required, default = 36
+;      The number of periods per year
 ;    create_raster : in, optional, default = no
 ;      If true the software will generate a separate band for each of the percentiles
 ;    prog_obj : in, optional
@@ -367,8 +370,9 @@ pro nrs_zonal_percentiles_group, image, classfile $
   if czeroes gt 0 then out_table[zeroes] = ''
   out_table = reform(out_table, nbOut, n_elements(percentile) * nr_class, /overwrite)
 
+  cl_inc = has_unclassified ? 1 : 0
   header = strjoin(['Percentile,Class', string(indgen(nbOut) + 1, format = '("Band_", i0)')], ',')
-  cli = string((indgen(nr_class * n_elements(percentile)) mod nr_class) + 1, format = '(i0)')
+  cli = string((indgen(nr_class * n_elements(percentile)) mod nr_class) + cl_inc, format = '(i0)')
   pin = string(fix(percentile[indgen(nr_class * n_elements(percentile)) / nr_class] * 100), format = '(i0)')
   openw, lun, outname, /GET_LUN
   printf, lun, header

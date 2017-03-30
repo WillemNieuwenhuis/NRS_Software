@@ -65,9 +65,24 @@ pro nrs_zonal_percentiles_gui, event
     , labelsize = label_width $
     , xsize = text_medium_width $
     )
-    
+
+  nrs_zonal_percentiles_group_base = widget_base(nrs_zonal_percentiles_mainPanel, /nonexclusive, uname = 'nrs_zonal_percentiles_group_base')
+  nrs_zonal_percentiles_group_button = widget_button(nrs_zonal_percentiles_group_base $
+    , uname = 'nrs_zonal_percentiles_group_button' $
+    , value = 'Use yearly grouping' $
+    , event_pro = 'nrs_zonal_percentiles_group_button_toggle' $
+    )
+
+  nrs_zonal_percentiles_imgperyear = fsc_inputfield(nrs_zonal_percentiles_mainPanel $
+    , uname = 'nrs_zonal_percentiles_imgperyear' $
+    , title = 'Images per year' $
+    , labelalign = 1 $
+    , labelsize = label_width $
+    , xsize = text_medium_width $
+    )
+
   nrs_zonal_percentiles_output_panel = widget_base(nrs_zonal_percentiles_contentPanel, /frame, /col)
-  nrs_zonal_percentiles_raster_base = widget_base(nrs_zonal_percentiles_output_panel, /nonexclusive, uname = 'nrs_stack_quartiles_use_folder_base')
+  nrs_zonal_percentiles_raster_base = widget_base(nrs_zonal_percentiles_output_panel, /nonexclusive, uname = 'nrs_zonal_percentiles_raster_base')
   nrs_zonal_percentiles_raster_button = widget_button(nrs_zonal_percentiles_raster_base $
     , uname = 'nrs_zonal_percentiles_raster_button' $
     , value = 'Create percentile raster(s)' $
@@ -88,6 +103,7 @@ pro nrs_zonal_percentiles_gui, event
   widget_control, /realize, nrs_zonal_percentiles_contentpanel
   
   ; Initialize stuff
+  nrs_zonal_percentiles_imgperyear->setproperty, sensitive = 0
   
   xmanager, 'nrs_zonal_percentiles_gui', nrs_zonal_percentiles_contentPanel, /no_block
 end
