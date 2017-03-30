@@ -1,4 +1,28 @@
-pro idl_open_file, image, error = error, meta = meta
+;+
+; Group of functions to handle ENVI data files. They are meant to
+; imitate the functionality of the ENVI functions within IDL to
+; avoid the dependency of ENVI. 
+;-
+
+;+
+; :description:
+;    Open an ENVI data file, by reading the header file, and collecting
+;    some metadata as well.
+;
+; :params:
+;    image : in, required
+;      The name of the data file. The header file is assumed to have
+;      the same base name as image with the extension '.hdr'
+;    meta : in/out, required
+;      The meta data collected from the header file. At this time
+;      this is a subset of the tags in the header file
+;
+; :author:
+;   nieuwenhuis
+; :history:
+;   - 6 Feb 2015: created
+;-
+pro idl_open_file, image, meta
   compile_opt idl2, logical_predicate
   
   idl_read_header, image, meta = meta
@@ -7,16 +31,33 @@ pro idl_open_file, image, error = error, meta = meta
     return
   endif
   
+  meta.data_bsq = ptr_new(make_array(meta.samples, meta.lines, type = meta.data_type), /no_copy)
+  meta.data_bil = ptr_new(make_array(meta.samples, meta.bands, type = meta.data_type), /no_copy)
+ 
   openr, unit, image, /get_lun, error = error
   
   meta.handle = unit
   
 end
 
+;+
+; :description:
+;    Close the data file, opened with idl_open_file.
+;
+; :params:
+;    meta: in, required
+;      The meta data of the data file
+;
+; :author: 
+;   nieuwenhuis
+; :history:
+;   - 6 Feb 2015: created
+;-
 pro idl_close_file, meta
   compile_opt idl2, logical_predicate
   
-  
+  if ptr_valid(meta.data_bsq) then ptr_free, meta.data_bsq 
+  if ptr_valid(meta.data_bil) then ptr_free, meta.data_bil
   close, meta.handle
   free_lun, meta.handle
 
@@ -27,41 +68,47 @@ end
 ; :description:
 ;    Read data layer (bsq)
 ;
+; :returns:
+;   0 in case of an error, 1 if the read operation succeeded
+;
 ; :params:
-;    unit
-;    line
+;    band : in, required
+;      The band number of the data to read
+;    meta : in, required
+;      The file descriptor structure
 ;
 ; :keywords:
-;    band
-;    meta
+;    data : out, required
+;      The named variable for the band data from the file.
 ;
-; :author: nieuwenhuis
+; :author:
+;   nieuwenhuis
+; :history:
+;   6 Feb 2015: created
 ;-
-function idl_get_data, band = band, meta = meta
+function idl_get_data, band, meta, data = data
   compile_opt idl2, logical_predicate
 
-  if n_elements(meta) eq 0 then begin
-    void = dialog_message('Data corrupt', title = 'Fatal error', /error)
+  if n_params() lt 2 then begin
+    void = dialog_message('Missing parameters', title = 'Fatal error', /error)
     ; serious error
-    return, []
+    return, 0
   endif
 
-  if n_elements(band) eq 0 then band = 0  ; default band 0
   band = band[0]  ; remove any array indirection
   
   if band lt 0 or band ge meta.bands then begin
     ; nothing to do
-    return, []
+    return, 0
   endif
   
   bsq_size = meta.lines * meta.samples * meta.bytes_per_pixel
-  bil_size = meta.bands * meta.samples * meta.bytes_per_pixel
-  bip_size = meta.bands * meta.lines * meta.bytes_per_pixel
+  bilp_size = meta.bands * meta.samples * meta.bytes_per_pixel
   line_size = meta.lines * meta.bytes_per_pixel
   sample_size = meta.bytes_per_pixel
-  data = make_array(meta.samples, meta.lines, type = meta.data_type)
-  ldata = make_array(meta.samples, type = meta.data_type)
-  sdata = make_array(1, type = meta.data_type)
+  ldata = make_array(meta.samples, type = meta.data_type, /nozero)
+  sdata = make_array(1, type = meta.data_type, /nozero)
+  if n_elements(data) eq 0 then data = make_array(meta.samples, meta.lines, meta.data_type, /nozero)
   if meta.interleave eq 0 then begin ; BSQ, so same as requested
     loc = band * bsq_size 
     point_lun, meta.handle, loc
@@ -69,46 +116,45 @@ function idl_get_data, band = band, meta = meta
     if meta.lines * meta.samples gt tc then begin
       void = dialog_message('Trying to read past end of file', title = 'Fatal error', /error)
       ; serious error
-      return, []
+      return, 0
     endif
   endif else if meta.interleave eq 1 then begin ; BIL
-    loc = lindgen(meta.lines) * bil_size + band * line_size
+    loc = lindgen(meta.lines) * bilp_size + band * line_size
     for l = 0, meta.lines - 1 do begin
       point_lun, meta.handle, loc[l]
       readu, meta.handle, ldata, transfer_count = tc
       if meta.samples gt tc then begin
         void = dialog_message('Trying to read past end of file', title = 'Fatal error', /error)
         ; serious error
-        return, []
+        return, 0
       endif
       data[*, l] = ldata
     endfor
   endif else if meta.interleave eq 2 then begin ; BIP
-    loc = lindgen(meta.samples) * bip_size + band * sample_size
+    loc = lindgen(meta.samples) * bilp_size + band * sample_size
     for l = 0, meta.lines - 1 do begin
       point_lun, meta.handle, loc[l]
       readu, meta.handle, sdata, transfer_count = tc
       if 1 gt tc then begin
         void = dialog_message('Trying to read past end of file', title = 'Fatal error', /error)
         ; serious error
-        return, []
+        return, 0
       endif
       data[*, l] = sdata
     endfor
   endif
-  return, data
+  return, 1
 end
 
-function idl_get_bil_slice, line, meta = meta
+function idl_get_bil_slice, line, meta
   compile_opt idl2, logical_predicate
   
-  if n_elements(meta) eq 0 then begin
-    void = dialog_message('Data corrupt', title = 'Fatal error', /error)
+  if n_params() lt 2 then begin
+    void = dialog_message('Missing parameters', title = 'Fatal error', /error)
     ; serious error
     return, []
   endif
 
-  if n_elements(line) eq 0 then line = 0
   line = line[0]  ; remove any array indirection
   
   if line lt 0 or line ge meta.lines then begin
@@ -119,9 +165,9 @@ function idl_get_bil_slice, line, meta = meta
   bsq_size = meta.lines * meta.samples * meta.bytes_per_pixel
   bil_size = meta.bands * meta.samples * meta.bytes_per_pixel
   sample_size = meta.samples * meta.bytes_per_pixel
-  if meta.interleave eq 0 then begin ; BSQ
-    data = make_array(meta.samples, meta.lines, type = meta.data_type)
-    ldata = make_array(meta.samples, type = meta.data_type)
+  if meta.interleave eq 0 then begin ; BSQ input
+    data = make_array(meta.samples, meta.lines, type = meta.data_type, /nozero)
+    ldata = make_array(meta.samples, type = meta.data_type, /nozero)
     loc = lindgen(meta.bands) * bsq_size + line * sample_size
     for l = 0, meta.bands - 1 do begin
       point_lun, meta.handle, loc[l]
@@ -133,7 +179,7 @@ function idl_get_bil_slice, line, meta = meta
       endif
       data[*, l] = ldata
     endfor
-  endif else begin ; BIL and BIP
+  endif else begin ; BIL and BIP input
     data = make_array(meta.samples, meta.bands, type = meta.data_type)
     loc = line * bil_size
     point_lun, meta.handle, loc
@@ -192,11 +238,13 @@ pro idl_read_header, image, meta = meta
 
   bpt = [0, 1, 2, 4, 4, 8, 8, 0, 0, 16, 0, 0, 2, 4, 8, 8]
 
-  meta = {metadata, filename:image, samples:ns, lines:nl, bands:nb $
+  meta = {metadata2, filename:image, samples:ns, lines:nl, bands:nb $
                   , data_type:dt, interleave:interleave[0] $
                   , bytes_per_pixel:bpt[dt] $
                   , has_undef:has_undef $
                   , data_ignore:undef $
+                  , data_bsq:ptr_new() $
+                  , data_bil:ptr_new() $
                   , handle:-1}
   
 end
@@ -238,4 +286,17 @@ end
 ;  free_lun, unit
 ;  
 ;  if n_elements(ar) gt 0 then ttt, lijst = ar
+;end
+;
+;
+;pro ttt
+;tic
+;dd=idl_get_bil_slice(80, meta=meta)
+;toc
+;tic
+;dd=idl_get_bil_slice(81, meta=meta)
+;toc
+;tic
+;dd2=envi_get_slice(fid=fid,line=80,xs=0,xe=358)
+;toc
 ;end
