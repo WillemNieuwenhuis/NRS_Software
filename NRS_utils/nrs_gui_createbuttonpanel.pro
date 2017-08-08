@@ -13,11 +13,11 @@ pro nrs_gui_createButtonPanel, parent $
   if no_buttons then return
    
   if n_elements(ok_uname) eq 0 then ok_uname = 'nrs_gui_buttonpanel_okbutton'
-  if n_elements(ok_value) eq 0 then ok_value = 'Go!'
+  if n_elements(ok_value) eq 0 then ok_value = 'Calculate'
   if n_elements(ok_tooltip) eq 0 then ok_tooltip = ''
   ok_on = (n_elements(ok_on) eq 0) or keyword_set(ok_on)
   if n_elements(cancel_uname) eq 0 then cancel_uname = 'nrs_gui_buttonpanel_cancelbutton'
-  if n_elements(cancel_value) eq 0 then ok_value = 'Done'
+  if n_elements(cancel_value) eq 0 then cancel_value = 'Cancel'
   if n_elements(cancel_tooltip) eq 0 then cancel_tooltip = ''
   cancel_on = (n_elements(cancel_on) eq 0) or keyword_set(cancel_on)
   ; Button panel (OK, Cancel etc)

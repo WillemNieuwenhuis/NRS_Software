@@ -208,6 +208,85 @@ function nrs_read_shape_points, shapes, hint_geo = hint_geo
   return, coords
 end
 
+pro nrs_read_shape_polygons, shapes, polygons = pols, att_names = att_names, hint_geo = hint_geo
+  compile_opt idl2, logical_predicate
+
+  pols = []
+  att_names = []
+
+  if strlowcase(nrs_get_file_extension(shapes)) ne '.shp' then begin
+    void = error_message('No shapefile specified')
+    return
+  endif
+
+  ; open the input shapefile
+  shape = obj_new('IDLffShape', shapes)
+
+  ; Get the number of entities and the entity type.
+  shape->idlffshape::getproperty, n_entities = num_ent, $
+    entity_type = ent_type, n_attributes = num_attr
+
+  if num_ent le 0 then begin
+    obj_destroy, shape
+    void = error_message('No features found in the shapefile')
+    return
+  endif
+
+  pnt_types = [5, 15, 25]
+  ix = where(ent_type eq pnt_types, pt_cnt)
+  if pt_cnt eq 0 then begin
+    obj_destroy, shape
+    void = error_message('Only polygon features supported')
+    return
+  endif
+
+  if num_attr gt 0 then begin
+    shape->IDLffShape::GetProperty, attribute_info = attr_info
+    att_names = attr_info.name
+  endif
+  pols = shape->IDLffShape::GetEntity(/all, /attributes)
+
+  obj_destroy, shape
+  
+  minx = min((pols.bounds)[0, *])
+  miny = min((pols.bounds)[1, *])
+  maxx = max((pols.bounds)[4, *])
+  maxy = max((pols.bounds)[5, *])
+  hint_geo = ((abs(maxx) le 360.0 && abs(minx) le 360.0) $
+    && (abs(maxy) le 360.0 && abs(miny) le 360.0))
+
+end
+
+function nrs_shape_attr_from, dt, width = width, dec = dec
+  switch dt of
+    1:
+    2:
+    12: begin
+      width = 6
+      dec = 0
+      return, 3 ; integer
+    end
+    3:
+    13: begin
+      width = 11
+      dec = 0
+      return, 3 ; integer
+    end
+    14:
+    15: begin
+      width = 18
+      dec = 0
+      return, 3 ; integer
+    end
+    else: begin
+      width = 15
+      dec = 5
+      return, 5 ; double
+    end
+  endswitch
+end
+
+
 ;----------
 ; Cleanup open resources, close all shape objects
 pro nrs_close_shapes, shapes = shapes
