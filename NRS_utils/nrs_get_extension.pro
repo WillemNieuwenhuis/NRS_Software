@@ -33,7 +33,14 @@ function nrs_get_file_extension, name, exclude_dot = exclude_dot
     pos = strpos(name, '.', /reverse_search)
     ix = where(pos gt 0, cnt)
     if cnt gt 0 then begin
-      if keyword_set(exclude_dot) then pos = min([transpose(pos + 1), transpose(strlen(name))], dim = 1)
+      if keyword_set(exclude_dot) then begin
+        if n_elements(name) gt 1 then begin
+          pos = min([transpose(pos + 1), transpose(strlen(name))], dim = 1)
+        endif else begin 
+          pos = min([pos + 1, strlen(name)])
+        endelse
+      endif
+      
       if n_elements(pos) gt 1 then pos = transpose(pos)
       ext = strmid(name, pos)
     endif
