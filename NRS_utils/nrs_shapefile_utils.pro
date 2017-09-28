@@ -5,10 +5,6 @@
 ; :Params:
 ;   filename:  in
 ;     filename of the shapefile
-;     
-; :Keywords:
-;   myshape: out
-;     Reference to the open shapefile object
 ;   num_ent: out
 ;     The number of features in the shape file
 ;   ent_type: out
@@ -18,11 +14,19 @@
 ;   attr_info: out
 ;     Detailed information about all the attributes in the shapefile
 ;     
+; :Keywords:
+;   myshape: out
+;     Reference to the open shapefile object
+;   update: in, optional, default = no
+;     If set allows updating of the shapefile
+;     
 ;-
-pro nrs_openShapefile, filename, shape_obj = myshape, num_ent, ent_type, num_attr, attr_info
+pro nrs_openShapefile, filename, shape_obj = myshape, num_ent, ent_type, num_attr, attr_info, update = update
   compile_opt idl2, logical_predicate
   
-  myshape = OBJ_NEW('IDLffShape', filename)
+  update = keyword_set(update)
+  
+  myshape = OBJ_NEW('IDLffShape', filename, update = update)
 
   ; Get the number of entities and the entity type.
   myshape->IDLffShape::GetProperty, N_ENTITIES = num_ent, $
