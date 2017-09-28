@@ -1,34 +1,3 @@
-function nrs_shape_attr_from, dt, width = width, dec = dec
-  switch dt of
-    1:
-    2:
-    12: begin
-      width = 6
-      dec = 0
-      return, 3
-    end
-    3:
-    13: begin
-      width = 11
-      dec = 0
-      return, 3
-    end
-    14:
-    15: begin
-      width = 18
-      dec = 0
-      return, 3
-    end
-    else: begin
-      width = 15
-      dec = 5
-      return, 5
-    end
-  endswitch
-end
-
-;----------
-; Main routine
 pro nrs_extract_by_location, shapefile, image, outshape = outshape, prog_obj = prog_obj, cancelled = cancelled
   compile_opt idl2, logical_predicate
   
