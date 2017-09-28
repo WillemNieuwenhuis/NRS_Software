@@ -912,7 +912,7 @@ FUNCTION PROGRESSBAR::INIT, $
    IF N_Elements(title) EQ 0 THEN title = "Progress Bar"
    IF N_Elements(xsize) EQ 0 THEN self.xsize = 150 ELSE self.xsize = xsize
    IF N_Elements(ysize) EQ 0 THEN self.ysize = 10 ELSE self.ysize = ysize
-   if n_elements(level) eq 0 then self.level = 0
+   if n_elements(level) eq 0 then self.level = 0 else self.level = level
 
    ; Create the widgets for the progress bar.
 
