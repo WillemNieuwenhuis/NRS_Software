@@ -8,6 +8,9 @@ pro _build_prototype
     , 'nrs_zonal_batch_gui_eventcb.pro' $
     , 'nrs_import_ascii_rsebv_gui.pro' $
     , 'nrs_import_ascii_rsebv.pro' $
+    , 'nrs_gwp_convert.pro' $
+    , 'nrs_gwp_tiff_gui.pro' $
+    , 'nrs_gwp_tiff_gui_eventcb.pro' $
     ]
   _auto_build, files, 'bin' + path_sep() + 'nrs_prototype.sav', logfile = 'bin' + path_sep() + 'nrs_prototype.log'
 
