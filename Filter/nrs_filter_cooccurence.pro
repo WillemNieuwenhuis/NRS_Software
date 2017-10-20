@@ -17,7 +17,6 @@ pro nrs_filter_cooccurence, img, shapefile, kernel = kernel, outshape = outshape
 
   if n_elements(outname) eq 0 then outname = getoutname(img, postfix = '_cooc', ext = '.dat')
 
-  envi_delete_rois, /all  ; make sure no rois are defined
   nrs_read_shape_polygons, shapefile, polygons = pols, att_names = att_names, hint_geo = hint_geo
 
   nr_pols = n_elements(pols.vertices)
@@ -66,7 +65,7 @@ pro nrs_filter_cooccurence, img, shapefile, kernel = kernel, outshape = outshape
   for p = 0, nr_pols - 1 do begin
     if nrs_update_progress(prog_obj, p, nr_pols) then begin
       cancelled = 1
-      nrs_close_shapes, [myshape, newshape]
+      nrs_close_shapes, shapes = [myshape, newshape]
       return
     endif
 
@@ -83,12 +82,16 @@ pro nrs_filter_cooccurence, img, shapefile, kernel = kernel, outshape = outshape
     endelse
     pixelX = reform(round(pixelX), n_elements(pixelX))
     pixelY = reform(round(pixelY), n_elements(pixelY))
+    if nrs_check_Bounds(min(pixelX), min(pixelY), nl, ns) eq 0 then continue
+    if nrs_check_Bounds(max(pixelX), max(pixelY), nl, ns) eq 0 then continue
 
+    envi_delete_rois, /all  ; make sure no rois are defined
     new_roi = envi_create_roi(ns = ns, nl = nl, name = 'tree')
     envi_define_roi, new_roi, /polygon, xpts = pixelX, ypts = pixelY
 
     for b = 0, nb - 1 do begin
       rdata = envi_get_roi_data(new_roi, fid = fidIn, pos = b, addr = rix)
+      if n_elements(rix) lt (kernel * kernel) then continue
       if rix[0] eq -1 then continue 
 
       if b eq 0 then begin
@@ -115,10 +118,16 @@ pro nrs_filter_cooccurence, img, shapefile, kernel = kernel, outshape = outshape
       
       data[mix, b] = rdata
     endfor
+    if (nsloc le kernel) || (nlloc le kernel) then continue
+    if n_elements(data) eq 0 then continue  ; should not be possible!
+    
     data = reform(data, nsloc, nlloc, nb, /over)
     data *= mask
     
-    envi_write_envi_file, data, /no_open, /in_memory, r_fid = fidTree
+    postfix = '_temp_' + string(p, format = '(i06)')
+    outtreename = getoutname(img, postfix = postfix, ext = '.dat')
+    envi_write_envi_file, data, out_name = outtreename, /no_open
+    envi_open_file, outtreename, r_fid = fidTree, /no_realize, /no_interactive_query
 
     ; now start co-occurrence calculation
     envi_file_query, fidTree, dims = dimsTree
@@ -131,28 +140,24 @@ pro nrs_filter_cooccurence, img, shapefile, kernel = kernel, outshape = outshape
                  , kx = kernel, ky = kernel  $  ; square kernel
                  , g_levels = 64 $              ; quantization levels
                  , pos = pos $                  ; all bands
-                 , /no_realize
+                 , /no_realize, /invisible
 
     envi_file_query, fidOcc, ns = nsTree, nl = nlTree, nb = nbOcc, dims = dimsOcc
     ; result map has 8 * nb bands, grouped per input band
     ; per measure per input band the spatial information is aggregated to a single value (by averaging)
     
-;    nrs_set_progress_property, prog_obj, /start, title = 'Adding co-occurrence as attributes'
-
     ; get the feature and its attributes
-    feature = myshape->idlffshape::getentity(p, /attributes)
-    ; get the point coordinate
-    coordX = feature.bounds[0]
-    coordY = feature.bounds[1]
-
-    attr = feature.attributes
+    feature = myshape->idlffshape::getentity(p)
+    attr = myshape->idlffshape::getattributes(p)
+    
+    ; create a new attribute structure
     newAttr = newshape->idlffshape::getattributes(/ATTRIBUTE_STRUCTURE)
     ; Copy the existing attributes
     for count = 0, num_attr - 1 do begin
-      newAttr.(count) = (*attr).(count)
+      newAttr.(count) = attr.(count)
     end
 
-    ; get the measure values
+    ; get the measure values and add them as additional attribute fields
     for b = 0, nbOcc - 1 do begin
       dblock = envi_get_data(fid = fidOcc, dims = dimsOcc, pos = b)
       average = mean(dblock)
@@ -161,18 +166,17 @@ pro nrs_filter_cooccurence, img, shapefile, kernel = kernel, outshape = outshape
       newAttr.(count) = average
     endfor
 
-    ; add the measures to the new output shape (polygon)
-    feature.attributes = ptr_new(newAttr)
-    ptr_free, attr
-
     ; write the feature to the new shapefile
     newshape->idlffshape::putentity, feature
+    ; and also write the new attributes
+    newshape->idlffshape::getproperty, n_entities = nelem
+    newshape->idlffshape::setattributes, nelem - 1, newattr
 
     ; cleanup for the feature structure
     myshape->idlffshape::destroyentity, feature
     
     ; image cleanup: close the temp images
-    envi_file_mng, id = fidTree, /remove
+    envi_file_mng, id = fidTree, /remove, /delete  ; also remove from disk
     envi_file_mng, id = fidOcc, /remove
   endfor
 
