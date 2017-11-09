@@ -7,7 +7,7 @@ pro nrs_water_index_ratio, image, water_index, outname = outname $
   
   ; Error checking
   indices = ['NDWI', 'LSWI', 'LSWI1', 'LSWI2']
-  ibs = [[3, 1], [1, 4], [1, 4], [1, 5]]
+  ibs = [[3, 1], [1, 4], [1, 4], [1, 5]]  ; MODIS bands
   select = where(strupcase(water_index) eq indices, cnt)
   if cnt ne 1 then begin
     void = error_message('Unrecognized water index.')

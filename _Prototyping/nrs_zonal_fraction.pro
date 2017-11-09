@@ -30,48 +30,6 @@ pro nrs_zonal_fraction_batch, in_folder, shapefile, attribute = attribute $
   endif
 end
 
-; moved to NRS_Utils in nrs_shapefile_utils.pro as nrs_read_shape_polygons
-;pro nrs_zonal_fraction_read_shape, shapes, polygons = pols, att_names = att_names
-;  compile_opt idl2, logical_predicate
-;
-;  pols = []
-;  att_names = []
-;
-;  if strlowcase(nrs_get_file_extension(shapes)) ne '.shp' then begin
-;    void = error_message('No shapefile specified')
-;    return
-;  endif
-;
-;  ; open the input shapefile
-;  shape = obj_new('IDLffShape', shapes)
-;
-;  ; Get the number of entities and the entity type.
-;  shape->idlffshape::getproperty, n_entities = num_ent, $
-;    entity_type = ent_type, n_attributes = num_attr
-;
-;  if num_ent le 0 then begin
-;    obj_destroy, shape
-;    void = error_message('No features found in the shapefile')
-;    return
-;  endif
-;  
-;  pnt_types = [5, 15, 25]
-;  ix = where(ent_type eq pnt_types, pt_cnt)
-;  if pt_cnt eq 0 then begin
-;    obj_destroy, shape
-;    void = error_message('Only polygon features supported')
-;    return
-;  endif
-;
-;  if num_attr gt 0 then begin
-;    shape->IDLffShape::GetProperty, attribute_info = attr_info
-;    att_names = attr_info.name
-;  endif
-;  pols = shape->IDLffShape::GetEntity(/all, /attributes)
-;
-;  obj_destroy, shape
-;end
-
 pro nrs_zonal_fraction_shape, image, shapefile, attribute = attribute $
           , outname = outname, stat_table = stat_table
   compile_opt idl2, logical_predicate

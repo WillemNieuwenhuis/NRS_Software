@@ -1,6 +1,7 @@
 ;+
 ; :Description:
 ;    Read the lines from a text file into a string array. The file is closed after the read.
+;    Empty lines from the text file are removed.
 ;
 ; :Params:
 ;    filename : in, required

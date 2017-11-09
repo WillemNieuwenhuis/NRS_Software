@@ -1,5 +1,6 @@
 pro _build_all_utils
-  files = ['calc_permutation.pro' $
+  files = [ $
+             'calc_permutation.pro' $
            , 'cgpickcolorname.pro' $
            , 'cgcolor24.pro' $
            , 'cgcentertlb.pro' $

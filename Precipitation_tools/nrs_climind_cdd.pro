@@ -1,3 +1,25 @@
+;+
+; :Description:
+;    Calculate for the longest sequence of ones in the input data for all columns (samples).
+;    The output is written in the out_data 3D matrix, organised as ns x nl x climate_index
+;
+; :Params:
+;    data_in : in, required
+;      2D matrix containing zeroes and ones organised as BIL (ns x nb), (timeseries per sample).
+;    data_ndx : in, required
+;      Index (climate index) in the output data
+;    ns : in, required
+;      The number of columns (samples)
+;    line : in, required
+;      The current line index in the input timeseries (not the data_in matrix!)
+;    nb : in, required
+;      The number of bands in the input timeseries
+;      
+; :Keywords:
+;    out_data
+;
+; :Author: nieuwenhuis
+;-
 pro nrs_climind_cdd_count, data_in, data_ndx, ns, line, nb, out_data = out_data
   compile_opt idl2, logical_predicate
   
@@ -12,6 +34,11 @@ pro nrs_climind_cdd_count, data_in, data_ndx, ns, line, nb, out_data = out_data
       endelse 
       ++i
     endwhile
+    ; ;alternative:
+    ; h = histogram(data_in[s, *], rev = ri, max = max(data_in[s, *]))
+    ; ones = ri[ri[1]:ri[2]-1]
+    ; diff = ones[1:*] - ones[0, -1]
+    ; max_l = max(diff) + 1
     out_data[s, line, data_ndx] = max_l
   endfor
 end

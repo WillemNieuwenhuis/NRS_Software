@@ -22,11 +22,10 @@ pro nrs_image_linreg, image, output = coef, rmse = rmse $
   
   pos = indgen(nb)
   nbcoef = do_rmse ? 3 : 2
-  cdata = fltarr(ns,nl, nbcoef)
+  cdata = fltarr(ns, nl, nbcoef)
   for line = 0, nl - 1 do begin
-    if nrs_update_progress(prog_obj, line, nl, cancelled = cancelled) then return
-    if line mod 10 eq 0 then print, (float(line) / nl) * 100, ' %'
-
+    if nrs_update_progress(prog_obj, line, nl, cancelled = cancelled, /console) then return
+    
     slice = envi_get_slice(fid = fid, line = line, xs = 0, xe = ns - 1, pos = pos, /bil)
     
     for col = 0, ns - 1 do begin
