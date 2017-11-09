@@ -37,6 +37,8 @@
 ;    add_offset : out
 ;      The value of the add_offset attribute; if the attribute is not present, the
 ;      value will be undefined
+;    valid_range : out
+;      The valid range of the data as stored in the nc file. Any flag values will not be in this range.
 ;
 ; :Author: nieuwenhuis
 ;-
@@ -45,6 +47,7 @@ pro nrs_nc_get_varatt, nc_id, var_id, desc = desc, grid_mapping = grid_mapping, 
                                     , crd_str = crd_str $
                                     , bnds_str = bnds_str $
                                     , pole_lat = pole_lat, pole_lon = pole_lon $
+                                    , valid_range = valid_range $
                                     , scale_factor = scale_factor, add_offset = add_offset
   compile_opt idl2, logical_predicate
 
@@ -70,6 +73,10 @@ pro nrs_nc_get_varatt, nc_id, var_id, desc = desc, grid_mapping = grid_mapping, 
         'bounds' : bnds_str = string(value)
         'grid_north_pole_latitude' : pole_lat = float(value)
         'grid_north_pole_longitude' : pole_lon = float(value)
+        'valid_range' : begin
+            parts = strsplit(value, ',', /extract)
+            valid_range = float(parts)
+          end
       else :
       endcase
     endfor
@@ -220,6 +227,10 @@ function nrs_nc_get_var_cand, nc_id, grid_mapping = gm_ids, crd_vars = crd_vars
       endif
     end
     ; x and x coordinates
+    if n_elements(crd_vars) eq 0 then begin
+      void = error_message('No coordinates found')
+      return, []
+    endif
     ix = where(crd_vars.did eq dims[1], cnt)
     if cnt gt 0 then begin
       var_ids[v].y_id = crd_vars[ix[0]].vid
@@ -337,7 +348,8 @@ end
 ;+
 ; :Description:
 ;    Import a single netCDF file. It parses the netCDF file to find all data variables.
-;    For each data variable an output file is created. 
+;    For each data variable an output file is created. Also scale and offset are applied
+;    if specified, unless the DN keyword is set 
 ;
 ; :Params:
 ;    filename :
@@ -346,6 +358,8 @@ end
 ; :Keywords:
 ;    out_name : in, optional
 ;      The basename of the output file(s). If not specified the input name will be used as template
+;    DN : in, optional
+;      If set do not apply scale and/or offset
 ;    prog_obj : in, optional
 ;      A progress indicator (of type progressBar)
 ;    cancelled : out
@@ -354,6 +368,7 @@ end
 ; :Author: nieuwenhuis
 ;-
 pro nrs_nc_get_data, filename, out_name = base_name $
+                   , DN = DN $
                    , prog_obj = prog_obj, cancelled = cancelled
   compile_opt idl2, logical_predicate
   
@@ -415,68 +430,87 @@ pro nrs_nc_get_data, filename, out_name = base_name $
 
     postfix = '_' + var.name
     output_name = getOutname(base_name, postfix = postfix, ext = '.dat')
-  
+
     dt = var.data_type
     if n_elements(scale_factor) gt 0 then dt = size(scale_factor, /type) $
     else if n_elements(offset) gt 0 then dt = size(offset, /type)
+
+    do_scale = n_elements(scale_factor) gt 0 && abs(1.0 - scale_factor) gt 0.001
+    do_offset = n_elements(offset) gt 0 && abs(0.0 - offset) gt 0.001
+    if keyword_set(DN) then begin
+      do_scale = 0
+      do_offset = 0
+      dt = var.data_type
+    endif
   
     ; open the output for writing
     openw, unit, output_name, /get_lun
 
-    buf = make_array(ns, nl, type = dt)
-    var_cnt = [ns, nl]
+    ; calculate the default chunking size (nc 4.1, 4MB blocks); assume this for reading the data
+    chunking = nrs_nc_def_chunk(ns, nl)
+    nlstep = chunking[1]
+    nsstep = chunking[0]
+    nr_chunk_x = ceil(1.0 * ns / nsstep)
+    nr_chunk_y = ceil(1.0 * nl / nlstep)
+    last_chunk_ns = ns - (nr_chunk_x - 1) * nsstep 
+    last_chunk_nl = nl - (nr_chunk_y - 1) * nlstep
+    
+    buf = make_array(nsstep, nlstep, type = dt)
+    var_cnt = [nsstep, nlstep]
     var_offset = [0, 0]
     if nb gt 0 then begin
-      var_cnt = [ns, nl, 1]
+      var_cnt = [nsstep, nlstep, 1]
       var_offset = [0, 0, 0]
     endif
     if nz eq 1 then begin
-      var_cnt = [ns, nl, 1, 1]
+      var_cnt = [nsstep, nlstep, 1, 1]
       var_offset = [0, 0, 0, 0]
     endif
     nb = nb eq 0 ? 1 : nb 
+    
     for b = 0, nb - 1 do begin
-      if nrs_update_progress(prog_obj, b, nb, cancelled = cancelled) then return
+;      for ch_x = 0, nr_chunk_x - 1 do begin
+      for line = 0, nl - 1 do begin
+        if nrs_update_progress(prog_obj, line, nl, cancelled = cancelled, /console) then return
 
-      var_offset[-1] = b
-      ncdf_varget, nc_id, var.vid, band, count = var_cnt, offset = var_offset  ; read next band
-      if nz eq 1 then band = reform(band, ns, nl, /overwrite)
+        ; if pixels run from bottom to top, read from bottom
+        curline = line
+        if need_hor_mirror then curline = nl - line
       
-      if nodata_set then ndix = where(band eq nodata, nd_cnt)
-      do_scale = n_elements(scale_factor) gt 0 && abs(1.0 - scale_factor) gt 0.001
-      do_offset = n_elements(offset) gt 0 && abs(0.0 - offset) gt 0.001 
-      if do_scale || do_offset then begin
-        if do_scale then band *= scale_factor
-        if do_offset then band += offset
-        if nd_cnt gt 0 then band[ndix] = nodata
-      endif
-      
-      ; check for 2D-coord vars
-      if var.px_id ge 0 && var.py_id ge 0 then begin
-        if strlen(gm) gt 0 then begin
-          gm_id = ncdf_varid(nc_id, gm)
-          
-          nrs_nc_get_varatt, nc_id, gm_id, pole_lat = pole_lat, pole_lon = pole_lon
-
-          ; only rotate / resample if needed
-          if n_elements(pole_lat) gt 0 then begin
-            if ~(abs(pole_lat - 90) lt 0.000001) then begin
-              ncdf_varget, nc_id, var.px_id, lons 
-              ncdf_varget, nc_id, var.py_id, lats 
-              resam = make_array(ns, nl, type = dt)
+;[ dims0x1, start30000x10000, count5001x5001, stride1x1 ] 
+        if b gt 0 then var_offset[-1] = b
+        var_offset[1] = curline
+        ncdf_varget, nc_id, var.vid, buf, count = var_cnt, offset = var_offset  ; read next line
+        if nz eq 1 then buf = reform(buf, ns, nlstep, /overwrite)
+        
+        if nodata_set then ndix = where(buf eq nodata, nd_cnt)
+        if do_scale || do_offset then begin
+          if do_scale then buf *= scale_factor
+          if do_offset then buf += offset
+          if nd_cnt gt 0 then buf[ndix] = nodata
+        endif
+        
+        ; TODO: check for 2D-coord vars
+        if var.px_id ge 0 && var.py_id ge 0 then begin
+          if strlen(gm) gt 0 then begin
+            gm_id = ncdf_varid(nc_id, gm)
+            
+            nrs_nc_get_varatt, nc_id, gm_id, pole_lat = pole_lat, pole_lon = pole_lon
+  
+            ; only rotate / resample if needed
+            if n_elements(pole_lat) gt 0 then begin
+              if ~(abs(pole_lat - 90) lt 0.000001) then begin
+                ncdf_varget, nc_id, var.px_id, lons 
+                ncdf_varget, nc_id, var.py_id, lats 
+;                resam = make_array(ns, nlstep, type = dt)
+              endif
             endif
           endif
         endif
-      endif
-      
-      ; if pixels run from bottom to top, swap them
-      if need_hor_mirror then begin
-        for l = 0, nl - 1 do buf[*, l] = band[*, nl - l - 1]
-        band = buf
-      endif
-      
-      writeu, unit, band   ; write to disk
-    endfor  ; b 
+        
+        writeu, unit, buf   ; write to disk
+      endfor  ; line
+    endfor  ; b (band)
       
     ; build band names
     bnames = var.name
@@ -632,7 +666,7 @@ end
 ;
 ; :Author: nieuwenhuis
 ;-
-pro nrs_nc_import, folder
+pro nrs_nc_import, folder, DN = DN
   compile_opt idl2, logical_predicate
 
   ; outer progress indicator  
@@ -655,11 +689,24 @@ pro nrs_nc_import, folder
     for f = 0, n_elements(files) - 1 do begin
       if nrs_update_progress(progressBar, f, n_elements(files)) then return
 
-      nrs_nc_get_data, files[f], prog_obj = progressInner, cancelled = cancelled
+      nrs_nc_get_data, files[f], prog_obj = progressInner, cancelled = cancelled, DN = DN
     endfor
   endif
 
   if obj_valid(progressBar) gt 0 then progressBar -> Destroy
   if obj_valid(progressInner) gt 0 then progressInner -> Destroy
   
+end
+
+function nrs_nc_def_chunk, xs, ys
+  compile_opt idl2
+  
+  tot = xs * ys
+  chunks = tot / 2 ^ 22 ; default chunk size (nc 4.1) == 4MB
+  dimxy = ceil(sqrt(chunks))
+  
+  xsize = 1 + xs / dimxy
+  ysize = 1 + ys / dimxy
+  
+  return, [xsize, ysize]
 end
