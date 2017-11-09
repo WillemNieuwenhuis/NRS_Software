@@ -17,16 +17,19 @@
 ; :Keywords:
 ;   myshape: out
 ;     Reference to the open shapefile object
+;   table_only : in, optional, default = no
+;     If set only load the DBF file 
 ;   update: in, optional, default = no
 ;     If set allows updating of the shapefile
 ;     
 ;-
-pro nrs_openShapefile, filename, shape_obj = myshape, num_ent, ent_type, num_attr, attr_info, update = update
+pro nrs_openShapefile, filename, shape_obj = myshape, num_ent, ent_type, num_attr, attr_info $
+                     , update = update, table_only = table_only
   compile_opt idl2, logical_predicate
   
   update = keyword_set(update)
   
-  myshape = OBJ_NEW('IDLffShape', filename, update = update)
+  myshape = OBJ_NEW('IDLffShape', filename, update = update, dbf_only = table_only)
 
   ; Get the number of entities and the entity type.
   myshape->IDLffShape::GetProperty, N_ENTITIES = num_ent, $
