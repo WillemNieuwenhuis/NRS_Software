@@ -1,3 +1,205 @@
+pro nrs_sentinel_config, sen2cor = sen2cor
+  compile_opt idl2, logical_predicate
+
+  config_path = getenv('homedrive') + getenv('homepath') + path_sep() + 'nrs_sentinel'
+  isOK = file_test(config_path, /dir)
+  if ~isOK then begin
+    file_mkdir, config_path
+  endif
+
+  
+
+end
+
+
+pro nrs_sentinel2_run_sen2cor, folder
+  compile_opt idl2, logical_predicate
+
+  
+  config_path = getenv('homedrive') + getenv('homepath') + path_sep() + 'nrs_sentinel'
+  isOK = file_test(config_path, /dir)
+  if ~isOK then begin
+    file_mkdir, config_path 
+  endif
+  
+  
+  pushd, folder
+
+  sen2cor = "E:\temp\Sen2Cor-2.4.0-win64\L2A_Process.bat " + folder
+
+  spawn, sen2cor, unit = unit
+  print, 'File handle=', unit
+  ans = bytarr(1)
+  line = bytarr(250)
+  linpos = 0
+  while not eof(unit) do begin
+    readu, unit, ans
+    line[linpos] = ans
+    if (ans ne 13) && (ans ne 10) then linpos++
+    if ans eq 10 then begin
+      print, string(line)
+      line[*] = 0
+      linpos = 0
+    endif
+  endwhile
+
+  free_lun, unit
+
+  popd
+end
+
+function nrs_sentinel2_level, base_folder, level_str = level_str
+  compile_opt idl2, logical_predicate
+
+  level_str = ''
+  level = -1
+  
+  pattern = 'MTD_MSIL'
+  meta_file = nrs_find_images(base_folder, pattern, ext = 'xml')
+  if n_elements(meta_file) eq 1 then begin
+    meta_file = meta_file[0]
+    pos = strpos(meta_file, pattern)
+    if pos gt 0 then begin
+      level_str = strmid(meta_file, pos + strlen(pattern), 2)
+      level = fix(level_str)
+    endif
+  endif
+  
+  return, level
+end
+
+;+
+; :Description:
+;    Extract metadata from the sentinel granule
+;
+; :Params:
+;    xml : input, required
+;      The granule metadata file name
+;
+; :Keywords:
+;    map_info : out
+;      An array of mapinfo records for the different scaled images. Has the same number of elements as res_dims
+;    res_dims : out
+;      An array with the dimensions of the different scaled images. Has the same number of elements as res_dims
+;    sense_date : out
+;      The date of the image capture.
+;
+; :Author: nieuwenhuis
+;-
+pro nrs_sentinel_xml_csy, xml, map_info = map_info, res_dims = res_dims, sense_date = sense_date
+  compile_opt idl2, logical_predicate
+
+  p = obj_new('IDLffXMLDOMDocument', schema_checking = 0)
+  p->load, filename = xml, /quiet
+
+  oTopLevel = p->getDocumentElement() ;return root IDLffXMLDOMDocument
+
+  ; get the sensing date (at start time)
+  node = otoplevel->getElementsByTagName('SENSING_TIME')
+  item = node->item(0)
+  dt = (item->getFirstChild())->getNodeValue()
+  parts = strsplit(dt, 'T', /extract)
+  parts = strsplit(parts[0], '-', /extract)
+  sense_date = strjoin(parts)
+
+  ; get the projection information (EPSG number)
+  prjnode = oTopLevel->getElementsByTagName('HORIZONTAL_CS_CODE')
+  prjitem = prjnode->item(0)
+  prj = (prjitem->getFirstChild())->getNodeValue()
+  parts = strsplit(prj, ':', /extract)
+  epsg = long(parts[1])
+
+  ; get projection details
+  metaList = oTopLevel->getElementsByTagName('Tile_Geocoding')
+  ; how many KeyMeta tags in documents
+  metaElement = metaList->item(0)
+
+  ; get the tiepoints for the different resolutions
+  positions = metaElement->getElementsByTagname('Geoposition')
+  map_info = []
+  for c = 0L, positions->getLength() - 1L do begin
+    node = positions->item(c)
+    items = node->getElementsByTagname('*')
+    attr = node->getAttributes()
+    attritem= attr->item(0)
+    ps = fix(attritem->getNodeValue())
+    ps = [ps, ps]
+    mc = dblarr(4)
+    mc[0:1] = 0
+    for k = 0L, items->getLength() - 1L do begin
+      item = items->item(k)
+      name = item->getTagname()
+      dataList = item->getFirstChild()
+      value = dataList->getNodeValue()
+      if name eq 'ULX' then mc[2] = double(value)
+      if name eq 'ULY' then mc[3] = double(value)
+    endfor
+    map_info = [map_info, envi_map_info_create(type = 42, pe_coord_sys_code = epsg, mc = mc, ps = ps)]
+  endfor
+
+  ; get the X and Y dimensions for the different resolutions
+  positions = metaElement->getElementsByTagname('Size')
+  res_dims = lonarr(2,3)
+  for c = 0L, positions->getLength() - 1L do begin
+    node = positions->item(c)
+    items = node->getElementsByTagname('*')
+    attr = node->getAttributes()
+    attritem = attr->item(0)
+    ps = fix(attritem->getNodeValue())
+    ix = where(ps eq [10, 20, 60])
+    for k = 0L, items->getLength() - 1L do begin
+      item = items->item(k)
+      name = item->getTagname()
+      dataList = item->getFirstChild()
+      value = dataList->getNodeValue()
+      if name eq 'NCOLS' then res_dims[k, ix] = long(value)
+      if name eq 'NROWS' then res_dims[k, ix] = long(value)
+    endfor
+  endfor
+
+end
+
+;+
+; :Description:
+;    Determine the geotiff keys from the map_info from the image handle.
+;    This function only performs well with metadata extracted from Sentinel2 L2A images as
+;    it assumes UTM
+;
+; :Params:
+;    fid : in, required
+;      Open image handle to retrieve the map_info from
+;
+;
+; :Author: nieuwenhuis
+; :History:
+;   - October 2017, WN, created
+;-
+function nrs_convert_S2_geokeys, fid
+  compile_opt idl2, logical_predicate
+
+  envi_file_query, fid, dims = dims, ns = ns, nl = nl, nb = nb
+  mi = envi_get_map_info(fid = fid, undef = undef)
+  envi_convert_file_coordinates, fid, 0, 0, xm, ym, /to_map
+  syscode = mi.proj[0].pe_coord_sys_code
+  if syscode eq 0 then begin
+    zone = mi.proj[0].params[0]
+    hemi = mi.proj[0].params[1]
+    syscode = 32600 + zone + (hemi ne 0 ? 100 : 0)
+  endif
+
+  geokeys = { $
+    ModelPixelScaleTag: [mi.ps[0], mi.ps[1], 0d], $
+    ModelTiepointTag: [0, 0, 0, xm, ym, 0], $
+    GTModelTypeGeoKey: 1, $           ; (ModelTypeProjected)
+    GTRasterTypeGeoKey: 1, $          ; (RasterPixelIsArea)
+    GeogLinearUnitsGeoKey: 9001, $    ; (Linear_Meter)
+    GeogAngularUnitsGeokey: 9102, $   ; (Angular Degree)
+    ProjectedCSTypeGeoKey: syscode $  ; UTM code
+  }
+
+  return, geokeys
+end
+
 ;+
 ; :Description:
 ;    Add ENVI headers to all the JP2 images in the Sentinel2 L2A product. The ENVI headers will contain
@@ -29,9 +231,9 @@ pro nrs_convert_S2L2_to_S2ENVI, folders
     meta_file = nrs_find_images(tile_folder, ext = 'xml')
     if n_elements(meta_file) ne 1 then begin
       if multiple then $
-        print, 'No Sentinel L2A product found' $
+        print, 'No Sentinel L2 product found' $
       else $
-        print, 'No Sentinel L2A product found in: ' + tile_folder
+        print, 'No Sentinel L2 product found in: ' + tile_folder
 
       continue
     endif
@@ -197,32 +399,6 @@ pro nrs_convert_S2ENVI_to_ENVIstack, folders, out_folder, include_band8 = includ
 
   endfor
 
-end
-
-function nrs_convert_S2_geokeys, fid
-  compile_opt idl2, logical_predicate
-
-  envi_file_query, fid, dims = dims, ns = ns, nl = nl, nb = nb
-  mi = envi_get_map_info(fid = fid, undef = undef)
-  envi_convert_file_coordinates, fid, 0, 0, xm, ym, /to_map
-  syscode = mi.proj[0].pe_coord_sys_code
-  if syscode eq 0 then begin
-    zone = mi.proj[0].params[0] 
-    hemi = mi.proj[0].params[1]
-    syscode = 32600 + zone + (hemi ne 0 ? 100 : 0)
-  endif
-
-  geokeys = { $
-    ModelPixelScaleTag: [mi.ps[0], mi.ps[1], 0d], $
-    ModelTiepointTag: [0, 0, 0, xm, ym, 0], $
-    GTModelTypeGeoKey: 1, $           ; (ModelTypeProjected)
-    GTRasterTypeGeoKey: 1, $          ; (RasterPixelIsArea)
-    GeogLinearUnitsGeoKey: 9001, $    ; (Linear_Meter)
-    GeogAngularUnitsGeokey: 9102, $   ; (Angular Degree)
-    ProjectedCSTypeGeoKey: syscode $  ; UTM code
-  }
-  
-  return, geokeys
 end
 
 ;+
