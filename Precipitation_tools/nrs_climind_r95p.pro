@@ -38,7 +38,7 @@ pro nrs_climind_r95p, inname $
   nrs_get_dt_indices, [startday, endday + 1], period = 'year', julian_out = jm
   
   if nb ne (endday - startday + 1) then begin
-    void = error_message('Probably not daily data, quitting')
+    void = error_message('Probably not daily data, quitting', /error)
     return
   endif
 
@@ -55,6 +55,7 @@ pro nrs_climind_r95p, inname $
 
   jm -= startday
   pos = indgen(nb)
+  sl_tot = nb
   for line = 0, nl - 1 do begin
     if nrs_update_progress(prog_obj, line, nl, cancelled = cancelled) then return
     
