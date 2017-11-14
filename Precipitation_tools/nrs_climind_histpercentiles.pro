@@ -1,6 +1,6 @@
 ;+
 ; :description:
-;    Calculate the 95th percentile value of the wet days (> 1mm precipitation)
+;    Calculate the 95th or 99th percentile value of the wet days (> 1mm precipitation)
 ;    in the period 1961-1990.
 ;
 ; :params:
@@ -9,10 +9,16 @@
 ;
 ; :keywords:
 ;    outname : in
-;      The output name of the p95 image
+;      The output name of the percentile image
+;    percent : in, optional, default = 95%
+;      The percentile to calculate for (range 0 - 100)
 ;    zhang : in, optional, default = no
 ;      If set implements the percentile procedure as proposed by Zhang ea.
 ;      If not set will simply calculate the percentile coventionally
+;    use_full_image : in, optional, default = no
+;      if no/false, calculate the percentiles, assuming period ranging from 1-1-1961 to 31-12-1990
+;      if yes/true, calculate the percentile over the full period of the timeseries 
+;      This option is off for the zhang method: there are mutually exclusive 
 ;    prog_obj : in, optional
 ;      Progressbar object to indicate progress of the calculation
 ;    cancelled : in, optional
@@ -27,30 +33,37 @@
 ;-
 pro nrs_climind_percentiles, inname $
            , outname = outname $
+           , percent = percent $
            , zhang = zhang $
-;           , startday, endday $
+           , use_full_image = use_full_image $
            , prog_obj = prog_obj, cancelled = cancelled
   compile_opt idl2, logical_predicate
   
-  if keyword_set(zhang) then begin
-    nrs_climind_percentiles_zhang, inname, outname = outname, prog_obj = prog_obj, cancelled = cancelled
+  do_zhang = (keyword_set(zhang) && ~keyword_set(use_full_image))
+  if do_zhang then begin
+    nrs_climind_percentiles_zhang, inname, percent = percent, outname = outname, prog_obj = prog_obj, cancelled = cancelled
   endif else begin
-    nrs_climind_percentiles_native, inname, outname = outname, prog_obj = prog_obj, cancelled = cancelled
+    nrs_climind_percentiles_native, inname, percent = percent, use_full_image = use_full_image, outname = outname, prog_obj = prog_obj, cancelled = cancelled
   endelse 
 end
 
 pro nrs_climind_percentiles_native, inname $
            , outname = outname $
-           , zhang = zhang $
-;           , startday, endday $
+           , percent = percent $
+           , use_full_image = use_full_image $
            , prog_obj = prog_obj, cancelled = cancelled
   compile_opt idl2, logical_predicate, hidden
   
   cancelled = 1
 
+  if n_elements(percent) eq 0 then percent = 95
+  percent = fix(percent) / 100.0
+  
+  use_full_image = keyword_set(use_full_image)
+  
   envi_open_file, inname, r_fid = fid, /no_realize, /no_interactive_query
   if fid eq -1 then begin
-    void = error_message('Could not open input timeseries')
+    void = error_message('Could not open input timeseries', /error)
     return
   endif
   
@@ -64,13 +77,14 @@ pro nrs_climind_percentiles_native, inname $
     outname = getOutname(inname, postfix = '_hpct', ext = '.dat')
   endif
 
-;  if ~((n_elements(undef) gt 0) && (undef ne 1e34)) then undef = -9999
-
-  startday = nrs_str2julian('1-1-1961')
-  endday = nrs_str2julian('31-12-1990')
-  if nb ne (endday - startday + 1) then begin
-    void = error_message('Probably not daily data, quitting')
-    return
+  ; Check if the assumption of the deafult time period is correct
+  if ~use_full_image then begin
+    startday = nrs_str2julian('1-1-1961')
+    endday = nrs_str2julian('31-12-1990')
+    if nb ne (endday - startday + 1) then begin
+      void = error_message('Historical data does not match default date period, quitting', /error)
+      return
+    endif
   endif
 
   cancelled = 0
@@ -81,8 +95,8 @@ pro nrs_climind_percentiles_native, inname $
   
   out_data = intarr(ns, nl)
 
-  jm -= startday
   pos = indgen(nb)
+  
   for line = 0, nl - 1 do begin
     if nrs_update_progress(prog_obj, line, nl, cancelled = cancelled) then return
     
@@ -98,7 +112,7 @@ pro nrs_climind_percentiles_native, inname $
        
       series = series[ix]
       ix = sort(series)
-      out_data[col, line] = series[ix[long(0.95 * cnt)]]
+      out_data[col, line] = series[ix[long(percent * cnt)]]
     endfor
     
     writeu, unit, out_data
@@ -106,13 +120,14 @@ pro nrs_climind_percentiles_native, inname $
   
   meta = envi_set_inheritance(fid, dims, /full)
   
+  bname = string(fix(percent*100), format = '(i0,"th Percentile")')
   dt = size(out_data, /type)
   envi_setup_head, fname = outname $
           , data_type = dt $
           , /write $
           , interleave = 1 $  ; BIL
           , nb = 1, nl = nl, ns = ns $
-          , bnames = '95th Percentile' $
+          , bnames = bname $
           , inherit = meta $
           , data_ignore_value = undef
 
@@ -122,14 +137,18 @@ end
 
 pro nrs_climind_percentiles_zhang, inname $
            , outname = outname $
+           , percent = percent $
            , prog_obj = prog_obj, cancelled = cancelled
   compile_opt idl2, logical_predicate, hidden
   
   cancelled = 1
 
+  if n_elements(percent) eq 0 then percent = 95
+  percent = fix(percent) / 100.0
+
   envi_open_file, inname, r_fid = fid, /no_realize, /no_interactive_query
   if fid eq -1 then begin
-    void = error_message('Could not open input timeseries')
+    void = error_message('Could not open input timeseries', /error)
     return
   endif
   
@@ -143,8 +162,6 @@ pro nrs_climind_percentiles_zhang, inname $
     outname = getOutname(inname, postfix = '_hpct', ext = '.dat')
   endif
 
-;  if ~((n_elements(undef) gt 0) && (undef ne 1e34)) then undef = -9999
-
   startday = nrs_str2julian('1-1-1961')
   endday = nrs_str2julian('31-12-1990')
   caldat, [startday, endday], mm, dd, yy
@@ -154,7 +171,7 @@ pro nrs_climind_percentiles_zhang, inname $
   nrs_get_dt_indices, [startday, endday + 1], period = 'year', julian_out = jm
   
   if nb ne (endday - startday + 1) then begin
-    void = error_message('Probably not daily data, quitting')
+    void = error_message('Probably not daily data, quitting', /error)
     return
   endif
 
@@ -168,7 +185,7 @@ pro nrs_climind_percentiles_zhang, inname $
 
   jm -= startday
   pos = indgen(nb)
-  p95 = long(0.95 * nb)
+  p95 = long(percent * nb)
   for line = 0, nl - 1 do begin
     if nrs_update_progress(prog_obj, line, nl, cancelled = cancelled) then return
     
@@ -194,7 +211,7 @@ pro nrs_climind_percentiles_zhang, inname $
         ix = sort(block)
         p = block[ix[p95]]
         
-        ; calculate the r95p value for the out-of-base data
+        ; calculate the percentile value for the out-of-base data
         ix = where(oob gt p, cnt)
         estim[y] = cnt ne 0 ? total(oob[ix]) : 0.0
       endfor
@@ -207,13 +224,14 @@ pro nrs_climind_percentiles_zhang, inname $
   
   meta = envi_set_inheritance(fid, dims, /full)
   
+  bname = string(fix(percent*100), format = '(i0,"th Percentile")')
   dt = size(out_data, /type)
   envi_setup_head, fname = outname $
           , data_type = dt $
           , /write $
           , interleave = 1 $  ; BIL
           , nb = 1, nl = nl, ns = ns $
-          , bnames = '95th Percentile' $
+          , bnames = bname $
           , inherit = meta $
           , data_ignore_value = undef
 

@@ -16,13 +16,27 @@ pro nrs_climind_perc_handle_input, event
   widget_control, fld, set_value = outfile
 end
 
+pro nrs_climind_full_toggle, event
+  compile_opt idl2, logical_predicate
+
+  fld = widget_info(event.top, find_by_uname = 'nrs_climind_full_button')
+  full = widget_info(fld, /button_set)
+
+  fld = widget_info(event.top, find_by_uname = 'nrs_climind_perc_button')
+  widget_control, fld, sensitive = ~full
+
+end
+
 pro nrs_climind_perc_handleOK, event
   ; get input values
   fld = widget_info(event.top, find_by_uname = 'nrs_climind_perc_refstack')
   widget_control, fld, get_value = infile
   
+  fld = widget_info(event.top, find_by_uname = 'nrs_climind_full_button')
+  full = widget_info(fld, /button_set)
+
   fld = widget_info(event.top, find_by_uname = 'nrs_climind_perc_button')
-  zhang = widget_info(val_fld, /button_set)
+  zhang = widget_info(fld, /button_set)
   
   fld = widget_info(event.top, find_by_uname = 'nrs_climind_perc_outputFile')
   widget_control, fld, get_value = outfile
@@ -42,8 +56,9 @@ pro nrs_climind_perc_handleOK, event
                         , /fast_loop $
                         )
 
-  nrs_climind_percentiles, inname $
+  nrs_climind_percentiles, infile $
                        , outname = outfile $
+                       , use_full_image = full $
                        , zhang = zhang $
                        , prog_obj = progressBar, cancelled = cancelled
 

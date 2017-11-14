@@ -26,7 +26,7 @@ pro nrs_climind_perc_gui, event
   nrs_climind_perc_contentPanel = widget_base(uname = 'nrs_climind_perc_contentPanel'  $
     , /col  $
     , tab_mode = 1 $
-    , TITLE = 'Historical 95th percentile')
+    , TITLE = 'Historical percentile')
 
   nrs_climind_perc_mainPanel = widget_base(nrs_climind_perc_contentPanel, /frame, /col)
 
@@ -38,6 +38,29 @@ pro nrs_climind_perc_gui, event
                 , uname = 'nrs_climind_perc_refstack' $
                 , event_pro = 'nrs_climind_perc_handle_input' $
               )
+
+  nrs_climind_combobox_panel = widget_base(nrs_climind_perc_mainPanel $
+    , /row $
+    , uname = 'nrs_climind_combobox_panel' $
+    )
+
+  nrs_climind_combobox_label = widget_label(nrs_climind_combobox_panel $
+    , xsize = label_width $
+    , value = 'Percentile' $
+    )
+
+  nrs_climind_combobox = widget_combobox(nrs_climind_combobox_panel $
+    , uname = 'nrs_climind_combobox' $
+    , value = ['95', '99' ] $
+    , /editable $
+    )
+
+  nrs_climind_full_base = widget_base(nrs_climind_perc_mainPanel, /nonexclusive, uname = 'nrs_climind_full_base')
+  nrs_climind_full_button = widget_button(nrs_climind_full_base $
+    , uname = 'nrs_climind_full_button' $
+    , value = 'Use full date range' $
+    , event_pro = 'nrs_climind_full_toggle' $ 
+    )
 
   nrs_climind_perc_base = widget_base(nrs_climind_perc_mainPanel, /nonexclusive, uname = 'nrs_climind_perc_base')
   nrs_climind_perc_button = widget_button(nrs_climind_perc_base $
@@ -54,7 +77,7 @@ pro nrs_climind_perc_gui, event
         )
 
   nrs_gui_createButtonPanel, nrs_climind_perc_contentPanel $
-                , ok_uname = 'nrs_climind_perc_gobutton', ok_value = 'Go!', ok_tooltip = 'Historical 95th percentile' $
+                , ok_uname = 'nrs_climind_perc_gobutton', ok_value = 'Go!', ok_tooltip = 'Historical percentile' $
                 , cancel_uname = 'nrs_climind_perc_cancelbutton', cancel_value = 'Done', cancel_tooltip = 'Cancel the operation'
 
   ; Make sure we create the form
