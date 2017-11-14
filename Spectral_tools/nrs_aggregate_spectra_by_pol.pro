@@ -214,19 +214,29 @@ pro nrs_aggregate_spectra_by_pol, shapefile, image $
   endif
 
   aval = polnames
+  dt = size(profiles, /type)
   index = make_array(nr_pols, type = size(profiles, /type))
   index[*] = indgen(nr_pols) + 1
   if keyword_set(xytable) then begin
-    hdr = ['Index', bnames]
-    profiles = [transpose(index[ix]), transpose(profiles[ix, *])]
+    hdr = ['Pol_ID', bnames]
+    profiles = profiles[ix, *]
+    out_struct = {[], field001:aval[ix]}
+    for f = 0, n_elements(bnames) - 1 do begin
+      fname = string(f + 2, format = '("field",i03)') 
+      ts = create_struct([fname], profiles[*, f])
+      out_struct = create_struct([], out_struct, ts)
+    endfor
+
+    profiles = out_struct    
   endif else begin
     hdr = string(transpose(aval[ix]))
     profiles = profiles[ix, *]
+    if cnt eq 1 then profiles = reform(profiles, n_elements(hdr), 1, /overwrite)
   endelse
   
   if (n_elements(outname) eq 0) then outname = getOutname(image, postfix = '_prof', ext = '.csv')
   
-  if cnt eq 1 then profiles = reform(profiles, n_elements(hdr), 1, /overwrite)
   write_csv, outname, header = hdr, profiles
+;  envi_write_envi_file
 
 end
