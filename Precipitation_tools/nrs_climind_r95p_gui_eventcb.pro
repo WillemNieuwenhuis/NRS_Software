@@ -30,6 +30,9 @@ pro nrs_climind_r95p_handleOK, event
   fld = widget_info(event.top, find_by_uname = 'nrs_climind_r95p_end_date')
   widget_control, fld, get_value = ed
 
+  fld = widget_info(event.top, find_by_uname = 'nrs_climind_r95p_fraction_button')
+  calc_fraction = widget_info(fld, /button_set)
+
   fld = widget_info(event.top, find_by_uname = 'nrs_climind_r95p_outputFile')
   widget_control, fld, get_value = outfile
 
@@ -66,6 +69,7 @@ pro nrs_climind_r95p_handleOK, event
   nrs_climind_r95p, infile $
                   , hist95_file $
                   , outname = outfile $
+                  , calc_fraction = calc_fraction $
                   , sd, ed $
                   , prog_obj = progressBar, cancelled = cancelled
 

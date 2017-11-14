@@ -65,6 +65,13 @@ pro nrs_climind_r95p_gui, event
                 , unittext = '(dd-mm-yyyy)' $
               )
   
+  nrs_climind_r95p_fraction_base = widget_base(nrs_climind_r95p_mainPanel, /nonexclusive, uname = 'nrs_climind_r95p_fraction')
+  nrs_climind_r95p_fraction_button = widget_button(nrs_climind_r95p_fraction_base $
+    , uname = 'nrs_climind_r95p_fraction_button' $
+    , value = 'Calculate fraction' $
+    )
+
+
   nrs_climind_r95p_output_panel = widget_base(nrs_climind_r95p_contentPanel, /frame, /col)
   nrs_climind_r95p_outputFile = cw_dirfile(nrs_climind_r95p_output_panel, uname = 'nrs_climind_r95p_outputFile' $
         , style = 'file' $

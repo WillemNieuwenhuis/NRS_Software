@@ -2,11 +2,14 @@ pro nrs_climind_r95p, inname $
            , perc_image $
            , outname = outname $
            , startday, endday $
+           , calc_fraction = calc_fraction $
            , prog_obj = prog_obj, cancelled = cancelled
   compile_opt idl2, logical_predicate
   
   cancelled = 1
 
+  calc_fraction = keyword_set(calc_fraction)
+  
   envi_open_file, inname, r_fid = fid, /no_realize, /no_interactive_query
   if fid eq -1 then begin
     void = error_message('Could not open input timeseries')
@@ -29,8 +32,6 @@ pro nrs_climind_r95p, inname $
     outname = getOutname(inname, postfix = '_r95p', ext = '.dat')
   endif
 
-;  if ~((n_elements(undef) gt 0) && (undef ne 1e34)) then undef = -9999
-   
   caldat, [startday, endday], mm, dd, yy
   sy = yy[0]
   ey = yy[1]
@@ -47,11 +48,16 @@ pro nrs_climind_r95p, inname $
   limit = 1.0 ; in mm (only deal with wet days)
 
   openw, unit, outname, /get_lun
+  if calc_fraction then begin
+    out_f = getOutname(inname, postfix = '_frac', ext = '.dat')
+    openw, unit_f, out_f, /get_lun
+  endif
   
   bn = indgen(nr_years) + sy
   bnames = [string(bn, format = '(i0)')]
     
   out_data = intarr(ns, nr_years)
+  out_fraction = fltarr(ns, nr_years)
 
   jm -= startday
   pos = indgen(nb)
@@ -67,17 +73,20 @@ pro nrs_climind_r95p, inname $
     ix = where(slice lt limit, cnt)
     if cnt eq sl_tot then out_data[*] = 0.0 $
     else begin
-      data = (slice gt q95) * slice
+      above = (slice gt q95)
+      data = above * slice
       data[ix] = 0 ; exclude dry days, by setting precipitation on those days to zero
       
       for y = 0, nr_years - 1 do begin
         ps = jm[y]
         pe = jm[y + 1] - 1
-        out_data[*, y] = total(data[*, ps : pe], 2) 
+        out_data[*, y] = total(data[*, ps : pe], 2)
+        out_fraction[*, y] = total(above[*, ps : pe], 2)
       endfor
     endelse
     
     writeu, unit, out_data
+    if calc_fraction then writeu, unit_f, out_fraction
   endfor
   
   meta = envi_set_inheritance(fid, dims, /full)
@@ -94,4 +103,20 @@ pro nrs_climind_r95p, inname $
 
   close, unit
   free_lun, unit  ; close output file
+
+  if calc_fraction then begin
+    dt = size(out_fraction, /type)
+    envi_setup_head, fname = out_f $
+      , data_type = dt $
+      , /write $
+      , interleave = 1 $  ; BIL
+      , nb = nr_years, nl = nl, ns = ns $
+      , bnames = bnames $
+      , inherit = meta $
+      , data_ignore_value = undef
+  
+    close, unit_f
+    free_lun, unit_f  ; close output file
+  
+  endif
 end
