@@ -35,9 +35,9 @@ pro nrs_climind_rx5day, image, startday, endday, outname = outname $
   
   cancelled = 1
   
-  per_ix = where((strlowcase(period) eq ['month', 'year']), cnt)
+  per_ix = where((strlowcase(period) eq ['month', 'year', 'all']), cnt)
   if cnt eq 0 then begin
-    void = error_message('Not a valid time period, allowed are: month, year', /error)
+    void = error_message('Not a valid time period, allowed are: month, year or all', /error)
     return
   endif
   
@@ -49,10 +49,10 @@ pro nrs_climind_rx5day, image, startday, endday, outname = outname $
   
   missing = -9999.
   if ~((n_elements(undef) gt 0) && (undef ne 1e34)) then undef = missing 
-  count = 0
-  caldat, [startday, endday], mm, dd, yy
-  sy = yy[0]
-  ey = yy[1]
+;  count = 0
+;  caldat, [startday, endday], mm, dd, yy
+;  sy = yy[0]
+;  ey = yy[1]
   
   if nb ne (endday - startday + 1) then begin
     void = error_message('Probably not daily data, quitting')
@@ -82,15 +82,20 @@ pro nrs_climind_rx5day, image, startday, endday, outname = outname $
   ;       3       4       5       6       7
   ;       etc
   pos = indgen(nb)
-  np = per_ix eq 0 ? 27 : 366
+  np = per_ix eq 0 ? 27 : 366   ; 27 = 31 - 5 + 1
   ixs = per_ix eq 0 ? indgen(31) : indgen(366)
   
   ix = transpose(reform(rebin(indgen(5), 5 * np), np, 5))
   ix2 = reform(rebin(indgen(np), 5 * np), 5, np)
   ix5 = ix + ix2
 
-  nrs_get_dt_indices, [startday, endday + 1], period = period, julian_out = jm
+  jm =[startday, endday]
+  if per_ix ne 2 then begin ; do the total input as one period
+    nrs_get_dt_indices, [startday, endday + 1], period = period, julian_out = jm
+    jm = [jm[0], jm[-1]]
+  endif
   dpm = [0, total(jm[1:*] - jm[0:-2], /cumulative, /integer)]
+
   for l = 0, nl - 1 do begin
     if nrs_update_progress(prog_obj, l, nl, cancelled = cancelled) then begin
       close, unit1
@@ -123,6 +128,7 @@ pro nrs_climind_rx5day, image, startday, endday, outname = outname $
 
   caldat, jm[0 : -2], mm, dd, yy
   bnames = string([transpose(yy), transpose(mm)], format = '(i4,".",i02)')
+  if per_ix eq 2 then bnames = ['Entire']
   
   envi_setup_head, fname = outname_rx1 $
         , ns = ns, nl = nl, nb = n_elements(dpm) - 1 $

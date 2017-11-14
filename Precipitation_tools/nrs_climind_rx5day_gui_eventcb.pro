@@ -41,7 +41,7 @@ pro nrs_climind_rx5day_handleOK, event
   infile = strtrim(infile, 2)
   if strlen(infile) eq 0 then return
   
-  period = (['month', 'year'])[fix(strtrim(period_str, 2))]
+  period = (['month', 'year', 'all'])[fix(strtrim(period_str, 2))]
   
   if strlen(strtrim(start, 2)) eq 0 then begin
     void = dialog_message('You need to specify the start date', /error)

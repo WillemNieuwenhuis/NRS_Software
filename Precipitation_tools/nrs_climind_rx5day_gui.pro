@@ -60,7 +60,7 @@ pro nrs_climind_rx5day_gui, event
   nrs_climind_rx5day_period_panel = widget_base(nrs_climind_rx5day_mainPanel, /row)
   nrs_climind_rx5day_period_label = widget_label(nrs_climind_rx5day_period_panel, value = 'Aggregation period')
   nrs_climind_rx5day_period = cw_bgroup(nrs_climind_rx5day_period_panel $
-                , ['Monthly', 'Annual'] $
+                , ['Monthly', 'Annual', 'Entire period'] $
                 , /row, /exclusive $
                 , set_value = 0 $
                 , uname = 'nrs_climind_rx5day_period' $
