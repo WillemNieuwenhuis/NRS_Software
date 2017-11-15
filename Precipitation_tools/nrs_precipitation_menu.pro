@@ -23,7 +23,7 @@ pro nrs_precipitation_tools_define_buttons, buttonInfo
     uvalue = 'Maximum consecutive wet/dry', event_pro = 'nrs_climind_cdd_gui', $
     ref_value = 'Climate indices', position = 'last'
 
-  envi_define_menu_button, buttoninfo, value = '25 - r95p: Annual total very wet day precipitation', $
+  envi_define_menu_button, buttoninfo, value = '25, 26 - r95p,r99p: Annual total very wet day precipitation', $
     uvalue = 'Annual total very wet day precipitation', event_pro = 'nrs_climind_r95p_gui', $
     ref_value = 'Climate indices', position = 'last'
 
