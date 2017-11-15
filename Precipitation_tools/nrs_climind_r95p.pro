@@ -61,7 +61,6 @@ pro nrs_climind_r95p, inname $
 
   jm -= startday
   pos = indgen(nb)
-  sl_tot = nb
   for line = 0, nl - 1 do begin
     if nrs_update_progress(prog_obj, line, nl, cancelled = cancelled) then return
     
@@ -71,17 +70,19 @@ pro nrs_climind_r95p, inname $
     q95 = rebin(p95, ns, nb)  ; duplicate in band dir to get same size as input slice
     
     ix = where(slice lt limit, cnt)
-    if cnt eq sl_tot then out_data[*] = 0.0 $
+    if cnt eq nb then out_data[*] = 0.0 $
     else begin
       above = (slice gt q95)
-      data = above * slice
+      data = above * slice  ; anything less than threshold -> 0
       data[ix] = 0 ; exclude dry days, by setting precipitation on those days to zero
       
       for y = 0, nr_years - 1 do begin
         ps = jm[y]
         pe = jm[y + 1] - 1
-        out_data[*, y] = total(data[*, ps : pe], 2)
-        out_fraction[*, y] = total(above[*, ps : pe], 2)
+        p_above = total(data[*, ps : pe], 2) ; total annual precipitation on stormy days (p > threshold)
+        pt = total(slice[*, ps : pe], 2)  ; total annual precipitation
+        out_data[*, y] = p_above
+        out_fraction[*, y] = 100.0 * p_above / pt
       endfor
     endelse
     
