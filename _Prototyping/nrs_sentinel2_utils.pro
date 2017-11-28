@@ -89,8 +89,8 @@ end
 pro nrs_sentinel_xml_csy, xml, map_info = map_info, res_dims = res_dims, sense_date = sense_date
   compile_opt idl2, logical_predicate
 
-  p = obj_new('IDLffXMLDOMDocument', schema_checking = 0)
-  p->load, filename = xml, /quiet
+  p = obj_new('IDLffXMLDOMDocument')
+  p->load, filename = xml, schema_checking = 0, /quiet
 
   oTopLevel = p->getDocumentElement() ;return root IDLffXMLDOMDocument
 
@@ -157,7 +157,27 @@ pro nrs_sentinel_xml_csy, xml, map_info = map_info, res_dims = res_dims, sense_d
     endfor
   endfor
 
+  obj_destroy, p
 end
+
+pro nrs_sentinel_meta, xml, scale = scale
+  compile_opt idl2, logical_predicate
+
+  p = obj_new('IDLffXMLDOMDocument')
+  p->load, filename = xml, schema_checking = 0, /quiet
+
+  oTopLevel = p->getDocumentElement() ;return root IDLffXMLDOMDocument
+
+  ; get the sensing date (at start time)
+  node = otoplevel->getElementsByTagName('L2A_BOA_QUANTIFICATION_VALUE')
+  if node->getlength() eq 0 then return
+  
+  item = node->item(0)
+  scale = long( (item->getFirstChild())->getNodeValue())
+  
+  obj_destroy, p
+end
+
 
 ;+
 ; :Description:
@@ -200,6 +220,18 @@ function nrs_convert_S2_geokeys, fid
   return, geokeys
 end
 
+pro nrs_sentinel_product_error, folder = folder, multiple = multiple
+  compile_opt idl2, logical_predicate
+
+  if multiple then $
+    print, 'No Sentinel L2 product found' $
+  else $
+    print, 'No Sentinel L2 product found in: ' + folder
+
+end
+
+ 
+
 ;+
 ; :Description:
 ;    Add ENVI headers to all the JP2 images in the Sentinel2 L2A product. The ENVI headers will contain
@@ -218,7 +250,7 @@ end
 ;-
 pro nrs_convert_S2L2_to_S2ENVI, folders
   compile_opt idl2, logical_predicate
-
+  
   multiple = n_elements(folders) gt 1
   for fold = 0, n_elements(folders) - 1 do begin
     
@@ -230,11 +262,7 @@ pro nrs_convert_S2L2_to_S2ENVI, folders
     if fc eq 0 then tile_folder = file_search(folder + '\granule\l2*')  ; new structure
     meta_file = nrs_find_images(tile_folder, ext = 'xml')
     if n_elements(meta_file) ne 1 then begin
-      if multiple then $
-        print, 'No Sentinel L2 product found' $
-      else $
-        print, 'No Sentinel L2 product found in: ' + tile_folder
-
+      nrs_sentinel_product_error, folder = folder, multiple = multiple
       continue
     endif
     meta_xml = meta_file[0]
@@ -278,10 +306,103 @@ end
 
 ;+
 ; :Description:
+;    Build a stack from Sentinel2 images. This is done for a single resolution.
+;    Optionally a conversion from DN to BOA reflectance values is done
+;
+; :Params:
+;    folder : in, required
+;      The base folder of the Sentinel product
+;    gain : in, optional
+;      The correction factor to get from DN to reflectance
+;
+; :Keywords:
+;    dn_to_reflection : in, optional, default = no
+;      If set and yes, perform the DN to reflectance correction
+;
+; :Author: nieuwenhuis
+;-
+pro nrs_sentinel_stack, folder, gain, resolution = resolution, dn_to_reflection = dn_to_reflection
+  compile_opt idl2, logical_predicate
+
+  ; find tile data folder and extract meta data
+  tile_folder = file_search(count = fc, folder + '\granule\s2*')    ; old structure
+  if fc eq 0 then tile_folder = file_search(folder + '\granule\l2*')  ; new structure
+
+  resol_lut = [10, 20, 60]
+  imgfolder = [tile_folder, tile_folder, tile_folder] + ['\IMG_DATA\R10m', '\IMG_DATA\R20m', '\IMG_DATA\R60m']
+
+  res_ix = where(resol_lut eq resolution)
+  folder_res = imgfolder[res_ix]
+  pattern = '_B'  ; only select the regular spectral bands
+  files = nrs_find_images(folder_res, pattern, ext = 'jp2')
+
+  nrfiles = n_elements(files)
+  bpos = strpos(files, '_B')
+  bnam = strmid(reform(files, 1, nrfiles), reform(bpos + 2, 1, nrfiles), 2)
+  six = sort(fix(bnam))
+  files = files[six] ; put the bands in correct order
+
+  ; prepare arrays for layer stacking
+  case res_ix of
+    0 : bnames = ['02', '03', '04', '08']
+    1 : bnames = ['02', '03', '04', '05', '06', '07', '8A', '11', '12']
+    2 : bnames = ['01', '02', '03', '04', '05', '06', '07', '8A', '9', '11', '12']
+  endcase
+
+  ; stack bands
+  name = file_basename(files[0], '.jp2')
+  ix = strpos(name, 'B0')
+  name = strmid(name, 0, ix) + 'stack' + strmid(name, ix + 3)
+  outname = out_folder + path_sep() + name + '.dat'
+  fids = []
+  for f = 0, n_elements(files) - 1 do begin
+    envi_open_file, files[f], r_fid = fid_cur, /no_interactive_query, /no_realize
+    if f eq 0 then begin
+      envi_file_query, fid_cur, dims = dims, data_type = dt
+      mi = envi_get_map_info(fid = fid_cur)
+    endif
+
+    fids = [fids, fid_cur]
+  endfor
+
+  nr_bands = n_elements(fids)
+  all_dims = rebin(dims, 5, nr_bands)
+  pos = intarr(nr_bands)
+  tmpfile = nrs_get_temporary_filename(root = folder)
+  if keyword_set(dn_to_reflection) then sname = tmpfile else sname = outname
+  envi_doit, 'envi_layer_stacking_doit', fid = fids, pos = pos $
+    , out_name = sname $
+    , dims = all_dims $
+    , out_dt = dt, out_bname = bnames $
+    , out_proj = mi.proj, out_ps = mi.ps $
+    , r_fid = fid_stack $
+    , /invisible, /no_realize
+
+  for fi = 0, nr_bands - 1 do $
+    envi_file_mng, id = fids[fi], /remove
+
+  if keyword_set(dn_to_reflection) then begin
+    ; fid_stack now points to the temp output. This is used as input for the gain correction giving a new output
+    envi_doit, 'gainoff_doit', dims = dims, fid = fid_stack $
+      , gain = fltarr(nr_bands) + gain, offset = fltarr(nr_bands), pos = lindgen(nr_bands) $
+      , out_dt = dt, out_name = outname
+
+    envi_file_mng, id = fid_stack, /delete   ; close and delete the temp file
+  endif else begin
+    envi_file_mng, id = fid_stack, /remove   ; just close the new file
+  endelse
+
+end
+
+
+;+
+; :Description:
 ;    Create ENVI stacks for the 10m and 20m atmospherically corrected Sentinel2 bands (L2A product).
 ;    The 10m stack contains: B2, B3, B4, B8, in that order
 ;    The 20m stack contains: B2, B3, B4, B5, B6, B7, B8A, B11, B12, in that order.
-;    When include_band8 is set, the 20m stack contains: B2, B3, B4, B5, B6, B7, B8, B8A, B11, B12, in that order.
+;    
+;    The data in the corrected bands is still in DN. Optionally this can be corrected by reading the 
+;    scale factor from the metadata and applying the correct gain to get actual reflectance values. 
 ;    
 ;    The band names reflect the Sentinel2 band.
 ;    
@@ -295,107 +416,35 @@ end
 ;      folder to collect all results; it should already exist
 ;
 ; :Keywords:
-;    include_band8 : in, optional, default = no
-;      Include band 8 (NIR, 10m) resampled to 20m also in the 20m stack. Widebanded band 8 spectrally overlaps
-;      band 7 and band 8A which both have small bandwidth, so may not always be needed. (Not implemented yet)
+;    dn_to_reflection : in, optional, default = no
+;      Convert the DN numbers to actual reflection values   
 ;
 ; :Author: nieuwenhuis
 
 ; :History:
 ;   - august 2017: created
 ;-
-pro nrs_convert_S2ENVI_to_ENVIstack, folders, out_folder, include_band8 = include_band8
+pro nrs_convert_S2ENVI_to_ENVIstack, folders, out_folder, dn_to_reflection = dn_to_reflection
   compile_opt idl2, logical_predicate
 
   for fold = 0, n_elements(folders) - 1 do begin
     
     folder = folders[fold]
 
-    ; find tile data folder and extract meta data
-    tile_folder = file_search(count = fc, folder + '\granule\s2*')    ; old structure
-    if fc eq 0 then tile_folder = file_search(folder + '\granule\l2*')  ; new structure
-  
-    imgfolder = [tile_folder, tile_folder, tile_folder] + ['\IMG_DATA\R10m', '\IMG_DATA\R20m', '\IMG_DATA\R60m']
-    res_str = ['R10m', 'R20m', 'R60m']
-  
-    pattern = '_B'  ; only select the regular spectral bands
-    folder10 = imgfolder[0]
-    folder20 = imgfolder[1]
-    files_10m = nrs_find_images(folder10, pattern, ext = 'jp2')
-    files_20m = nrs_find_images(folder20, pattern, ext = 'jp2')
-  
-    nrfiles = n_elements(files_10m)
-    bpos = strpos(files_10m, '_B')
-    bnam = strmid(reform(files_10m, 1, nrfiles), reform(bpos + 2, 1, nrfiles), 2)
-    six = sort(fix(bnam))
-    files_10m = files_10m[six] ; put the bands in correct order
-  
-    nrfiles = n_elements(files_20m)
-    bpos = strpos(files_20m, '_B')
-    bnam = strmid(reform(files_20m, 1, nrfiles), reform(bpos + 2, 1, nrfiles), 2)
-    six = sort(fix(bnam))
-    files_20m = files_20m[six] ; put the bands in correct order
-  
-    ; prepare arrays for layer stacking
-    bnames_10m = ['02', '03', '04', '08']
-    bnames_20m = ['02', '03', '04', '05', '06', '07', '8A', '11', '12']
-  ;  if keyword_set(include_band8) then bnames_20m = ['02', '03', '04', '05', '06', '07', '8', '8A', '11', '12']
-  
-    ; stack 10m bands
-    name = file_basename(files_10m[0], '.jp2')
-    ix = strpos(name, 'B02')
-    name = strmid(name, 0, ix) + 'stack' + strmid(name, ix + 3)
-    outname = out_folder + path_sep() + name + '.dat'
-    fids = []
-    for f = 0, n_elements(files_10m) - 1 do begin
-      envi_open_file, files_10m[f], r_fid = fid_10m, /no_interactive_query, /no_realize
-      if f eq 0 then begin
-        envi_file_query, fid_10m, dims = dims_10m, data_type = dt
-        mi = envi_get_map_info(fid = fid_10m)
+    gain = 1
+    if keyword_set(dn_to_reflection) then begin
+      meta_top = nrs_find_images(folder, 'SAFL2', ext = 'xml')
+      if n_elements(meta_top) ne 1 then begin
+        nrs_sentinel_product_error, folder = folder, multiple = multiple
+        continue
       endif
-  
-      fids = [fids, fid_10m]
-    endfor
-  
-    all_dims = rebin(dims_10m, 5, n_elements(fids))
-    pos = intarr(n_elements(fids))
-    envi_doit, 'envi_layer_stacking_doit', fid = fids, pos = pos $
-      , out_name = outname $
-      , dims = all_dims $
-      , out_dt = dt, out_bname = bnames_10m $
-      , out_proj = mi.proj, out_ps = mi.ps $
-      , /invisible, /no_realize
-  
-    for fi = 0, n_elements(fids) - 1 do $
-      envi_file_mng, id = fids[fi], /remove
-  
-    ; stack 20m bands
-    name = file_basename(files_20m[0], '.jp2')
-    ix = strpos(name, 'B02')
-    name = strmid(name, 0, ix) + 'stack' + strmid(name, ix + 3)
-    outname = out_folder + path_sep() + name + '.dat'
-    fids = []
-    for f = 0, n_elements(files_20m) - 1 do begin
-      envi_open_file, files_20m[f], r_fid = fid_20m, /no_interactive_query, /no_realize
-      if f eq 0 then begin
-        envi_file_query, fid_20m, dims = dims_20m, data_type = dt
-        mi = envi_get_map_info(fid = fid_20m)
-      endif
-  
-      fids = [fids, fid_20m]
-    endfor
-  
-    all_dims = rebin(dims_20m, 5, n_elements(fids))
-    pos = intarr(n_elements(fids))
-    envi_doit, 'envi_layer_stacking_doit', fid = fids, pos = pos $
-      , out_name = outname $
-      , dims = all_dims $
-      , out_dt = dt, out_bname = bnames_20m $
-      , out_proj = mi.proj, out_ps = mi.ps $
-      , /invisible, /no_realize
-  
-    for fi = 0, n_elements(fids) - 1 do $
-      envi_file_mng, id = fids[fi], /remove
+      nrs_sentinel_meta, meta_top[0], scale = scale
+      gain = 1.0 / scale
+    endif
+
+    ; only stack 10m and 20m, skip 60m
+    nrs_sentinel_stack, folder, gain, resolution = 10, dn_to_reflection = dn_to_reflection
+    nrs_sentinel_stack, folder, gain, resolution = 20, dn_to_reflection = dn_to_reflection
 
   endfor
 
