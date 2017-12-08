@@ -26,7 +26,7 @@ function nrs_update_progress, progressBar, pos, tot, cancelled = cancelled, cons
   compile_opt idl2, logical_predicate
   
   cancelled = 0
-  if n_elements(progressBar) eq 0 then begin
+  if (progressBar eq !null) || (~obj_valid(progressBar)) then begin
     if keyword_set(console) then begin
       vp1 = 10.0 * (pos) / tot
       vp2 = 10.0 * (pos + 1) / tot
@@ -41,11 +41,11 @@ function nrs_update_progress, progressBar, pos, tot, cancelled = cancelled, cons
   vp1 = 1000.0 * (pos) / tot
   vp2 = 1000.0 * (pos + 1) / tot
   if (fix(vp2) - fix(vp1)) gt 0 then $
-    progressBar -> Update, 100.0 * (pos + 1) / tot, text = 'Progress: ' + string(pos + 1, format = '(i0)') + ' of ' + string(tot, format = '(i0)')
+    progressBar->Update, 100.0 * (pos + 1) / tot, text = 'Progress: ' + string(pos + 1, format = '(i0)') + ' of ' + string(tot, format = '(i0)')
     
   cancelled = progressBar -> CheckCancel()
   if cancelled eq 1 then begin
-    progressBar -> Destroy
+    progressBar->Destroy
     ans = dialog_message('Calculation interrupted by user', title = 'Information', /information)
   endif
   
@@ -53,7 +53,7 @@ function nrs_update_progress, progressBar, pos, tot, cancelled = cancelled, cons
 end
 
 pro nrs_set_progress_property, prog_obj, _extra = _extra, start = start, xs = xs, ys = ys
-  if n_elements(prog_obj) gt 0 then begin
+  if (n_elements(prog_obj) gt 0) && (obj_valid(prog_obj)) then begin
     if keyword_set(start) then prog_obj->Start, 0
     if n_elements(xs) ne 0 && n_elements(ys) ne 0 then $
       prog_obj->SetProperty, xoffset = xs, yoffset = ys
