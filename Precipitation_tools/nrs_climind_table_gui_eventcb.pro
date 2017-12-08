@@ -30,6 +30,7 @@ pro nrs_climind_table_handleOK, event
 
   val_fld = widget_info(event.top, find_by_uname = 'nrs_climind_table_obs')
   widget_control, val_fld, get_value = prec_table
+  prec_table = strtrim(prec_table[0], 2)
 
   val_fld = widget_info(event.top, find_by_uname = 'nrs_climind_table_history_option')
   widget_control, val_fld, get_value = hist_sel
@@ -68,7 +69,7 @@ pro nrs_climind_table_handleOK, event
 
   val_fld = widget_info(event.top, find_by_uname = 'nrs_climind_table_outputFile')
   widget_control, val_fld, get_value = outname
-  outname = strtrim(outname, 2)
+  outname = strtrim(outname[0], 2)
 
   indices = []
   if use_Rnn then indices = [indices, 'rnn']

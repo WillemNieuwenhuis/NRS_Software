@@ -69,7 +69,7 @@ function nrs_climdex_load, datafile, data = data_collect, na_stats = na_stats
   close, unit
   free_lun, unit
   line = strtrim(lst[0],2)
-  flds = strsplit(line, ' ,-', /extract)
+  flds = strsplit(line, ' ,', /extract)
   nr_fields = n_elements(flds)
   do_temp = nr_fields ge 5
   
@@ -79,7 +79,7 @@ function nrs_climdex_load, datafile, data = data_collect, na_stats = na_stats
     ldat = strtrim(lst[line], 2)
     if strlen(ldat) eq 0 then continue  ; skip empty lines
     
-    record = float(strsplit(ldat, ' ,-', /extract))
+    record = float(strsplit(ldat, ' ,', /extract))
     jd = julday(record[1], record[2], record[0])
     caldat, jd, m, d, y
     if m ne record[1] then continue   ; skip invalid dates (30 feb, 31 april, etc)
