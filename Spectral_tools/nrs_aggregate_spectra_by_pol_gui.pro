@@ -36,7 +36,7 @@ pro nrs_aggregate_spectra_by_pol_gui, event
 
   nrs_aggregate_spectra_by_pol_input_image = cw_dirfile(nrs_aggregate_spectra_by_pol_mainPanel $
     , title = 'Input spectral image' $
-    , style = 'envi' $
+    , style = 'file' $
     , xsize = text_width $
     , xtitlesize = label_width $
     , uname = 'nrs_aggregate_spectra_by_pol_input_image' $

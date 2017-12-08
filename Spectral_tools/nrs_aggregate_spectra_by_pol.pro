@@ -227,16 +227,22 @@ pro nrs_aggregate_spectra_by_pol, shapefile, image $
       out_struct = create_struct([], out_struct, ts)
     endfor
 
-    profiles = out_struct    
   endif else begin
-    hdr = string(transpose(aval[ix]))
+    hdr = ['Image_name', string(aval[ix])]
     profiles = profiles[ix, *]
+    out_struct = create_struct('field001', bnames)
+    for f = 0, n_elements(aval) - 1 do begin
+      fname = string(f + 2, format = '("field",i03)') 
+      ts = create_struct([fname], reform(profiles[f, *], n_elements(bnames), /over))
+      out_struct = create_struct([], out_struct, ts)
+    endfor
+
     if cnt eq 1 then profiles = reform(profiles, n_elements(hdr), 1, /overwrite)
   endelse
   
   if (n_elements(outname) eq 0) then outname = getOutname(image, postfix = '_prof', ext = '.csv')
   
-  write_csv, outname, header = hdr, profiles
-;  envi_write_envi_file
+  write_csv, outname, header = hdr, out_struct
+
 
 end

@@ -7,6 +7,10 @@ pro nrs_spectral_tools_define_buttons, buttonInfo
     uvalue = 'Spectrum extraction', event_pro = 'nrs_aggregate_spectrum_gui', $
     ref_value = 'Spectral tools', position = 'after'
 
+  envi_define_menu_button, buttonInfo, value = 'Spectrum extraction (polygon)', $
+    uvalue = 'Spectrum extraction (polygon)', event_pro = 'nrs_aggregate_spectra_by_pol_gui', $
+    ref_value = 'Spectral tools', position = 'after'
+
 end
 
 pro nrs_spectral_tools_extensions_init
@@ -16,6 +20,7 @@ pro nrs_spectral_tools_extensions_init
   if e eq !NULL then return
 
   e.addextension, 'Spectrum extraction', 'nrs_aggregate_spectrum_gui', PATH='NRS/Spectral'
+  e.addextension, 'Spectrum extraction (polygon)', 'Spectrum extraction (polygon)', PATH='NRS/Spectral'
 end
 
 ; ENVI 5 compatibility
