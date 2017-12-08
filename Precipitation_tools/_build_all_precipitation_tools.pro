@@ -23,6 +23,11 @@ pro _build_all_precipitation_tools
            , 'nrs_climind_rx5day.pro' $
            , 'nrs_climind_rx5day_gui.pro' $
            , 'nrs_climind_rx5day_gui_eventcb.pro' $
+           , 'nrs_climind_table.pro' $
+           , 'nrs_climind_table_gui.pro' $
+           , 'nrs_climind_table_gui_eventcb.pro' $
+           , 'nrs_climindex_qc.pro' $
+           , 'nrsclimateindices__define.pro' $
            , 'nrs_precipitation_menu.pro' $
           ]
   _auto_build, files, 'bin' + path_sep() + 'nrs_precipitation_tools.sav', logfile = 'bin' + path_sep() + 'nrs_precipitation_tools.log' 
