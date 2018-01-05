@@ -151,6 +151,7 @@ function nrs_nc_get_var_cand, nc_id, grid_mapping = gm_ids, crd_vars = crd_vars
         , gm : string('') $  ; grid_mapping, if any
         , unit : string('') $
         , dim_ids : intarr(4) $
+        , n_dim : -1 $
         , data_type : 4 $ ; 4 == float
         , x_id : -1 $
         , y_id : -1 $
@@ -200,6 +201,7 @@ function nrs_nc_get_var_cand, nc_id, grid_mapping = gm_ids, crd_vars = crd_vars
         new_var.vid = id
         new_var.data_type = nrs_datatype_from_string(dt)
         nd = min([ndim, 4])
+        new_var.n_dim = nd
         new_var.dim_ids[0 : nd - 1]  = dims[0 : nd - 1]
         var_ids = [var_ids, new_var]
       end
@@ -207,6 +209,7 @@ function nrs_nc_get_var_cand, nc_id, grid_mapping = gm_ids, crd_vars = crd_vars
   endfor
   for v = 0, n_elements(var_ids) - 1 do begin
     dims = var_ids[v].dim_ids
+    nd = var_ids[v].n_dim
     
     ; time coordinate
     if nd ge 3 then begin
@@ -382,6 +385,7 @@ pro nrs_nc_get_data, filename, out_name = base_name $
   
   for v = 0, n_elements(vars) - 1 do begin
     var = vars[v]
+    if var.nb eq 0 then continue
     
     ; get time info
     if var.t_id ge 0 then begin
@@ -421,7 +425,7 @@ pro nrs_nc_get_data, filename, out_name = base_name $
     ps = [(max_lon - min_lon) / (ns - 1), (max_lat - min_lat) / (nl - 1)]
     mi = envi_map_info_create(/geographic, mc = mc, ps = ps)
     
-    nrs_set_progress_property, prog_obj, title = 'Converting ...'
+    nrs_set_progress_property, prog_obj, title = 'Converting ' + var.name
     nrs_nc_get_varatt, nc_id, var.vid $
                      , units = unit_desc, missing_value = nodata, desc = var_desc $
                      , grid_mapping = gm $
@@ -447,15 +451,18 @@ pro nrs_nc_get_data, filename, out_name = base_name $
     openw, unit, output_name, /get_lun
 
     ; calculate the default chunking size (nc 4.1, 4MB blocks); assume this for reading the data
-    chunking = nrs_nc_def_chunk(ns, nl)
-    nlstep = chunking[1]
-    nsstep = chunking[0]
-    nr_chunk_x = ceil(1.0 * ns / nsstep)
-    nr_chunk_y = ceil(1.0 * nl / nlstep)
-    last_chunk_ns = ns - (nr_chunk_x - 1) * nsstep 
-    last_chunk_nl = nl - (nr_chunk_y - 1) * nlstep
+;    chunking = nrs_nc_def_chunk(ns, nl)
+;    nlstep = chunking[1]
+;    nsstep = chunking[0]
+;    nr_chunk_x = ceil(1.0 * ns / nsstep)
+;    nr_chunk_y = ceil(1.0 * nl / nlstep)
+;    last_chunk_ns = ns - (nr_chunk_x - 1) * nsstep 
+;    last_chunk_nl = nl - (nr_chunk_y - 1) * nlstep
+    nsstep = ns
+    nlstep = 1
     
-    buf = make_array(nsstep, nlstep, type = dt)
+    ; assume BSQ organisation for now
+    buf = make_array(nsstep, type = dt)
     var_cnt = [nsstep, nlstep]
     var_offset = [0, 0]
     if nb gt 0 then begin
@@ -469,17 +476,14 @@ pro nrs_nc_get_data, filename, out_name = base_name $
     nb = nb eq 0 ? 1 : nb 
     
     for b = 0, nb - 1 do begin
-;      for ch_x = 0, nr_chunk_x - 1 do begin
+      if nb gt 1 then if nrs_update_progress(prog_obj, b, nb, cancelled = cancelled, /console) then return
       for line = 0, nl - 1 do begin
-        if nrs_update_progress(prog_obj, line, nl, cancelled = cancelled, /console) then return
-
         ; if pixels run from bottom to top, read from bottom
         curline = line
         if need_hor_mirror then curline = nl - line
       
-;[ dims0x1, start30000x10000, count5001x5001, stride1x1 ] 
         if b gt 0 then var_offset[-1] = b
-        var_offset[1] = curline
+        var_offset[1] = curline - 1
         ncdf_varget, nc_id, var.vid, buf, count = var_cnt, offset = var_offset  ; read next line
         if nz eq 1 then buf = reform(buf, ns, nlstep, /overwrite)
         
@@ -490,7 +494,7 @@ pro nrs_nc_get_data, filename, out_name = base_name $
           if nd_cnt gt 0 then buf[ndix] = nodata
         endif
         
-        ; TODO: check for 2D-coord vars
+        ; TODO: check for 2D-coord vars; for north oriented we are OK here
         if var.px_id ge 0 && var.py_id ge 0 then begin
           if strlen(gm) gt 0 then begin
             gm_id = ncdf_varid(nc_id, gm)
@@ -502,7 +506,6 @@ pro nrs_nc_get_data, filename, out_name = base_name $
               if ~(abs(pole_lat - 90) lt 0.000001) then begin
                 ncdf_varget, nc_id, var.px_id, lons 
                 ncdf_varget, nc_id, var.py_id, lats 
-;                resam = make_array(ns, nlstep, type = dt)
               endif
             endif
           endif
@@ -705,8 +708,8 @@ function nrs_nc_def_chunk, xs, ys
   chunks = tot / 2 ^ 22 ; default chunk size (nc 4.1) == 4MB
   dimxy = ceil(sqrt(chunks))
   
-  xsize = 1 + xs / dimxy
-  ysize = 1 + ys / dimxy
+  xsize = dimxy eq 0 ? xs : 1 + xs / dimxy
+  ysize = dimxy eq 0 ? ys : 1 + ys / dimxy
   
   return, [xsize, ysize]
 end
