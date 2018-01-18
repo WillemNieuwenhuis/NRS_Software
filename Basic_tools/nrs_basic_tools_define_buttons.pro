@@ -15,8 +15,12 @@ pro nrs_basic_tools_define_buttons, buttonInfo
     uvalue = 'Extract by time', event_pro = 'nrs_extract_time_gui', $
     ref_value = 'NRS', position = 'first'
 
-  envi_define_menu_button, buttoninfo, value = 'Import netCDF', $
-    uvalue = 'Import netCDF', event_pro = 'nrs_import_netcdf_gui', $
+  envi_define_menu_button, buttoninfo, value = 'Import netCDF (folder)', $
+    uvalue = 'Import netCDF (folder)', event_pro = 'nrs_import_netcdf_gui', $
+    ref_value = 'NRS', position = 'first'
+
+  envi_define_menu_button, buttoninfo, value = 'Import single netCDF', $
+    uvalue = 'Import single netCDF', event_pro = 'nrs_import_netcdf_file_gui', $
     ref_value = 'NRS', position = 'first'
 
   envi_define_menu_button, buttoninfo, value = 'Spatial statistics (batch)', $

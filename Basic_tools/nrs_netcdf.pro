@@ -348,6 +348,51 @@ pro nrs_nc_error_message, nc_id, msg, title = title, cancelled = cancelled
   cancelled = 1
 end
 
+function nrs_nc_get_data_vars_from_file, filename
+  compile_opt idl2, logical_predicate
+
+  nc_id = ncdf_open(filename)
+
+  vars = nrs_nc_get_data_vars(nc_id, cancelled = cancelled)
+  ix = where(vars.nb ge 2, cnt)
+  if cnt gt 0 then vars = vars[ix]
+
+  ncdf_close, nc_id  ; done reading; close the nc file
+
+  return, vars
+  
+end
+
+function nrs_nc_get_time_from_file, filename, var, interval = interval
+  compile_opt idl2, logical_predicate
+
+  nc_id = ncdf_open(filename)
+
+  ; get time info
+  if var.t_id ge 0 then begin
+    nrs_nc_get_varatt, nc_id, var.t_id, units = time_units
+    if n_elements(time_units) eq 0 then begin
+      nrs_nc_error_message, nc_id, 'No time coordinate found, skipping ' + var.name $
+        , cancelled = cancelled, title = 'Import netCDF'
+
+      ncdf_close, nc_id  ; done reading; close the nc file
+      interval = -1 ; indicate no time coordinate
+      return, []
+    endif
+    ncdf_varget, nc_id, var.t_id, timar
+    isCF = nrs_get_dt_from_units(timar, time_units, julian = julian, interval = interval)
+
+;    nrs_get_days_indices, julian, dmbands = dmbands, dybands = dybands, doy = doy
+;    dmbands = fix(total(dmbands, /cum)) - 1
+;    dybands = fix(total(dybands, /cum)) - 1
+;    caldat, julian, mm, dd, yy, hh, mn, ss
+  endif
+
+  ncdf_close, nc_id  ; done reading; close the nc file
+
+  return, julian  
+end
+
 ;+
 ; :Description:
 ;    Import a single netCDF file. It parses the netCDF file to find all data variables.
@@ -363,6 +408,11 @@ end
 ;      The basename of the output file(s). If not specified the input name will be used as template
 ;    DN : in, optional
 ;      If set do not apply scale and/or offset
+;    var_list : in, optional
+;      A string array containing the names of the data variables to import.
+;      If not specified or empty: import all data variables
+;    date_range: in, optional
+;      String array with two elements: the range of start date to end date between which all data will be imported
 ;    prog_obj : in, optional
 ;      A progress indicator (of type progressBar)
 ;    cancelled : out
@@ -372,6 +422,8 @@ end
 ;-
 pro nrs_nc_get_data, filename, out_name = base_name $
                    , DN = DN $
+                   , var_list = var_list $
+                   , date_range = date_range $
                    , prog_obj = prog_obj, cancelled = cancelled
   compile_opt idl2, logical_predicate
   
@@ -380,13 +432,34 @@ pro nrs_nc_get_data, filename, out_name = base_name $
   nc_id = ncdf_open(filename)
 
   nrs_set_progress_property, prog_obj, /start, title = 'Importing ' + file_basename(filename)
-    
-  vars = nrs_nc_get_data_vars(nc_id, cancelled = cancelled)
+
+  has_date_range = n_elements(date_range) eq 2
+  if has_date_range then begin
+    sd = nrs_str2julian(date_range[0])
+    ed = nrs_str2julian(date_range[1])
+  endif
+
+  if n_elements(var_list) eq 0 then $
+    vars = nrs_nc_get_data_vars(nc_id, cancelled = cancelled) $
+  else $
+    vars = var_list 
   
   for v = 0, n_elements(vars) - 1 do begin
     var = vars[v]
     if var.nb eq 0 then continue
     
+    ns = var.ns
+    nl = var.nl
+    nb = var.nb
+    nz = var.nz
+    if nz gt 1 then begin
+      nrs_nc_error_message, nc_id, 'No 3D data cube, skipping ' + var.name $
+        , cancelled = cancelled, title = 'Import netCDF'
+      continue
+    endif
+
+    sd_ix = 0
+    ed_ix = nb - 1
     ; get time info
     if var.t_id ge 0 then begin
       nrs_nc_get_varatt, nc_id, var.t_id, units = time_units
@@ -397,6 +470,14 @@ pro nrs_nc_get_data, filename, out_name = base_name $
       endif
       ncdf_varget, nc_id, var.t_id, timar
       isCF = nrs_get_dt_from_units(timar, time_units, julian = julian, interval = interval)
+      if has_date_range then begin
+        sd_off = min(abs(julian - sd), sd_ix) 
+        ed_off = min(abs(julian - ed), ed_ix)
+        if sd lt julian[0] then sd_ix = 0
+        if ed gt julian[-1] then ed_ix = nb - 1
+        julian = julian[sd_ix : ed_ix]
+        nb = ed_ix - sd_ix + 1
+      endif
      
       nrs_get_days_indices, julian, dmbands = dmbands, dybands = dybands, doy = doy
       dmbands = fix(total(dmbands, /cum)) - 1
@@ -406,15 +487,6 @@ pro nrs_nc_get_data, filename, out_name = base_name $
   
     ; now spatial extent
     nrs_set_progress_property, prog_obj, title = 'Loading coordinates'
-    ns = var.ns
-    nl = var.nl
-    nb = var.nb
-    nz = var.nz
-    if nz gt 1 then begin
-      nrs_nc_error_message, nc_id, 'No 3D data cube, skipping ' + var.name $
-                    , cancelled = cancelled, title = 'Import netCDF'
-      continue
-    endif
     ncdf_varget, nc_id, var.y_id, lats
     ncdf_varget, nc_id, var.x_id, lons
     min_lat = min(lats, max = max_lat)
@@ -467,23 +539,23 @@ pro nrs_nc_get_data, filename, out_name = base_name $
     var_offset = [0, 0]
     if nb gt 0 then begin
       var_cnt = [nsstep, nlstep, 1]
-      var_offset = [0, 0, 0]
+      var_offset = [0, 0, sd_ix]
     endif
-    if nz eq 1 then begin
+    if nz eq 1 then begin ; needs checking with spatial 3D data (last dimension = temporal / spectral)
       var_cnt = [nsstep, nlstep, 1, 1]
-      var_offset = [0, 0, 0, 0]
+      var_offset = [0, 0, 0, sd_ix]
     endif
     nb = nb eq 0 ? 1 : nb 
     
-    for b = 0, nb - 1 do begin
-      if nb gt 1 then if nrs_update_progress(prog_obj, b, nb, cancelled = cancelled, /console) then return
+    for b = sd_ix, ed_ix do begin
+      if nb gt 1 then if nrs_update_progress(prog_obj, b - sd_ix, nb, cancelled = cancelled, /console) then return
       for line = 0, nl - 1 do begin
         ; if pixels run from bottom to top, read from bottom
         curline = line
-        if need_hor_mirror then curline = nl - line
+        if need_hor_mirror then curline = nl - line - 1
       
         if b gt 0 then var_offset[-1] = b
-        var_offset[1] = curline - 1
+        var_offset[1] = curline
         ncdf_varget, nc_id, var.vid, buf, count = var_cnt, offset = var_offset  ; read next line
         if nz eq 1 then buf = reform(buf, ns, nlstep, /overwrite)
         
@@ -585,15 +657,16 @@ end
 ;    julian : out
 ;      array containing the date/time of the bands in julian days
 ;    interval : out
-;      time resolution of the netCDF file in seconds
+;      time resolution of the netCDF file in seconds if positiv, reolution in days if negativ
 ;
 ; :Author: nieuwenhuis
 ;-
-function nrs_get_dt_from_units, timar, time_units, julian = julian, interval = interval
+function nrs_get_dt_from_units, timar, time_units, julian = julian, interval = interval, period = period
   compile_opt idl2, logical_predicate
   
   ; first determine the absolute start date and the time interval
   periods = ['yr', 'year', 'years', 'mon', 'month', 'months', 'week', 'weeks', 'd', 'day', 'days', 'h', 'hr', 'hour', 'hours', 'min', 'minute', 'minutes', 's', 'sec', 'seconds']
+  periods_full = ['year', 'month', 'week', 'day', 'hour', 'minute', 'second']
   piv = [-365, -365, -365, -31,-31, -31, -7, -7, 86400, 86400, 86400, 3600, 3600, 3600, 3600, 60, 60, 60, 1, 1, 1]
   parts = strsplit(time_units, ' ', /extract)
   
@@ -630,10 +703,11 @@ function nrs_get_dt_from_units, timar, time_units, julian = julian, interval = i
       endif
       jd = julday(month, day, year, hour, minute, second)
       if interval lt 0 then begin
+        jd = julday(month, day, year)
         case interval of
-          -365 : julian = julday(month, day, year + timar, hour, minute, second)
-          -31 : julian = julday(((month + timar - 1) mod 12) + 1, day, year + (month + timar - 1) / 12, hour, minute, second)
-          -7 : julian = (double(interval) * timar * 7) / 86400D + jd
+          -365 : julian = julday(month, day, year + timar)
+          -31 : julian = julday(((month + timar - 1) mod 12) + 1, day, year + (month + timar - 1) / 12)
+          -7 : julian = (double(-interval) * timar * 7) / 86400D + jd
         endcase
       endif $
       else julian = (double(interval) * timar) / 86400D + jd
