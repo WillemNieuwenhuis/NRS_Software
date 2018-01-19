@@ -86,7 +86,7 @@ pro nrs_rpd_at_location, image, table, perc = perc $
   endelse
   
   out_data = make_array(3, nrrec, type = size(line_data, /type))
-  out_data[0:1,*] = line_data
+  out_data[0:1,*] = line_data[0:1,*]
   if winter_corr then begin
     leap = (nb eq 366)
     yy = 2007 + leap  ; 2007: can be any non-leap year
@@ -125,6 +125,8 @@ pro nrs_rpd_at_location, image, table, perc = perc $
     endfor
   endelse
   
+  hdr_list = strsplit(header, ',', /extract)
+  if n_elements(hdr_list) gt 2 then header = strjoin(hdr_list[0:1], ',')
   if (nb eq 365) || (nb eq 366) then out_header = header + ',doy' $
   else out_header = header + ',index'
   
