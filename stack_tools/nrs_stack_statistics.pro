@@ -140,8 +140,12 @@ pro nrs_aggregate_layers, fid, aggr_method, layers = layers, outname = outname, 
 
   cancelled = 0
 
-  envi_file_query, fid, dims = dims, ns = ns, nl = nl, nb = nb, data_type = dt, fname = fname, bnames = bnames
-  mi = envi_get_map_info(fid = fid, undefined = undef)
+  envi_file_query, fid, dims = dims, ns = ns, nl = nl, nb = nb, data_type = dt $
+                 , fname = fname, bnames = bnames $
+                 , data_ignore_value = undef
+  chktype = size(undef, /type)
+  has_valid_undef = ~( ((chktype eq 4) or (chktype eq 5)) and (undef eq 1e-34) )
+  mi = envi_get_map_info(fid = fid, undefined = csy_undef)
   
   if n_elements(layers) eq 0 then $
     layers = indgen(nb)
@@ -158,21 +162,39 @@ pro nrs_aggregate_layers, fid, aggr_method, layers = layers, outname = outname, 
   for l = 0, nl - 1 do begin
     if nrs_update_progress(prog_obj, l, nl, cancelled = cancelled) then return
 
-    cube = envi_get_slice(fid = fid, xs = 0, xe = ns - 1, line = l, pos = layers[b], /bil)
+    cube = envi_get_slice(fid = fid, xs = 0, xe = ns - 1, line = l, pos = layers, /bil)
+    if has_valid_undef then begin
+      uix = where(cube eq undef, cnt_undef)
+      if cnt_undef gt 0 then begin
+        cube[uix] = !values.f_nan
+      endif
+    endif
   
+    mn = min(cube, dimension = 2, /nan, max = mx)
+    tot = total(cube, 2, /nan)
+    avg = tot / nr_band
+    med = median(cube, dimension = 2)
+    uxi = where(finite(mn, /nan), uxi_cnt)
+    if uxi_cnt gt 0 then begin
+      tot[uxi] = undef
+      avg[uxi] = undef
+      med[uxi] = undef
+      mn[uxi] = undef
+      mx[uxi] = undef
+    endif
     if aggr_method eq 'All' then begin
-      out[*, l, 0] = total(cube, 2, /nan)
-      out[*, l, 1] = total(cube, 2, /nan) / nr_band
-      out[*, l, 2] = median(cube, dimension = 2)
-      out[*, l, 3] = min(cube, dimension = 2, /nan)
-      out[*, l, 4] = max(cube, dimension = 2, /nan)
+      out[*, l, 0] = tot
+      out[*, l, 1] = avg
+      out[*, l, 2] = med
+      out[*, l, 3] = mn
+      out[*, l, 4] = mx
     end else begin
       case strlowcase(aggr_method) of
-        'sum'    : out[*, l] = total(cube, 2, /nan)
-        'mean'   : out[*, l] = total(cube, 2, /nan) / nr_band
-        'median' : out[*, l] = median(cube, dimension = 2)
-        'min'    : out[*, l] = min(cube, dimension = 2, /nan)
-        'max'    : out[*, l] = max(cube, dimension = 2, /nan)
+        'sum'    : out[*, l] = tot
+        'mean'   : out[*, l] = avg
+        'median' : out[*, l] = med
+        'min'    : out[*, l] = mn
+        'max'    : out[*, l] = mx
       endcase
     endelse
   endfor
