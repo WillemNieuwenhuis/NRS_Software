@@ -22,7 +22,7 @@ pro NrsStackAggregate::cleanup
   self->idl_object::cleanup
 end
 
-pro NrsStackAggregate::getproperty $ ;, start_year = start_year, end_year = end_year $
+pro NrsStackAggregate::getproperty ;$ ;, start_year = start_year, end_year = end_year $
 ;  , base_start_year = base_start_year, base_end_year = base_end_year $
 ;  , perc_95 = perc_95, perc_99 = perc_99 $
 ;  , precip = precip $
@@ -126,27 +126,27 @@ pro NrsStackAggregate::calculate_percentiles
     *(self.percentile_high)[*, l] = sorted[pai][*, 1]
   endfor
   
-  endif else begin
-    dbase = *(self.precip)
-    ; use the timeseries itself to calculate the 95/99 percentile
-    ; make sure the base years are inside the full timeseries
-    bsy = max([self.start_year, self.base_start_year])
-    bey = min([self.end_year, self.base_end_year])
-    nrs_get_dt_indices, [julday(1, 1, bsy), julday(12, 31, bey)], period = 'day', julian_out = jd_base
-    jd_start = julday(1, 1, self.start_year)
-
-    base_ix = jd_base - jd_start ; index of base years inside timeseries
-    base = dbase[base_ix]
-  endelse
-  sel_ix = where(base gt 1, sel_cnt)  ; takes care of missing also (handles missing as NaN or missing lower than 0)
-  prec = base[sel_ix]   ; only wet days
-
-  prec = prec[sort(prec)]
-  nr_prec = n_elements(prec)
-  p95_ix = long(0.95 * nr_prec) ; percentile by nearest rank
-  p99_ix = long(0.99 * nr_prec)
-  self.percentile_95 = prec[p95_ix]
-  self.percentile_99 = prec[p99_ix]
+;  endif else begin
+;    dbase = *(self.precip)
+;    ; use the timeseries itself to calculate the 95/99 percentile
+;    ; make sure the base years are inside the full timeseries
+;    bsy = max([self.start_year, self.base_start_year])
+;    bey = min([self.end_year, self.base_end_year])
+;    nrs_get_dt_indices, [julday(1, 1, bsy), julday(12, 31, bey)], period = 'day', julian_out = jd_base
+;    jd_start = julday(1, 1, self.start_year)
+;
+;    base_ix = jd_base - jd_start ; index of base years inside timeseries
+;    base = dbase[base_ix]
+;  endelse
+;  sel_ix = where(base gt 1, sel_cnt)  ; takes care of missing also (handles missing as NaN or missing lower than 0)
+;  prec = base[sel_ix]   ; only wet days
+;
+;  prec = prec[sort(prec)]
+;  nr_prec = n_elements(prec)
+;  p95_ix = long(0.95 * nr_prec) ; percentile by nearest rank
+;  p99_ix = long(0.99 * nr_prec)
+;  self.percentile_95 = prec[p95_ix]
+;  self.percentile_99 = prec[p99_ix]
 
 end
 
