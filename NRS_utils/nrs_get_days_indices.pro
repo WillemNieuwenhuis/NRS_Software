@@ -397,10 +397,10 @@ pro nrs_get_dt_indices, julian, interval = interval, period = period $
   year_cnt = ey - sy + 1
   month_cnt = (ey - sy) * 12 + (em - sm) + 1
   
-  period_in = period
+  if n_elements(period) gt 0 then period_in = period
   mult = 1
   if n_elements(interval) gt 0 then begin
-    period_out = 365.0 / interval 
+    period_out = round(364.0 / interval) 
     new_nb = long((julian[nb - 1] - julian[0]) / interval) + 1
     jul_out = julday(sm, sd, sy) + lindgen(new_nb) * interval
   endif else begin
