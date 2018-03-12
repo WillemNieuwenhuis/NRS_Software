@@ -220,7 +220,7 @@ pro nrs_aggregate_layers, fid, aggr_method, layers = layers, outname = outname, 
   
     mn = min(cube, dimension = 2, /nan, max = mx)
     tot = total(cube, 2, /nan)
-    avg = tot / nr_band
+    avg = mean(cube, dim = 2, /nan)
     med = median(cube, dimension = 2)
     uxi = where(finite(mn, /nan), uxi_cnt)  ; find the locations with no data
     if uxi_cnt gt 0 then begin
