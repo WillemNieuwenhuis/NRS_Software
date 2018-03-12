@@ -32,6 +32,7 @@ pro _build_stack_tools
            , 'nrs_zonal_percentiles.pro' $
            , 'nrs_zonal_percentiles_gui.pro' $
            , 'nrs_zonal_percentiles_gui_eventcb.pro' $
+           , 'nrsstackaggregate__define.pro' $
           ]
   _auto_build, files, 'bin' + path_sep() + 'nrs_stack_tools.sav', logfile = 'bin' + path_sep() + 'nrs_stack_tools.log'
 end

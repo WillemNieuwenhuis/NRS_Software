@@ -79,13 +79,11 @@ pro nrs_aggregate_handleOK, event
   if exclude_outliers then begin
     perc_low = pert_val
     perc_high = 100 - pert_val
-    aggregator = NrsStackAggregate()
-    aggregator->setproperty, perc_low = perc_low, perc_high = perc_high, use_percentiles = exclude_outliers $
-;      , base_start_year = base_start_year, base_end_year = base_end_year $
+    nrs_aggregate_excoutliers, stack = ref, outname = outname $
+      , aggr_method = aggr_method $
+      , perc_low = perc_low, perc_high = perc_high, exclude_outliers = exclude_outliers $
       , period = period $
-      , stack_name = ref $
-;      , outlier_name = outlier_name $
-      , prog_obj = prog_obj
+      , prog_obj = prog_obj, cancelled = cancelled
   endif else begin
     layers = indgen(nb)
     nrs_aggregate_layers, fid_ref, aggr_method, layers = layers, outname = outname, prog_obj = prog_obj, cancelled = cancelled

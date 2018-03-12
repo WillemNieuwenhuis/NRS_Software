@@ -13,8 +13,8 @@ end
 pro NrsStackAggregate::cleanup
   compile_opt idl2
 
-  if ptr_valid(self.precipitation_low) then ptr_free, self.precipitation_low
-  if ptr_valid(self.precipitation_high) then ptr_free, self.precipitation_high
+  if ptr_valid(self.percentile_low) then ptr_free, self.percentile_low
+  if ptr_valid(self.percentile_high) then ptr_free, self.percentile_high
 ;  if ptr_valid(self.base) then ptr_free, self.base
 ;  if obj_valid(self.prog_obj) then self.prog_obj->destroy
 
@@ -55,11 +55,11 @@ pro NrsStackAggregate::check_set_perc, low, high
     low = high
     high = dummy
   endif
-  if self.p_low ne perc_low then begin
+  if self.p_low ne low then begin
     self.p_low = low
     self.need_recalc = 1
   endif
-  if self.p_high ne perc_high then begin
+  if self.p_high ne high then begin
     self.p_high = high
     self.need_recalc = 1
   endif
@@ -76,7 +76,8 @@ pro NrsStackAggregate::setproperty, perc_low = perc_low, perc_high = perc_high, 
   ; if user passed in a property, then set it.
   low = isa(perc_low) ? perc_low : self.p_low
   high = isa(perc_high) ? perc_high : self.p_high
-  check_set_perc, low, high
+  self.check_set_perc, low, high
+  if isa(use_percentiles) then self.use_percentiles = use_percentiles
   
   if isa(base_start_year) then self.base_start_year = base_start_year
   if isa(base_end_year) then self.base_end_year = base_end_year
@@ -110,7 +111,7 @@ pro NrsStackAggregate::calculate_percentiles
   
   ; open the stack to calculate the percentiles
   envi_open_file, self.stack_name, r_fid = fid
-  envi_file_query, fid, dims = dims, nb = nb, nl = nl, ns = ns, data_ignore_value = ignore_value
+  envi_file_query, fid, dims = dims, nb = nb, nl = nl, ns = ns, data_ignore_value = ignore_value, data_type = dt
   
   hasIgnore = n_elements(ignore_value) gt 0
   if hasIgnore then ignore_value = (fix(ignore_value, type = dt, /print))[0]
@@ -124,7 +125,9 @@ pro NrsStackAggregate::calculate_percentiles
   self.percentile_high = ptr_new(fltarr(ns, nl))
   
   percentile = [self.p_low, self.p_high] / 100.0  ; percentage to value
+  perc_count = n_elements(percentile)
   pperc = rebin(transpose(percentile), ns, 2)
+  px = rebin(indgen(ns), ns, perc_count)
   pos = indgen(nb)
   ivx = []  ; data locations where ignore_data values have been found
   cnt_val = intarr(ns, nb)
@@ -154,10 +157,10 @@ pro NrsStackAggregate::calculate_percentiles
     six = transpose(reform(ix[ri[ns + 1L : *]], nb, ns))  ; indices are now arranged as BIP
     sorted = data[six]  ; data is now ordered as BIP. The stack values are now sorted per pixel
     
-    *(self.percentile_low)[*, l] = (sorted[pai])[*, 0]  ; select the percentile value per pixel for the low percentile
-    *(self.percentile_high)[*, l] = (sorted[pai])[*, 1]  ; select the percentile value per pixel for the high percentile
+    (*(self.percentile_low))[*, l] = (sorted[pai])[*, 0]  ; select the percentile value per pixel for the low percentile
+    (*(self.percentile_high))[*, l] = (sorted[pai])[*, 1]  ; select the percentile value per pixel for the high percentile
   endfor
-  envi_file_mng, id = fid, /remove  ; close the image stack
+;  envi_file_mng, id = fid, /remove  ; close the image stack
   if ~cancelled then self.need_recalc = 0
   
   nrs_set_progress_property, self.prog_obj, title = 'Percentiles are calculated'
@@ -182,7 +185,7 @@ function NrsStackAggregate::aggregate, method = method
   if strlen(self.stack_name) eq 0 then return, []
 
   methods = ['sum', 'mean', 'min', 'max', 'stdev', 'median']
-  method_ix = where(method eq methods, cnt)
+  method_ix = where(strlowcase(method) eq methods, cnt)
   if cnt eq 0 then return, []
   
   ; open the stack to calculate the percentiles
@@ -192,11 +195,14 @@ function NrsStackAggregate::aggregate, method = method
   hasIgnore = n_elements(ignore_value) gt 0
   if hasIgnore then ignore_value = (fix(ignore_value, type = dt, /print))[0]
 
+  ; initialize the progress indicator
+  nrs_set_progress_property, self.prog_obj, /start, title = 'Aggregating using: ' + method
+
   ; make sure to calculate the correct percentiles first
   if self.use_percentiles then if self.need_recalc then self.calculate_percentiles
   
-  nrs_set_progress_property, self.prog_obj, title = 'Aggregating using: ' + method
-  
+  nrs_set_progress_property, self.prog_obj, title = 'Aggregating using: ' + method, /start  ; restart
+
   out = make_array(ns, nl, type = dt)
   if self.generate_outlier_index then begin
     openw, unit, self.outname_outlier, /get_lun
@@ -224,9 +230,9 @@ function NrsStackAggregate::aggregate, method = method
   
     ; Use percentiles: mark outliers as NaN to exclude them from the aggregation
     if self.use_percentiles then begin
-      lix = where(data lt *(self.percentile_low)[*, l], lix_cnt)
+      lix = where(data lt (*(self.percentile_low))[*, l], lix_cnt)
       if lix_cnt gt 0 then data[lix] = !values.f_nan
-      hix = where(data gt *(self.percentile_high)[*, l], hix_cnt)
+      hix = where(data gt (*(self.percentile_high))[*, l], hix_cnt)
       if hix_cnt gt 0 then data[hix] = !values.f_nan
       
       ; calculate outlier day indices if requested
@@ -245,6 +251,8 @@ function NrsStackAggregate::aggregate, method = method
       5 : out[*, l] = median(data, dim = 2)   ; ignores NAN
     endcase
   endfor
+  uix = where(finite(out, /nan), uix_cnt)
+  if uix_cnt gt 0 then out[uix] = ignore_value
   
   envi_file_mng, id = fid, /remove  ; close the image stack
     

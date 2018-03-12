@@ -104,6 +104,54 @@ pro nrs_stack_statistics, stack, outname = outname $
 
 end
 
+pro nrs_aggregate_excoutliers, stack = stack, outname = outname $
+    , aggr_method = aggr_method $ 
+    , perc_low = perc_low, perc_high = perc_high, exclude_outliers = exclude_outliers $
+    , period = period $
+    , prog_obj = prog_obj, cancelled = cancelled
+  compile_opt idl2, logical_predicate
+
+  envi_open_file, stack, r_fid = fid, /no_realize, /no_interactive_query
+  envi_file_query, fid, dims = dims, ns = ns, nl = nl, nb = nb, data_type = dt $
+    , fname = fname, bnames = bnames $
+    , data_ignore_value = undef
+  chktype = size(undef, /type)
+  has_valid_undef = ~( ((chktype eq 4) or (chktype eq 5)) and (undef eq 1e-34) )
+  mi = envi_get_map_info(fid = fid, undefined = csy_undef)
+
+  if strlowcase(aggr_method) eq 'all' then begin
+    bnames = ['sum', 'min', 'max', 'mean', 'stdev', 'median']
+    out = make_array(ns, nl, n_elements(bnames), type = dt)
+    postfix = '_aggr'
+  end else begin
+    out = make_array(ns, nl, type = dt)
+    bnames = [aggr_method]
+    postfix = '_' + aggr_method
+  endelse
+  
+  aggregator = NrsStackAggregate()
+  aggregator->setproperty, perc_low = perc_low, perc_high = perc_high, use_percentiles = exclude_outliers $
+    , period = period $
+    , stack_name = stack $
+    , prog_obj = prog_obj
+
+  if aggr_method eq 'All' then begin
+    for bn = 0, n_elements(bnames) - 1 do begin
+      method = bnames[bn]
+      out[*, *, bn] = aggregator->aggregate(method = method)
+    endfor
+  endif else begin
+    out[*] = aggregator->aggregate(method = aggr_method)
+  endelse
+
+  if n_elements(outname) eq 0 then $
+    outname = getOutname(fname, postfix = postfix, ext = '.dat')
+
+  envi_write_envi_file, out, out_name = outname, map_info = mi, bnames = bnames, data_ignore_value = undef
+
+end
+
+
 ;+
 ; :Description:
 ;    Aggregate layers in a stack. The user can define the indices of the layers to be aggregated.
@@ -174,7 +222,7 @@ pro nrs_aggregate_layers, fid, aggr_method, layers = layers, outname = outname, 
     tot = total(cube, 2, /nan)
     avg = tot / nr_band
     med = median(cube, dimension = 2)
-    uxi = where(finite(mn, /nan), uxi_cnt)
+    uxi = where(finite(mn, /nan), uxi_cnt)  ; find the locations with no data
     if uxi_cnt gt 0 then begin
       tot[uxi] = undef
       avg[uxi] = undef
@@ -202,5 +250,5 @@ pro nrs_aggregate_layers, fid, aggr_method, layers = layers, outname = outname, 
   if n_elements(outname) eq 0 then $
     outname = getOutname(fname, postfix = postfix, ext = '.dat')
     
-  envi_write_envi_file, out, out_name = outname, map_info = mi, bnames = bnames
+  envi_write_envi_file, out, out_name = outname, map_info = mi, bnames = bnames, data_ignore_value = undef
 end
