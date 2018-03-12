@@ -400,95 +400,98 @@ pro nrs_get_dt_indices, julian, interval = interval, period = period $
   if n_elements(period) gt 0 then period_in = period
   mult = 1
   if n_elements(interval) gt 0 then begin
-    period_out = round(364.0 / interval) 
-    new_nb = long((julian[nb - 1] - julian[0]) / interval) + 1
-    jul_out = julday(sm, sd, sy) + lindgen(new_nb) * interval
-  endif else begin
-    timar = ['1 hour', '2 hours', '3 hours', '4 hours', '6 hours', '12 hours']
-    mular = [24, 12, 8, 6, 4, 2]
-    ix = where(period eq timar, cnt_tim)
-    if cnt_tim eq 1 then begin
-      period_in = 'time'
-      mult = (mular[ix])[0]
+    all_per = [1, 8, 10, 15, 16, 30, 365]
+    all_int = ['day', '8-day', '10-day', 'bi-monthly', '16-day', 'month', 'year']
+    ix = where(interval eq  all_per, cnt)
+    if cnt eq 0 then begin
+      jul_out = []
+      return
     endif
-    case strlowcase(period_in) of
-      'time'   : begin
-                   nrs_days_per_year, [julian[0], julian[-1]], dybands = period_out
-                   new_nb = long( (julian[nb - 1] - julian[0]) * mult + 1)
-                   jul_out = julday(sm, sd, sy, th, tm, ts) + findgen(new_nb) / mult
-                   bins = lindgen(366 * mult)
-                 end
-      'day'    : begin
-                   nrs_days_per_year, [julian[0], julian[-1]], dybands = period_out
-                   new_nb = long(julian[nb - 1] - julian[0]) + 1
-                   jul_out = julday(sm, sd, sy) + lindgen(new_nb)
-                   bins = lindgen(366) + 1
-                 end
-      '8-day'  : begin
-                   period_out = 46 
-                   nrs_get_days_from, julian, 8, 46, jul_out = jul_out, start_only = dostart, crop = docrop, clip = doclip
-                   bins = (lindgen(366) / 8) + 1
-                 end
-      '10-day' : begin
-                   period_out = 36 
-                   corr = (sd - 1) / 10
-                   dar = (corr + (indgen(month_cnt * 3))) mod 3 * 10 + 1
-                   dar[0] = sd
-                   mar = 1 + (((corr + indgen(month_cnt * 3)) / 3) + (sm - 1)) mod 12
-                   yar = sy + (((corr + indgen(month_cnt * 3)) / 3) + (sm - 1)) / 12
-                   jul_out = julday(mar, dar, yar)
-                   bins = [10, 10, 11, 10, 10, 9, 10, 10, 11, 10, 10, 10, 10, 10, 11, 10, 10, 10 $
-                         , 10, 10, 11, 10, 10, 11, 10, 10, 10, 10, 10, 11, 10, 10, 10, 10, 10, 11]
-                   h = histogram(total(bins, /cum) - 1, /binsize, rev = ri, min = 0)
-                   bins = ri[0 : n_elements(h) - 1] - ri[0]
-                 end
-      'bi-monthly' : begin
-                   period_out = 24
-                   corr = (sd - 1) / 10
-                   dar = (corr + (indgen(month_cnt * 2))) mod 2 * 15 + 1
-                   dar[0] = sd
-                   mar = 1 + (((corr + indgen(month_cnt * 2)) / 2) + (sm - 1)) mod 12
-                   yar = sy + (((corr + indgen(month_cnt * 2)) / 2) + (sm - 1)) / 12
-                   jul_out = julday(mar, dar, yar)
-                   bins = [15, 16, 15, 14, 15, 16, 15, 15, 15, 16, 15, 15, 15, 16, 15, 16, 15, 15, 15, 16, 15, 15, 15, 16]
-                   h = histogram(total(bins, /cum) - 1, /binsize, rev = ri, min = 0)
-                   bins = ri[0 : n_elements(h) - 1] - ri[0]
-                 end
-      '16-day' : begin
-                  period_out = 23 
-                  nrs_get_days_from, julian, 16, 23, jul_out = jul_out, start_only = dostart, crop = docrop, clip = doclip
-                  bins = (lindgen(366) / 16) + 1
-                end
-      'month' : begin
-                  period_out = 12
-                  if docrop and (ed gt 1) then month_cnt++
-                  dar = intarr(month_cnt) + 1
-                  mar = 1 + (indgen(month_cnt) + (sm - 1)) mod 12
-                  yar = sy + (indgen(month_cnt) + (sm - 1)) / 12
-                  if docrop and (ed gt 1) then begin
-                    dar[[0, month_cnt - 1]] = [sd, ed]
-                    mar[[0, month_cnt - 1]] = [sm, em]
-                    yar[[0, month_cnt - 1]] = [sy, ey]
-                  endif 
-                  jul_out = julday(mar, dar, yar)
-                  bins = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-                  h = histogram(total(bins, /cum) - 1, /binsize, rev = ri, min = 0)
-                  bins = ri[0 : n_elements(h) - 1] - ri[0]
-                end
-;      '3-month' : begin
-;                  mar = 1 + (indgen(month_cnt) + (sm - 1)) mod 12
-;                  yar = sy + (indgen(month_cnt) + (sm - 1)) / 12
-;                  jul_out = julday(mar, 1, yar)
-;                end
-      'year'  : begin
-                  period_out = 1
-                  if docrop and (ed gt 1) then year_cnt++
-                  jul_out = julday(1, 1, sy + indgen(year_cnt))
-                  bins = lonarr(366)
-;                  jul_out[[0,year_cnt - 1]] = julian[[0, nb - 1]]
-                end
-    endcase
-  endelse
+    period = all_int[ix]
+  endif
+  timar = ['1 hour', '2 hours', '3 hours', '4 hours', '6 hours', '12 hours']
+  mular = [24, 12, 8, 6, 4, 2]
+  ix = where(period eq timar, cnt_tim)
+  if cnt_tim eq 1 then begin
+    period_in = 'time'
+    mult = (mular[ix])[0]
+  endif else period_in = period
+  case strlowcase(period_in) of
+    'time'   : begin
+                 nrs_days_per_year, [julian[0], julian[-1]], dybands = period_out
+                 new_nb = long( (julian[nb - 1] - julian[0]) * mult + 1)
+                 jul_out = julday(sm, sd, sy, th, tm, ts) + findgen(new_nb) / mult
+                 bins = lindgen(366 * mult)
+               end
+    'day'    : begin
+                 nrs_days_per_year, [julian[0], julian[-1]], dybands = period_out
+                 new_nb = long(julian[nb - 1] - julian[0]) + 1
+                 jul_out = julday(sm, sd, sy) + lindgen(new_nb)
+                 bins = lindgen(366) + 1
+               end
+    '8-day'  : begin
+                 period_out = 46 
+                 nrs_get_days_from, julian, 8, 46, jul_out = jul_out, start_only = dostart, crop = docrop, clip = doclip
+                 bins = (lindgen(366) / 8) + 1
+               end
+    '10-day' : begin
+                 period_out = 36 
+                 corr = (sd - 1) / 10
+                 dar = (corr + (indgen(month_cnt * 3))) mod 3 * 10 + 1
+                 dar[0] = sd
+                 mar = 1 + (((corr + indgen(month_cnt * 3)) / 3) + (sm - 1)) mod 12
+                 yar = sy + (((corr + indgen(month_cnt * 3)) / 3) + (sm - 1)) / 12
+                 jul_out = julday(mar, dar, yar)
+                 bins = [10, 10, 11, 10, 10, 9, 10, 10, 11, 10, 10, 10, 10, 10, 11, 10, 10, 10 $
+                       , 10, 10, 11, 10, 10, 11, 10, 10, 10, 10, 10, 11, 10, 10, 10, 10, 10, 11]
+                 h = histogram(total(bins, /cum) - 1, /binsize, rev = ri, min = 0)
+                 bins = ri[0 : n_elements(h) - 1] - ri[0]
+               end
+    'bi-monthly' : begin
+                 period_out = 24
+                 corr = (sd - 1) / 10
+                 dar = (corr + (indgen(month_cnt * 2))) mod 2 * 15 + 1
+                 dar[0] = sd
+                 mar = 1 + (((corr + indgen(month_cnt * 2)) / 2) + (sm - 1)) mod 12
+                 yar = sy + (((corr + indgen(month_cnt * 2)) / 2) + (sm - 1)) / 12
+                 jul_out = julday(mar, dar, yar)
+                 bins = [15, 16, 15, 14, 15, 16, 15, 15, 15, 16, 15, 15, 15, 16, 15, 16, 15, 15, 15, 16, 15, 15, 15, 16]
+                 h = histogram(total(bins, /cum) - 1, /binsize, rev = ri, min = 0)
+                 bins = ri[0 : n_elements(h) - 1] - ri[0]
+               end
+    '16-day' : begin
+                period_out = 23 
+                nrs_get_days_from, julian, 16, 23, jul_out = jul_out, start_only = dostart, crop = docrop, clip = doclip
+                bins = (lindgen(366) / 16) + 1
+              end
+    'month' : begin
+                period_out = 12
+                if docrop and (ed gt 1) then month_cnt++
+                dar = intarr(month_cnt) + 1
+                mar = 1 + (indgen(month_cnt) + (sm - 1)) mod 12
+                yar = sy + (indgen(month_cnt) + (sm - 1)) / 12
+                if docrop and (ed gt 1) then begin
+                  dar[[0, month_cnt - 1]] = [sd, ed]
+                  mar[[0, month_cnt - 1]] = [sm, em]
+                  yar[[0, month_cnt - 1]] = [sy, ey]
+                endif 
+                jul_out = julday(mar, dar, yar)
+                bins = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+                h = histogram(total(bins, /cum) - 1, /binsize, rev = ri, min = 0)
+                bins = ri[0 : n_elements(h) - 1] - ri[0]
+              end
+;    '3-month' : begin
+;                mar = 1 + (indgen(month_cnt) + (sm - 1)) mod 12
+;                yar = sy + (indgen(month_cnt) + (sm - 1)) / 12
+;                jul_out = julday(mar, 1, yar)
+;              end
+    'year'  : begin
+                period_out = 1
+                if docrop and (ed gt 1) then year_cnt++
+                jul_out = julday(1, 1, sy + indgen(year_cnt))
+                bins = lonarr(366)
+              end
+  endcase
   
   ; Determine types of the dates:
   ; long(3) for dates, or double(5) for date and time
