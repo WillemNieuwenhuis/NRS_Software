@@ -51,23 +51,18 @@ pro nrs_aggregate_gui, event
                 , event_pro = 'nrs_aggregate_handle_input' $
               )
 
-  nrs_aggregate_period_panel = widget_base(nrs_aggregate_mainPanel, /row)
-  nrs_aggregate_period_label = widget_label(nrs_aggregate_period_panel $
-    , value = 'Stack period' $
-    , xsize = label_width $
-    )
-  nrs_aggregate_period_combo = widget_combobox(nrs_aggregate_period_panel $
-    , uname = 'nrs_aggregate_period_combo' $
-    , value = ['8-day', '16-day', 'Monthly', 'Yearly'] $
-    )
-
   nrs_aggregate_usepert_base = widget_base(nrs_aggregate_mainPanel, title='Exclude outliers', /col, /nonexclusive)
   nrs_aggregate_usepert_toggle = widget_button(nrs_aggregate_usepert_base, uname='nrs_aggregate_usepert_toggle'  $
         , /align_left ,value='Exclude outliers' $
         , event_pro = 'nrs_aggregate_toggle_exoutlier' $
         )
 
-  nrs_aggregate_pertval_pert = fsc_inputfield(nrs_aggregate_mainPanel $
+  nrs_aggregate_outlier_base = widget_base(nrs_aggregate_mainPanel, /frame, /col $
+    , uname = 'nrs_aggregate_outlier_base' $
+    , sensitive = 0 $
+    )
+
+  nrs_aggregate_pertval_pert = fsc_inputfield(nrs_aggregate_outlier_base $
     , uname = 'nrs_aggregate_pertval_pert' $
     , title = 'Outlier percentile' $
     , labelalign = 1 $
@@ -76,9 +71,37 @@ pro nrs_aggregate_gui, event
     , /int $
     , xsize = text_small_width $
     , unit = ' %' $
-    , sensitive = 0 $
     )
 
+  nrs_aggregate_outliers_base = widget_base(nrs_aggregate_outlier_base, title='Report outliers', /col, /nonexclusive)
+  nrs_aggregate_outliers_toggle = widget_button(nrs_aggregate_outliers_base, uname='nrs_aggregate_outliers_toggle'  $
+    , /align_left ,value='Report outliers' $
+    , event_pro = 'nrs_aggregate_toggle_report' $
+    )
+
+  nrs_aggregate_start_date = fsc_inputfield(nrs_aggregate_outlier_base $
+    , uname = 'nrs_aggregate_start_date' $
+    , title = 'Start date' $
+    , labelalign = 1 $
+    , labelsize = label_width $
+    , unittext = '(dd-mm-yyyy)' $
+    , value = '' $
+    , xsize = text_small_width * 2 $
+    , sensitive = 0 $
+    , /all_events $
+    )
+
+  nrs_aggregate_end_date = fsc_inputfield(nrs_aggregate_outlier_base $
+    , uname = 'nrs_aggregate_end_date' $
+    , title = 'End date' $
+    , labelalign = 1 $
+    , labelsize = label_width $
+    , unittext = '(dd-mm-yyyy)' $
+    , value = '' $
+    , xsize = text_small_width * 2 $
+    , sensitive = 0 $
+    , /all_events $
+    )
 
   nrs_aggregate_output_panel = widget_base(nrs_aggregate_contentPanel, /frame, /col)
   nrs_aggregate_outputFile = cw_dirfile(nrs_aggregate_output_panel, uname = 'nrs_aggregate_outputFile' $

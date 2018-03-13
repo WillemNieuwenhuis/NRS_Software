@@ -22,27 +22,16 @@ pro NrsStackAggregate::cleanup
   self->idl_object::cleanup
 end
 
-pro NrsStackAggregate::getproperty ;$ ;, start_year = start_year, end_year = end_year $
-;  , base_start_year = base_start_year, base_end_year = base_end_year $
-;  , perc_95 = perc_95, perc_99 = perc_99 $
-;  , precip = precip $
-;  , base_data = base_data
+pro NrsStackAggregate::getproperty $
+          , base_start_date = base_start_date, base_end_date = base_end_date
   compile_opt idl2
 
   if (isa(self)) then begin
     ; user asked for an "instance" property.
     if (arg_present(start_year)) then start_year = self.start_year
     if (arg_present(end_year)) then end_year = self.end_year
-    if (arg_present(base_start_year)) then base_start_year = self.base_start_year
-    if (arg_present(base_end_year)) then base_end_year = self.base_end_year
-    if (arg_present(precip)) then begin
-      if ptr_valid(self.precip) then precip = *(self.precip) else precip = []
-    endif
-    if (arg_present(base_data)) then begin
-      if ptr_valid(self.base) then precip = *(self.base) else base_data = []
-    endif
-    if arg_present(perc_95) then perc_95 = self.percentile_95
-    if arg_present(perc_99) then perc_99 = self.percentile_99
+    if (arg_present(base_start_date)) then base_start_date = self.base_start_date
+    if (arg_present(base_end_date)) then base_end_date = self.base_end_date
   endif
 end
 
@@ -66,7 +55,7 @@ pro NrsStackAggregate::check_set_perc, low, high
 end
 
 pro NrsStackAggregate::setproperty, perc_low = perc_low, perc_high = perc_high, use_percentiles = use_percentiles $
-  , base_start_year = base_start_year, base_end_year = base_end_year $
+  , base_start_date = base_start_date, base_end_date = base_end_date $
   , period = period $
   , stack_name = stack_name $
   , outlier_name = outlier_name $
@@ -79,8 +68,8 @@ pro NrsStackAggregate::setproperty, perc_low = perc_low, perc_high = perc_high, 
   self.check_set_perc, low, high
   if isa(use_percentiles) then self.use_percentiles = use_percentiles
   
-  if isa(base_start_year) then self.base_start_year = base_start_year
-  if isa(base_end_year) then self.base_end_year = base_end_year
+  if isa(base_start_date) then self.base_start_date = base_start_date
+  if isa(base_end_date) then self.base_end_date = base_end_date
   if isa(period) then self.period = period
   if isa(stack_name) then begin
     fi = file_info(stack_name)
@@ -89,13 +78,10 @@ pro NrsStackAggregate::setproperty, perc_low = perc_low, perc_high = perc_high, 
     else self.stack_name = '' 
   endif
   if isa(outlier_name) then begin
-    fi = file_info(outlier_name)
-    self.generate_outlier_index = 0
-    if fi.exists && ~fi.directory then begin
-      self.outname_outlier = outlier_name
-      self.generate_outlier_index = 1
-    endif else $ 
-      self.outname_outlier = ''
+     if strlen(outlier_name) gt 0 then begin
+       self.outname_outlier = outlier_name
+       self.generate_outlier_index = 1
+     endif else self.generate_outlier_index = 0
   endif
   if isa(prog_obj, "PROGRESSBAR") then begin
     if obj_valid(self.prog_obj) then self.prog_obj->destroy
@@ -191,6 +177,7 @@ function NrsStackAggregate::aggregate, method = method
   ; open the stack to calculate the percentiles
   envi_open_file, self.stack_name, r_fid = fid
   envi_file_query, fid, dims = dims, nb = nb, nl = nl, ns = ns, data_ignore_value = ignore_value, data_type = dt
+  mi = envi_get_map_info(fid = fid)
 
   hasIgnore = n_elements(ignore_value) gt 0
   if hasIgnore then ignore_value = (fix(ignore_value, type = dt, /print))[0]
@@ -207,12 +194,17 @@ function NrsStackAggregate::aggregate, method = method
   if self.generate_outlier_index then begin
     openw, unit, self.outname_outlier, /get_lun
     
-    outliers = intarr(ns, nb)
+    outliers = bytarr(ns, nb)
     
-    num_years = (self.base_end_year - self.base_start_year + 1)
-    nrs_get_dt_indices, julday(1, 1, [self.base_start_year, self.base_start_year + 1]), interval = self.period, julian_out = jul, num_period = per_py
+    sd = nrs_str2julian(self.base_start_date)
+    ed = nrs_str2julian(self.base_end_date)
+    self.period = nrs_get_period_from_range(sd, ed, nb)
+     
+    nrs_get_dt_indices, [sd, ed], interval = self.period, julian_out = jul, num_period = per_py
     
-    doys = (indgen(num_years * per_py) mod per_py) * period + 1
+    doys = nrs_doy_from_julian(jul, year = doy_year)
+    
+    bnames = 'Year:Doy=' + string([transpose(doy_year), transpose(doys)], format = '(i04,":",i03)')
   endif
   
   for l = 0, nl - 1 do begin
@@ -230,15 +222,19 @@ function NrsStackAggregate::aggregate, method = method
   
     ; Use percentiles: mark outliers as NaN to exclude them from the aggregation
     if self.use_percentiles then begin
-      lix = where(data lt (*(self.percentile_low))[*, l], lix_cnt)
+      low = rebin((*(self.percentile_low))[*, l], ns, nb)
+      high = rebin((*(self.percentile_high))[*, l], ns, nb)
+      lix = where((data - low) lt 0, lix_cnt)
       if lix_cnt gt 0 then data[lix] = !values.f_nan
-      hix = where(data gt (*(self.percentile_high))[*, l], hix_cnt)
+      hix = where((data - high) gt 0, hix_cnt)
       if hix_cnt gt 0 then data[hix] = !values.f_nan
       
       ; calculate outlier day indices if requested
       if self.generate_outlier_index then begin
         outliers[*] = 0
-        outliers[lix] = 1
+        outliers[lix] = 1 ; doys[lix / ns]  ; report the doy of the outliers
+        outliers[hix] = 1 ; doys[hix / ns]
+        writeu, unit, outliers
       endif
     endif
     
@@ -254,6 +250,20 @@ function NrsStackAggregate::aggregate, method = method
   uix = where(finite(out, /nan), uix_cnt)
   if uix_cnt gt 0 then out[uix] = ignore_value
   
+  if self.generate_outlier_index then begin
+    close, unit
+    free_lun, unit
+    
+    envi_setup_head, fname = self.outname_outlier $
+      , /write $
+      , data_type = 1 $ ; byte
+      , nb = nb $
+      , nl = nl, ns = ns $
+      , bnames = bnames $
+      , map_info = mi $
+      , interleave = 1  ; BIL
+    
+  endif
   envi_file_mng, id = fid, /remove  ; close the image stack
     
   return, out
@@ -275,8 +285,8 @@ pro NrsStackAggregate__define
     , need_recalc:     0 $  ; Flag to indicate if the percentiles have changed, and need to be recalculated
     , outname_aggr:     '' $  ; If specified, save to file with this name
     , outname_outlier:  '' $  ; if specified, save the outliers into a file with this name
-    , base_start_year: 0 $    ; assumption: data contains full years, so only start and end year are required
-    , base_end_year:   0 $
+    , base_start_date: '' $
+    , base_end_date:   '' $
     , period:         -1 $    ; product repetition period in days 
     , prog_obj:        obj_new() $;!null $
   }

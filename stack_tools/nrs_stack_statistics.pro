@@ -106,8 +106,11 @@ end
 
 pro nrs_aggregate_excoutliers, stack = stack, outname = outname $
     , aggr_method = aggr_method $ 
-    , perc_low = perc_low, perc_high = perc_high, exclude_outliers = exclude_outliers $
-    , period = period $
+    , perc_low = perc_low, perc_high = perc_high $
+    , exclude_outliers = exclude_outliers $
+    , outlier_name = outlier_name $
+    , start_date = start_date $
+    , end_date = end_date $
     , prog_obj = prog_obj, cancelled = cancelled
   compile_opt idl2, logical_predicate
 
@@ -130,8 +133,11 @@ pro nrs_aggregate_excoutliers, stack = stack, outname = outname $
   endelse
   
   aggregator = NrsStackAggregate()
-  aggregator->setproperty, perc_low = perc_low, perc_high = perc_high, use_percentiles = exclude_outliers $
-    , period = period $
+  aggregator->setproperty, perc_low = perc_low, perc_high = perc_high $
+    , base_start_date = start_date $
+    , base_end_date = end_date $
+    , use_percentiles = exclude_outliers $
+    , outlier_name = outlier_name $
     , stack_name = stack $
     , prog_obj = prog_obj
 
@@ -139,6 +145,7 @@ pro nrs_aggregate_excoutliers, stack = stack, outname = outname $
     for bn = 0, n_elements(bnames) - 1 do begin
       method = bnames[bn]
       out[*, *, bn] = aggregator->aggregate(method = method)
+      if bn eq 0 then aggregator->setproperty, outlier_name = ''  ; only need to report on outliers once 
     endfor
   endif else begin
     out[*] = aggregator->aggregate(method = aggr_method)
@@ -252,3 +259,11 @@ pro nrs_aggregate_layers, fid, aggr_method, layers = layers, outname = outname, 
     
   envi_write_envi_file, out, out_name = outname, map_info = mi, bnames = bnames, data_ignore_value = undef
 end
+
+;pro qqq
+;  fn = 'E:\NRS\Lin Lin Li\aggregation_with_percentile\gemid_outlier.dat'
+;  e = envi()
+;  raster = e.openRaster(fn)
+;  nb = raster.
+;  data = raster.GetData(BANDS=[0], SUB_RECT=[100,449,550,899])
+;end
