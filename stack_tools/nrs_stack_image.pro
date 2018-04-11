@@ -28,18 +28,25 @@
 ;    band_names : in, optional
 ;      Names of the bands; the length of the list of names must match exactly with the
 ;      number of bands, otherwise the filenames of the stacked bands are used.
+;    ignore_value : in, optional
+;      If set replace the existing undef value with the ignore_value
 ;    prog_obj : in, optional
 ;      A ProgressBar object to indicate progress
 ;    cancelled : out, optional
 ;      If set, the user stopped the process
 ;
 ; :Author: nieuwenhuis
+; 
+; :History:
+;   - 11 Apr 2018: nieuwenhuis, added keyword parameter: ignore_value
+;   - oct 2013: nieuwenhuis, created
 ;-
 pro nrs_stack_image, outname, folder = folder, list_file = list_file $
                    , allow_multi = allow_multi $
                    , band_pos = band_pos $
                    , extension = extension $
                    , band_names = band_names $
+                   , ignore_value = ignore_value $
                    , prog_obj = prog_obj, cancelled = cancelled
   compile_opt idl2, logical_predicate
   
@@ -161,6 +168,18 @@ pro nrs_stack_image, outname, folder = folder, list_file = list_file $
   free_lun, unit
   
   if n_elements(band_names) eq bcnt then bnames = band_names
+  
+  if n_elements(ignore_value) gt 0 then begin
+    sz = size(ignore_value, /type)
+    if sz eq 7 then begin
+      valid = 0
+      on_ioerror, no_num 
+      ignore_value = float(ignore_value)
+      valid = 1
+    no_num: ignore_value = undef  ; keep original undef in case of conversion error
+    endif  
+    undef = ignore_value
+  endif
   
   envi_setup_head, fname = outname $
           , data_type = dt $
