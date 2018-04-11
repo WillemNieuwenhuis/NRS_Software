@@ -5,7 +5,7 @@ pro nrs_unstack_handle_input, event
   target_str = strtrim(target)
   if strlen(target_str) eq 0 then return
 
-  basename = getOutname(target_str, postfix = '_uns', ext = '.')
+  basename = getOutname(target_str, postfix = '_uns', ext = '.dat')
   val_fld = widget_info(event.top, find_by_uname = 'nrs_unstack_outputFile')
   widget_control, val_fld, set_value = basename
 end
@@ -37,6 +37,6 @@ pro nrs_unstack_handleOK, event
   
   nrs_unstack_image, fid_ref, basename = basename, prog_obj = progressBar, cancelled = cancelled
   
-  progressBar -> Destroy
+  progressBar->Destroy
 end
 

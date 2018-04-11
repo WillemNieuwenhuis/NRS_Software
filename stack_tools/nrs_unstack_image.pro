@@ -33,14 +33,17 @@ pro nrs_unstack_image, fid, basename = basename, list_file = list_file, prog_obj
 
   if n_elements(list_file) eq 0 then list_file = imgname
   filelist = getOutname(list_file, ext = '.txt', postfix = '')
+  format = '(i0' + string(alog10(nb) + 1,format="(i0)") + ')'
   openw, lun, filelist, /get_lun
   for b = 0, nb - 1 do begin
-    if nrs_update_progress(prog_obj, b, nb, cancelled = cancelled) then return
+    if nrs_update_progress(prog_obj, b, nb, cancelled = cancelled) then begin
+      break
+    endif
     
-    outname = getOutname(imgname, postfix = '_' + string(b, format='(i03)'), ext='.')
+    outname = getOutname(imgname, postfix = '_' + string(b, format=format), ext='.dat')
     printf, lun, outname
     data = envi_get_data(fid = fid, dims = dims, pos = b)
-    bname = 'band_' + string(b, format='(i03)')
+    bname = 'band_' + string(b, format = format)
     if n_elements(bnames) gt b then bname = bnames[b]
     envi_write_envi_file, data, out_name = outname, bnames = [bname], /no_copy, /no_open, map_info = mi
   endfor
