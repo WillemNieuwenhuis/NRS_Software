@@ -65,7 +65,7 @@ pro nrs_stack_percentiles_gui, event
   nrs_stack_percentiles_outputFile = cw_dirfile(nrs_stack_percentiles_output_panel $
         , uname = 'nrs_stack_percentiles_outputFile' $
         , style = 'file' $
-        , title = 'Output quartiles' $
+        , title = 'Output percentiles' $
         , xsize = text_width $
         , xtitlesize = label_width $
         )
