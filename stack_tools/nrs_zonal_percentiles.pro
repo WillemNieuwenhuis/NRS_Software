@@ -383,4 +383,152 @@ pro nrs_zonal_percentiles_group, image, classfile $
   close, lun
   free_lun, lun
 
-end                           
+end
+
+
+;+
+; :description:
+;    Calculate percentiles rank per zone and band on an image stack. The output is stored in a new image stack
+;    with the same time dimension.
+;    Each output value is calculated as the percentile rank within a the timeseries on each location
+;
+; :params:
+;    image : in
+;      The image stack
+;    classfile : in
+;      The classified image containing the zonal information. The spatial dimensions
+;      are expected to be equal to those of the image stack
+;
+; :keywords:
+;    outname : in, optional
+;      Output name of the table; base output name of the optional raster bands.
+;      If not specified the input data filename will be used as template.
+;    step : in, optional, default = 5%
+;      The percentile step (in percentage) to calculate; use higher value for low number of bands
+;    ignore_value : in, optional
+;      Indicate the missing value in the data in the image stack
+;    prog_obj : in, optional
+;      A progressBar object to be used to display progress
+;    cancelled : out
+;      Indicates if the process was interupted by the user in the progressBar
+;
+; :Author: nieuwenhuis
+;
+; :history:
+;   - 4 May 2018: nieuwenhuis, created
+;
+;-
+pro nrs_zonal_ranking, image, classfile $
+  , outname = outname $
+  , step = step $
+  , ignore_value = ignore_value $
+  , prog_obj = prog_obj, cancelled = cancelled
+  compile_opt idl2, logical_predicate
+
+  cancelled = 1
+
+  if n_elements(step) gt 0 then begin
+    step = fix(step)
+  endif else begin
+    step = 5
+  endelse
+  nr_steps = 100.0 / step[0]
+  if nr_steps lt 5 then nr_steps = 5  ; at least all quartiles
+
+  envi_open_file, image, r_fid = fid, /no_realize, /no_interactive_query
+  if fid eq -1 then return
+
+  envi_open_file, classfile, r_fid = class, /no_realize, /no_interactive_query
+  if class eq -1 then return
+
+  envi_file_query, fid, dims = dims, ns = ns, nl = nl, nb = nb, data_type = dt, bnames = bnames
+  mi = envi_get_map_info(fid = fid, undefined = undefined)
+  if undefined eq 1 then delvar, mi
+  inherit = envi_set_inheritance(fid, dims, /full)
+
+  hasIgnore = n_elements(ignore_value) gt 0
+  if hasIgnore then ignore_value = (fix(ignore_value, type = dt, /print))[0]
+
+  envi_file_query, class, ns = ns_class, nl = nl_class
+  if (ns ne ns_class) || (nl ne nl_class) then begin
+    void = error_message('Dimension of class image does not match input image', title = 'Zonal ranking', /error, /noname, traceback = 0)
+    return
+  endif
+
+  if n_elements(outname) eq 0 then outname = getoutname(image, postfix = '_rank', ext = '.dat')
+
+  cancelled = 0
+
+  ix = where(dt eq [1, 2, 3, 12, 13, 14, 15], cix)
+  isInt = cix gt 0
+  eps = 1.0e-6
+
+  nrs_set_progress_property, prog_obj, /start, title = 'Zonal ranking'
+
+  nrs_load_class_image, class, cldata = cldata, num_classes = nr_class $
+    , has_unclassified = has_unclassified $
+    , /class_adjust
+  ; calculate masks of all classes
+  maxcl = max(cldata)
+  h = histogram(cldata, min = 0, max = maxcl, binsize = 1, reverse_indices = ri)
+
+  openw, lun, outname, /get_lun
+
+  outband = intarr(ns, nl)
+  for b = 0, nb - 1 do begin
+    if nrs_update_progress(prog_obj, b, nb, cancelled = cancelled) then return
+
+    outband[*] = -9999  ; initialize to ignore value
+    band = envi_get_data(fid = fid, dims = dims, pos = b)
+    ; for all classes / zones
+    for c = 0, maxcl do begin
+      clx = []
+      if ri[c + 1] gt ri[c] then $
+        clx = ri[ri[c] : ri[c + 1] - 1]
+
+      if n_elements(clx) eq 0 then continue
+      
+      selected = band[clx]  ; mask out data for a single class
+      if hasIgnore then begin
+        ex = where(selected ne ignore_value, cex)
+        if cex gt 0 then begin
+          clx = clx[ex]
+          selected = selected[ex]
+        endif
+      endif
+
+      sorted = selected[sort(selected)]
+      ix_size = min([nr_steps + 1, n_elements(sorted)])
+      p_index = round(findgen(ix_size) * (n_elements(sorted) - 1) / (ix_size - 1))
+      ranking = findgen(ix_size) * 100 / (ix_size - 1)
+      lookup = sorted[p_index]  ; index from (discrete) percentile to value
+      
+      ; now do reverse lookup to get the ranking
+      for ix = 0, n_elements(clx) - 1 do begin
+        val = band[clx[ix]]
+        p = where(lookup ge val, pcount)
+        
+        if pcount ge 1 then outband[clx[ix]] = ranking[p[0]]
+        
+      endfor
+
+    endfor
+    
+    writeu, lun, outband
+
+  endfor
+
+  envi_setup_head, fname = outname $
+    , data_type = 2 $ ; 2 == int
+    , ns = ns, nl = nl, nb = nb $
+    , interleave = 0 $  ; 0 == BSQ
+    , data_ignore_value = -9999 $
+    , bnames = bnames $
+    , /write $
+    , inherit = inherit
+
+  close, lun
+  free_lun, lun
+
+end
+
