@@ -321,7 +321,7 @@ end
 ;
 ; :Author: nieuwenhuis
 ;-
-pro nrs_sentinel_stack, folder, gain, resolution = resolution, dn_to_reflection = dn_to_reflection
+pro nrs_sentinel_stack, folder, out_folder, gain, resolution = resolution, dn_to_reflection = dn_to_reflection
   compile_opt idl2, logical_predicate
 
   ; find tile data folder and extract meta data
@@ -443,8 +443,8 @@ pro nrs_convert_S2ENVI_to_ENVIstack, folders, out_folder, dn_to_reflection = dn_
     endif
 
     ; only stack 10m and 20m, skip 60m
-    nrs_sentinel_stack, folder, gain, resolution = 10, dn_to_reflection = dn_to_reflection
-    nrs_sentinel_stack, folder, gain, resolution = 20, dn_to_reflection = dn_to_reflection
+    nrs_sentinel_stack, folder, out_folder, gain, resolution = 10, dn_to_reflection = dn_to_reflection
+    nrs_sentinel_stack, folder, out_folder, gain, resolution = 20, dn_to_reflection = dn_to_reflection
 
   endfor
 
