@@ -418,7 +418,7 @@ end
 ;   - 4 May 2018: nieuwenhuis, created
 ;
 ;-
-pro nrs_zonal_ranking, image, classfile $
+pro nrs_zonal_ranking_spatial, image, classfile $
   , outname = outname $
   , step = step $
   , ignore_value = ignore_value $
@@ -532,3 +532,141 @@ pro nrs_zonal_ranking, image, classfile $
 
 end
 
+;+
+; :description:
+;    Calculate percentiles rank per zone and band on an image stack. The output is stored in a new image stack
+;    with the same time dimension.
+;    Each output value is calculated as the percentile rank within a the timeseries on each location
+;
+; :params:
+;    image : in
+;      The image stack
+;    classfile : in
+;      The classified image containing the zonal information. The spatial dimensions
+;      are expected to be equal to those of the image stack
+;
+; :keywords:
+;    outname : in, optional
+;      Output name of the table; base output name of the optional raster bands.
+;      If not specified the input data filename will be used as template.
+;    step : in, optional, default = 5%
+;      The percentile step (in percentage) to calculate; use higher value for low number of bands
+;    ignore_value : in, optional
+;      Indicate the missing value in the data in the image stack
+;    prog_obj : in, optional
+;      A progressBar object to be used to display progress
+;    cancelled : out
+;      Indicates if the process was interupted by the user in the progressBar
+;
+; :Author: nieuwenhuis
+;
+; :history:
+;   - 31 May 2018: nieuwenhuis, created
+;
+;-
+pro nrs_zonal_ranking_temporal, image, classfile $
+  , outname = outname $
+  , step = step $
+  , ignore_value = ignore_value $
+  , prog_obj = prog_obj, cancelled = cancelled
+  compile_opt idl2, logical_predicate
+
+  cancelled = 1
+
+  if n_elements(step) gt 0 then begin
+    step = fix(step)
+  endif else begin
+    step = 5
+  endelse
+  nr_steps = 100.0 / step[0]
+  if nr_steps lt 5 then nr_steps = 5  ; at least all quartiles
+
+  envi_open_file, image, r_fid = fid, /no_realize, /no_interactive_query
+  if fid eq -1 then return
+
+  envi_open_file, classfile, r_fid = class, /no_realize, /no_interactive_query
+  if class eq -1 then return
+
+  envi_file_query, fid, dims = dims, ns = ns, nl = nl, nb = nb, data_type = dt, bnames = bnames
+  mi = envi_get_map_info(fid = fid, undefined = undefined)
+  if undefined eq 1 then delvar, mi
+  inherit = envi_set_inheritance(fid, dims, /full)
+
+  hasIgnore = n_elements(ignore_value) gt 0
+  if hasIgnore then ignore_value = (fix(ignore_value, type = dt, /print))[0]
+
+  envi_file_query, class, ns = ns_class, nl = nl_class
+  if (ns ne ns_class) || (nl ne nl_class) then begin
+    void = error_message('Dimension of class image does not match input image', title = 'Zonal ranking', /error, /noname, traceback = 0)
+    return
+  endif
+
+  if n_elements(outname) eq 0 then outname = getoutname(image, postfix = '_rank', ext = '.dat')
+
+  cancelled = 0
+
+  ix = where(dt eq [1, 2, 3, 12, 13, 14, 15], cix)
+  isInt = cix gt 0
+  eps = 1.0e-6
+
+  nrs_set_progress_property, prog_obj, /start, title = 'Zonal ranking'
+
+  nrs_load_class_image, class, cldata = cldata, num_classes = nr_class $
+    , has_unclassified = has_unclassified $
+    , /class_adjust
+  ; calculate masks of all classes
+  maxcl = max(cldata)
+  h = histogram(cldata, min = 0, max = maxcl, binsize = 1, reverse_indices = ri)
+
+  openw, lun, outname, /get_lun
+
+  ; first read the entire 3D cube
+  nrs_set_progress_property, prog_obj, title = 'Zonal ranking, reading'
+
+  cube = make_array(ns * nl, nb, type = dt)
+  for b = 0, nb - 1 do begin
+    if nrs_update_progress(prog_obj, b, nb, cancelled = cancelled) then return
+    cube[*, b] = envi_get_data(fid = fid, dims = dims, pos = b)
+  endfor
+  
+  nrs_set_progress_property, prog_obj, title = 'Zonal ranking, ranking'
+  outdata = intarr(ns * nl, nb) - 9999  ; initialize output data to ignore value
+  for c = 0, maxcl do begin
+    if nrs_update_progress(prog_obj, c, maxcl, cancelled = cancelled) then return
+
+    clx2d = []
+    if ri[c + 1] gt ri[c] then $
+      clx2d = ri[ri[c] : ri[c + 1] - 1]
+
+    if n_elements(clx2d) eq 0 then continue
+
+    bix = rebin(transpose(indgen(nb) * ns * nl), n_elements(clx2d), nb)   ; build index offsets for Z-direction 
+    c2 = rebin(clx2d, n_elements(clx2d), nb)   ; extrude spatial indices in Z-direction
+    clx3d = c2 + bix     ; build 3D index into the data cube
+    selected = cube[clx3d]  ; mask out data for a single class over all bands
+    if hasIgnore then begin
+      ex = where(selected ne ignore_value, cex)
+      if cex gt 0 then begin
+        clx3d = clx3d[ex]   ; get indices of values in the cube to examine
+        selected = selected[ex] ; get all the values in the cube to examine
+      endif
+    endif
+    selected = float(selected)  ; avoid rounding errors in case of byte / int; histogram calculates min / max
+
+    ranking = round(100.0 * (indgen(nr_steps) + 1) / nr_steps)  ; setup the ranking steps in %
+    ; calculated histogram to perform ranking:
+    ; each bin in the histogram is one rank
+    h = histogram(selected, nbins = nr_steps, reverse_indices = rev)
+    for rank = 0, n_elements(h) - 1 do begin
+      if rev[rank] eq rev[rank + 1] then continue
+      rar = rev[rev[rank] : rev[rank + 1] - 1]    ; get index into 'selected'
+      vix = clx3d[rar]  ; translate index into cube index: all indices for this rank
+      outdata[vix] = ranking[rank]
+    endfor
+
+  endfor
+
+  outdata = reform(outdata, ns, nl, nb, /over)
+  envi_write_envi_file, outdata, out_name = outname, bnames = bnames, data_ignore_value = -9999, inherit = inherit, /no_open
+
+end

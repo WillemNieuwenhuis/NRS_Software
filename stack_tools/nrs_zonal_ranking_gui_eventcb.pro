@@ -46,7 +46,7 @@ pro nrs_zonal_ranking_handleok, event
     , /fast_loop $
     )
 
-  nrs_zonal_ranking, ref, classfile, outname = outname $
+  nrs_zonal_ranking_temporal, ref, classfile, outname = outname $
     , ignore_value = ignore $
     , step = step $
     , prog_obj = progressBar, cancelled = cancelled
