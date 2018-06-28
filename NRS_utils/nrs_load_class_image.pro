@@ -40,7 +40,11 @@ pro nrs_load_class_image, fid, cldata = cldata, cnames = cnames, num_classes = n
   cldata = envi_get_data(fid = fid, dims = dims, pos = 0)
   
   ; handle presence of 'Unclassified' in main classified map
-  has_unclassified = (where(strlowcase(cnames) eq 'unclassified') ne -1)
+  has_unclassified = 0
+  if n_elements(cnames) gt 0 then begin
+    has_unclassified = (where(strlowcase(cnames) eq 'unclassified') ne -1)
+  endif
+  
   ; determine the number of classes
   ix = where(cldata lt 32000, count)
   nrclass = max(cldata[ix]) + 1
