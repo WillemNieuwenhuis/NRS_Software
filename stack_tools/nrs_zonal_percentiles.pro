@@ -426,7 +426,7 @@ pro nrs_zonal_threshold_spatial, image, classfile $
   cancelled = 1
 
   if n_elements(threshold) gt 0 then begin
-    threshold = float(threshold)
+    threshold = float(threshold[0])
   endif else begin
     void = error_message('Threshold value needs to be specified', title = 'Zonal threshold', /error, /noname, traceback = 0)
     return
@@ -444,6 +444,7 @@ pro nrs_zonal_threshold_spatial, image, classfile $
   inherit = envi_set_inheritance(fid, dims, /full)
 
   hasIgnore = n_elements(ignore_value) gt 0
+  if hasIgnore then hasIgnore = strlen(ignore_value) gt 0
   if hasIgnore then ignore_value = (fix(ignore_value, type = dt, /print))[0]
 
   envi_file_query, class, ns = ns_class, nl = nl_class
@@ -455,10 +456,6 @@ pro nrs_zonal_threshold_spatial, image, classfile $
   if n_elements(outname) eq 0 then outname = getoutname(image, postfix = '_thr', ext = '.dat')
 
   cancelled = 0
-
-;  ix = where(dt eq [1, 2, 3, 12, 13, 14, 15], cix)
-;  isInt = cix gt 0
-;  eps = 1.0e-6
 
   nrs_set_progress_property, prog_obj, /start, title = 'Zonal threshold'
 
