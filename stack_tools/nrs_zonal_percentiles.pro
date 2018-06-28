@@ -385,12 +385,10 @@ pro nrs_zonal_percentiles_group, image, classfile $
 
 end
 
-
 ;+
 ; :description:
-;    Calculate percentiles rank per zone and band on an image stack. The output is stored in a new image stack
+;    Count the number of pixels lower than a threshold per zone and band on an image stack. The output is stored in a new image stack
 ;    with the same time dimension.
-;    Each output value is calculated as the percentile rank within a the timeseries on each location
 ;
 ; :params:
 ;    image : in
@@ -403,8 +401,8 @@ end
 ;    outname : in, optional
 ;      Output name of the table; base output name of the optional raster bands.
 ;      If not specified the input data filename will be used as template.
-;    step : in, optional, default = 5%
-;      The percentile step (in percentage) to calculate; use higher value for low number of bands
+;    threshold : in, required
+;      The threshold for the calculation
 ;    ignore_value : in, optional
 ;      Indicate the missing value in the data in the image stack
 ;    prog_obj : in, optional
@@ -415,25 +413,24 @@ end
 ; :Author: nieuwenhuis
 ;
 ; :history:
-;   - 4 May 2018: nieuwenhuis, created
+;   - 28 June 2018: nieuwenhuis, created
 ;
 ;-
-pro nrs_zonal_ranking_spatial, image, classfile $
+pro nrs_zonal_threshold_spatial, image, classfile $
   , outname = outname $
-  , step = step $
+  , threshold = threshold $
   , ignore_value = ignore_value $
   , prog_obj = prog_obj, cancelled = cancelled
   compile_opt idl2, logical_predicate
 
   cancelled = 1
 
-  if n_elements(step) gt 0 then begin
-    step = fix(step)
+  if n_elements(threshold) gt 0 then begin
+    threshold = float(threshold)
   endif else begin
-    step = 5
+    void = error_message('Threshold value needs to be specified', title = 'Zonal threshold', /error, /noname, traceback = 0)
+    return
   endelse
-  nr_steps = 100.0 / step[0]
-  if nr_steps lt 5 then nr_steps = 5  ; at least all quartiles
 
   envi_open_file, image, r_fid = fid, /no_realize, /no_interactive_query
   if fid eq -1 then return
@@ -451,19 +448,19 @@ pro nrs_zonal_ranking_spatial, image, classfile $
 
   envi_file_query, class, ns = ns_class, nl = nl_class
   if (ns ne ns_class) || (nl ne nl_class) then begin
-    void = error_message('Dimension of class image does not match input image', title = 'Zonal ranking', /error, /noname, traceback = 0)
+    void = error_message('Dimension of class image does not match input image', title = 'Zonal threshold', /error, /noname, traceback = 0)
     return
   endif
 
-  if n_elements(outname) eq 0 then outname = getoutname(image, postfix = '_rank', ext = '.dat')
+  if n_elements(outname) eq 0 then outname = getoutname(image, postfix = '_thr', ext = '.dat')
 
   cancelled = 0
 
-  ix = where(dt eq [1, 2, 3, 12, 13, 14, 15], cix)
-  isInt = cix gt 0
-  eps = 1.0e-6
+;  ix = where(dt eq [1, 2, 3, 12, 13, 14, 15], cix)
+;  isInt = cix gt 0
+;  eps = 1.0e-6
 
-  nrs_set_progress_property, prog_obj, /start, title = 'Zonal ranking'
+  nrs_set_progress_property, prog_obj, /start, title = 'Zonal threshold'
 
   nrs_load_class_image, class, cldata = cldata, num_classes = nr_class $
     , has_unclassified = has_unclassified $
@@ -474,7 +471,7 @@ pro nrs_zonal_ranking_spatial, image, classfile $
 
   openw, lun, outname, /get_lun
 
-  outband = intarr(ns, nl)
+  outband = lonarr(ns, nl)
   for b = 0, nb - 1 do begin
     if nrs_update_progress(prog_obj, b, nb, cancelled = cancelled) then return
 
@@ -497,20 +494,7 @@ pro nrs_zonal_ranking_spatial, image, classfile $
         endif
       endif
 
-      sorted = selected[sort(selected)]
-      ix_size = min([nr_steps + 1, n_elements(sorted)])
-      p_index = round(findgen(ix_size) * (n_elements(sorted) - 1) / (ix_size - 1))
-      ranking = findgen(ix_size) * 100 / (ix_size - 1)
-      lookup = sorted[p_index]  ; index from (discrete) percentile to value
-      
-      ; now do reverse lookup to get the ranking
-      for ix = 0, n_elements(clx) - 1 do begin
-        val = band[clx[ix]]
-        p = where(lookup ge val, pcount)
-        
-        if pcount ge 1 then outband[clx[ix]] = ranking[p[0]]
-        
-      endfor
+      outband[clx] = total(selected lt threshold)
 
     endfor
     
@@ -519,7 +503,7 @@ pro nrs_zonal_ranking_spatial, image, classfile $
   endfor
 
   envi_setup_head, fname = outname $
-    , data_type = 2 $ ; 2 == int
+    , data_type = 3 $ ; 3 == int32
     , ns = ns, nl = nl, nb = nb $
     , interleave = 0 $  ; 0 == BSQ
     , data_ignore_value = -9999 $
@@ -629,10 +613,10 @@ pro nrs_zonal_ranking_temporal, image, classfile $
     cube[*, b] = envi_get_data(fid = fid, dims = dims, pos = b)
   endfor
   
-  nrs_set_progress_property, prog_obj, title = 'Zonal ranking, ranking'
+  nrs_set_progress_property, prog_obj, /start, title = 'Zonal ranking, ranking'
   outdata = intarr(ns * nl, nb) - 9999  ; initialize output data to ignore value
   for c = 0, maxcl do begin
-    if nrs_update_progress(prog_obj, c, maxcl, cancelled = cancelled) then return
+    if nrs_update_progress(prog_obj, c, maxcl + 1, cancelled = cancelled) then return
 
     clx2d = []
     if ri[c + 1] gt ri[c] then $
