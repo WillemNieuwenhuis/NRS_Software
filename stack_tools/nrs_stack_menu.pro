@@ -35,6 +35,10 @@ pro nrs_stack_tools_define_buttons, buttonInfo
     uvalue = 'Zonal ranking', event_pro = 'nrs_zonal_ranking_gui', $
     ref_value = 'Stack', position = 'last'
 
+  envi_define_menu_button, buttonInfo, value = 'Zonal threshold', $
+    uvalue = 'Zonal threshold', event_pro = 'nrs_zonal_threshold_gui', $
+    ref_value = 'Stack', position = 'last'
+
   envi_define_menu_button, buttonInfo, value = 'Aggregate stack', $
     uvalue = 'Aggregate stack', event_pro = 'nrs_aggregate_gui', $
     ref_value = 'Stack', position = 'last'
