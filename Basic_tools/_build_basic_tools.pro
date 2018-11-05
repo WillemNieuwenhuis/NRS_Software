@@ -24,6 +24,9 @@ pro _build_basic_tools
            , 'nrs_extract_time_gui_eventcb.pro' $
            , 'nrs_extract_by_time.pro' $
            , 'nrs_extract_by_location_shape.pro' $
+           , 'nrs_image_linreg.pro' $
+           , 'nrs_image_linreg_gui.pro' $
+           , 'nrs_image_linreg_gui_eventcb.pro' $
            , 'nrs_import_netcdf_eventCB.pro' $
            , 'nrs_import_netcdf_gui.pro' $
            , 'nrs_import_netcdf_file_gui_eventcb.pro' $

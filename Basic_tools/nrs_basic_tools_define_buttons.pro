@@ -31,6 +31,10 @@ pro nrs_basic_tools_define_buttons, buttonInfo
     uvalue = 'Detect burnt periods', event_pro = 'nrs_detect_burnt_gui', $
     ref_value = 'NRS', position = 'last'
 
+  envi_define_menu_button, buttoninfo, value = 'Temporal linear regression', $
+    uvalue = 'Temporal linear regression', event_pro = 'nrs_image_linreg_gui', $
+    ref_value = 'NRS', position = 'last'
+
 end
 
 pro nrs_basic_tools_extensions_init

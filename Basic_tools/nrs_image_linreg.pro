@@ -1,4 +1,4 @@
-pro nrs_image_linreg, image, output = coef, rmse = rmse $
+pro nrs_image_linreg, image, output = coef_file, rmse = rmse $
                     , prog_obj = prog_obj, cancelled = cancelled
   compile_opt idl2, logical_predicate
 
@@ -14,7 +14,7 @@ pro nrs_image_linreg, image, output = coef, rmse = rmse $
   
   do_rmse = keyword_set(rmse)
   
-  if n_elements(coef) eq 0 then coef_file = getOutname(image, postfix = '_coef', ext = '.dat')
+  if n_elements(coef_file) eq 0 then coef_file = getOutname(image, postfix = '_coef', ext = '.dat')
   
   cancelled = 0
 
@@ -37,7 +37,7 @@ pro nrs_image_linreg, image, output = coef, rmse = rmse $
   
   bnames = ['a', 'b']
   if do_rmse then bnames = [bnames, 'rmse']
-  envi_write_envi_file, cdata, out_name = coef_file, map_info = mi, bnames = bnames
+  envi_write_envi_file, cdata, out_name = coef_file, map_info = mi, bnames = bnames, /no_open
   
   
 end
