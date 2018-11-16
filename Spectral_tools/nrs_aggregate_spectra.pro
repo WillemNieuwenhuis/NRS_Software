@@ -65,7 +65,7 @@ pro nrs_aggregate_spectra, pnt_tbl, image $
   cancelled = 0
   
   envi_open_file, image, r_fid = mapID, /no_realize, /no_interactive_query
-  envi_file_query, mapID, nb = nb, nl = nl, ns = ns, data_ignore_value = undef
+  envi_file_query, mapID, nb = nb, nl = nl, ns = ns, data_ignore_value = undef, bnames = bnames
   mi = envi_get_map_info(fid = mapID, undefined = undef_csy)
   if undef_csy eq 1 then begin
     void = error_message('Spectral image has no coordinates')
@@ -147,8 +147,11 @@ pro nrs_aggregate_spectra, pnt_tbl, image $
   index[*] = indgen(pointCount) + 1
   if keyword_set(xytable) then begin
     dig = fix(alog10(nb)) + 1
-    form = '("band_",' + string(dig, format = '("i0", i0)') + ')'
-    hdr = ['Index', 'X', 'Y', string(indgen(nb) + 1, format = form)]
+    if n_elements(bnames) ne nb then begin
+      form = '("band_",' + string(dig, format = '("i0", i0)') + ')'
+      bnames = string(indgen(nb) + 1, format = form)
+    endif
+    hdr = ['Index', 'X', 'Y', bnames]
     profiles = [transpose(index[ix]), transpose(x[ix]), transpose(y[ix]), transpose(profiles[ix, *])]
   endif else begin
     hdr = string([transpose(x[ix]), transpose(y[ix])], format = '("(",f0.6,":",f0.6,")")')
