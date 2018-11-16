@@ -118,7 +118,7 @@ pro nrs_read_points_csv, table, x, y, data = asc, valid = valid  $
   maxx = max(x, min = minx)
   maxy = max(y, min = miny)
   hint_geo = hint_geo $
-             && ((abs(maxx) le 360.0 && abs(minx) le 360.0) $
+             || ((abs(maxx) le 360.0 && abs(minx) le 360.0) $
                && (abs(maxy) le 360.0 && abs(miny) le 360.0))
 
 end
