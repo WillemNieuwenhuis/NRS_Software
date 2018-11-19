@@ -160,16 +160,18 @@ pro nrs_sentinel_xml_csy, xml, map_info = map_info, res_dims = res_dims, sense_d
   obj_destroy, p
 end
 
-pro nrs_sentinel_meta, xml, scale = scale
+pro nrs_sentinel_meta, xml, scale = scale, key = xml_key
   compile_opt idl2, logical_predicate
 
+  if n_elements(xml_key) eq 0 then xml_key = 'L2A_BOA_QUANTIFICATION_VALUE'
+  
   p = obj_new('IDLffXMLDOMDocument')
   p->load, filename = xml, schema_checking = 0, /quiet
 
   oTopLevel = p->getDocumentElement() ;return root IDLffXMLDOMDocument
 
   ; get the sensing date (at start time)
-  node = otoplevel->getElementsByTagName('L2A_BOA_QUANTIFICATION_VALUE')
+  node = otoplevel->getElementsByTagName(xml_key)
   if node->getlength() eq 0 then return
   
   item = node->item(0)
@@ -223,7 +225,7 @@ end
 pro nrs_sentinel_product_error, folder = folder, multiple = multiple
   compile_opt idl2, logical_predicate
 
-  if multiple then $
+  if keyword_set(multiple) then $
     print, 'No Sentinel L2 product found' $
   else $
     print, 'No Sentinel L2 product found in: ' + folder
@@ -278,27 +280,26 @@ pro nrs_convert_S2L2_to_S2ENVI, folders
     extract_bands = []
     scl_file = ''
     ; Add ENVI headers if needed
+    total_files = 0
     for fo = 0, n_elements(flist) - 1 do begin
       files = nrs_find_images(flist[fo], pattern[fo], ext = 'jp2')  ; select all spectral bands
-      if n_elements(files) eq 0 then begin
-        if multiple then $
-          print, 'No Sentinel L2A product found' $
-        else $
-          print, 'No Sentinel L2A product found in: ' + tile_folder
-  
-        break
+      total_files += n_elements(files)
+      if n_elements(files) gt 0 then begin
+        for f = 0, n_elements(files) - 1 do begin
+          mi = map_info[fo]
+          select = nrs_extract_select(files[f], scl = scl)
+          if select then extract_bands = [extract_bands, files[f]]
+          if scl then begin
+            scl_file = files[f]
+            mi = map_info[1]  ; force to 20m
+          endif
+          nrs_sentinel_jp2_add_header, files[f], mapinfo = mi
+        endfor
       endif
-      for f = 0, n_elements(files) - 1 do begin
-        mi = map_info[fo]
-        select = nrs_extract_select(files[f], scl = scl)
-        if select then extract_bands = [extract_bands, files[f]]
-        if scl then begin
-          scl_file = files[f]
-          mi = map_info[1]  ; force to 20m
-        endif
-        nrs_sentinel_jp2_add_header, files[f], mapinfo = mi
-      endfor
     endfor
+    if total_files eq 0 then begin
+      nrs_sentinel_product_error, tile_folder, multiple
+    endif
     
   endfor
 
@@ -334,6 +335,9 @@ pro nrs_sentinel_stack, folder, out_folder, gain, resolution = resolution, dn_to
   res_ix = where(resol_lut eq resolution)
   folder_res = imgfolder[res_ix]
   pattern = '_B'  ; only select the regular spectral bands
+  fi = file_info(folder_res)
+  if ~fi.exists then return ; folder does not exist: do nothing
+  
   files = nrs_find_images(folder_res, pattern, ext = 'jp2')
 
   nrfiles = n_elements(files)
@@ -383,10 +387,14 @@ pro nrs_sentinel_stack, folder, out_folder, gain, resolution = resolution, dn_to
 
   if keyword_set(dn_to_reflection) then begin
     ; fid_stack now points to the temp output. This is used as input for the gain correction giving a new output
+    ; make sure the output type is set to float (out_dt == 4)
     envi_doit, 'gainoff_doit', dims = dims, fid = fid_stack $
       , gain = fltarr(nr_bands) + gain, offset = fltarr(nr_bands), pos = lindgen(nr_bands) $
-      , out_dt = dt, out_name = outname
+      , out_dt = 4, out_name = outname, r_fid = r_fid
 
+    envi_assign_header_value, fid = r_fid, keyword = 'band names', value = bnames
+    envi_write_file_header, r_fid
+    envi_file_mng, id = r_fid, /remove       ; close file
     envi_file_mng, id = fid_stack, /delete   ; close and delete the temp file
   endif else begin
     envi_file_mng, id = fid_stack, /remove   ; just close the new file
@@ -432,13 +440,22 @@ pro nrs_convert_S2ENVI_to_ENVIstack, folders, out_folder, dn_to_reflection = dn_
     folder = folders[fold]
 
     gain = 1
+    new_format = 0
     if keyword_set(dn_to_reflection) then begin
       meta_top = nrs_find_images(folder, 'SAFL2', ext = 'xml')
       if n_elements(meta_top) ne 1 then begin
-        nrs_sentinel_product_error, folder = folder, multiple = multiple
-        continue
+        ds_folder = file_search(folder + '\datastrip\ds*')  ; new structure
+        ds_folder = ds_folder[0]
+        meta_top = nrs_find_images(ds_folder, 'MTD_DS', ext = 'xml')
+        if n_elements(meta_top) ne 1 then begin
+          nrs_sentinel_product_error, folder = folder, multiple = multiple
+          continue
+        endif
+        new_format = 1
       endif
-      nrs_sentinel_meta, meta_top[0], scale = scale
+      xml_key = 'L2A_BOA_QUANTIFICATION_VALUE'
+      if new_format then xml_key = 'BOA_QUANTIFICATION_VALUE'
+      nrs_sentinel_meta, meta_top[0], scale = scale, key = xml_key
       gain = 1.0 / scale
     endif
 
