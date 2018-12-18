@@ -65,7 +65,7 @@ pro nrs_zonal_ranking_handleok, event
 
   ; initialise tranquilizer
   progressBar = obj_new("PROGRESSBAR", background = 'white', color = 'green' $
-    , ysize = 15, title = "Zonal ranking" $
+    , ysize = 15, xsize = 250, title = "Zonal ranking" $
     , /fast_loop $
     )
 
