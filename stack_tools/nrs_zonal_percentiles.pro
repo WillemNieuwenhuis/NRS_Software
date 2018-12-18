@@ -599,7 +599,10 @@ pro nrs_zonal_ranking_temporal, image, classfile $
     , /class_adjust
   ; calculate masks of all classes
   maxcl = max(cldata)
-  if ~has_unclassified && exclude_clzero then cldata--
+  if ~has_unclassified && exclude_clzero then begin
+    cldata--
+    maxcl-- ; 
+  endif
   h = histogram(cldata, min = 0, max = maxcl, binsize = 1, reverse_indices = ri)
 
   openw, lun, outname, /get_lun
@@ -614,7 +617,7 @@ pro nrs_zonal_ranking_temporal, image, classfile $
   endfor
   
   nrs_set_progress_property, prog_obj, /start, title = 'Zonal ranking, ranking'
-  outdata = intarr(ns * nl, nb) - 9999  ; initialize output data to ignore value
+  outdata = intarr(ns * nl, nb) - 9999S  ; initialize output data to ignore value
 
   ; Init data for z-factor if specified
   if keyword_set(calc_zfactor) then begin
@@ -663,14 +666,16 @@ pro nrs_zonal_ranking_temporal, image, classfile $
 
   endfor
 
+  nrs_set_progress_property, prog_obj, /start, title = 'Zonal ranking, writing ranks'
   outdata = reform(outdata, ns, nl, nb, /over)
-  envi_write_envi_file, outdata, out_name = outname, bnames = bnames, data_ignore_value = -9999, inherit = inherit, /no_open
+  envi_write_envi_file, outdata, out_name = outname, bnames = bnames, data_ignore_value = -9999, inherit = inherit, /no_open, /no_copy
   
   if keyword_set(calc_zfactor) then begin
     zfactor_name = getoutname(outname, postfix = '_zfact', ext = '.dat')
 
+    nrs_set_progress_property, prog_obj, title = 'Zonal ranking, writing Z-factor'
     zdata = reform(zdata, ns, nl, nb, /over)
-    envi_write_envi_file, zdata, out_name = zfactor_name, bnames = bnames, data_ignore_value = -9999, inherit = inherit, /no_open
+    envi_write_envi_file, zdata, out_name = zfactor_name, bnames = bnames, data_ignore_value = -9999, inherit = inherit, /no_open, /no_copy
   endif
     
 end
