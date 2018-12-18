@@ -40,12 +40,27 @@ pro nrs_zonal_ranking_gui, event
     , event_pro = 'nrs_zonal_ranking_handle_input' $
     )
 
+  nrs_zonal_ranking_ignore = fsc_inputfield(nrs_zonal_ranking_mainPanel $
+    , uname = 'nrs_zonal_ranking_ignore' $
+    , title = 'Ignore value' $
+    , labelalign = 1 $
+    , labelsize = label_width $
+    , xsize = text_medium_width $
+    )
+
   nrs_zonal_ranking_classfile = cw_dirfile(nrs_zonal_ranking_mainPanel $
     , title = 'Classified image' $
     , style = 'envi' $
     , xsize = text_width $
     , xtitlesize = label_width $
     , uname = 'nrs_zonal_ranking_classfile' $
+    , event_pro = 'nrs_zonal_ranking_handle_class_input' $
+    )
+
+  nrs_zonal_ranking_exclude_clzero_base = widget_base(nrs_zonal_ranking_mainPanel, /nonexclusive, uname = 'nrs_zonal_ranking_exclude_clzero_base')
+  nrs_zonal_ranking_exclude_clzero_button = widget_button(nrs_zonal_ranking_exclude_clzero_base $
+    , uname = 'nrs_zonal_ranking_exclude_clzero_button' $
+    , value = 'Exclude class zero' $
     )
 
   nrs_zonal_ranking_step = fsc_inputfield(nrs_zonal_ranking_mainPanel $
@@ -58,12 +73,10 @@ pro nrs_zonal_ranking_gui, event
     , unit = ' %' $
     )
 
-  nrs_zonal_ranking_ignore = fsc_inputfield(nrs_zonal_ranking_mainPanel $
-    , uname = 'nrs_zonal_ranking_ignore' $
-    , title = 'Ignore value' $
-    , labelalign = 1 $
-    , labelsize = label_width $
-    , xsize = text_medium_width $
+  nrs_zonal_ranking_zfactor_base = widget_base(nrs_zonal_ranking_mainPanel, /nonexclusive, uname = 'nrs_zonal_ranking_zfactor_base')
+  nrs_zonal_ranking_zfactor_button = widget_button(nrs_zonal_ranking_zfactor_base $
+    , uname = 'nrs_zonal_ranking_zfactor_button' $
+    , value = 'Calculate Z-factor' $
     )
 
   nrs_zonal_ranking_output_panel = widget_base(nrs_zonal_ranking_contentPanel, /frame, /col)

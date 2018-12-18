@@ -549,6 +549,8 @@ pro nrs_zonal_ranking_temporal, image, classfile $
   , outname = outname $
   , step = step $
   , ignore_value = ignore_value $
+  , calc_zfactor = calc_zfactor $
+  , exclude_clzero = exclude_clzero $
   , prog_obj = prog_obj, cancelled = cancelled
   compile_opt idl2, logical_predicate
 
@@ -576,14 +578,14 @@ pro nrs_zonal_ranking_temporal, image, classfile $
   hasIgnore = n_elements(ignore_value) gt 0
   if hasIgnore then ignore_value = (fix(ignore_value, type = dt, /print))[0]
 
-  envi_file_query, class, ns = ns_class, nl = nl_class
+  envi_file_query, class, ns = ns_class, nl = nl_class, file_type = ft
   if (ns ne ns_class) || (nl ne nl_class) then begin
     void = error_message('Dimension of class image does not match input image', title = 'Zonal ranking', /error, /noname, traceback = 0)
     return
   endif
 
   if n_elements(outname) eq 0 then outname = getoutname(image, postfix = '_rank', ext = '.dat')
-
+    
   cancelled = 0
 
   ix = where(dt eq [1, 2, 3, 12, 13, 14, 15], cix)
@@ -597,6 +599,7 @@ pro nrs_zonal_ranking_temporal, image, classfile $
     , /class_adjust
   ; calculate masks of all classes
   maxcl = max(cldata)
+  if ~has_unclassified && exclude_clzero then cldata--
   h = histogram(cldata, min = 0, max = maxcl, binsize = 1, reverse_indices = ri)
 
   openw, lun, outname, /get_lun
@@ -612,6 +615,11 @@ pro nrs_zonal_ranking_temporal, image, classfile $
   
   nrs_set_progress_property, prog_obj, /start, title = 'Zonal ranking, ranking'
   outdata = intarr(ns * nl, nb) - 9999  ; initialize output data to ignore value
+
+  ; Init data for z-factor if specified
+  if keyword_set(calc_zfactor) then begin
+    zdata = fltarr(ns * nl, nb) - 9999.0  ; initialize output data to ignore value
+  endif
   for c = 0, maxcl do begin
     if nrs_update_progress(prog_obj, c, maxcl + 1, cancelled = cancelled) then return
 
@@ -644,10 +652,25 @@ pro nrs_zonal_ranking_temporal, image, classfile $
       vix = clx3d[rar]  ; translate index into cube index: all indices for this rank
       outdata[vix] = ranking[rank]
     endfor
+    
+    ; calculate z-factor if specified
+    if keyword_set(calc_zfactor) then begin
+      stat = moment(selected, maxmoment = 2)  ; only mean and variance are calculated
+      avg = stat[0]
+      sigma = sqrt(stat[1])
+      zdata[clx3d] = (selected - avg) / sigma
+    endif 
 
   endfor
 
   outdata = reform(outdata, ns, nl, nb, /over)
   envi_write_envi_file, outdata, out_name = outname, bnames = bnames, data_ignore_value = -9999, inherit = inherit, /no_open
+  
+  if keyword_set(calc_zfactor) then begin
+    zfactor_name = getoutname(outname, postfix = '_zfact', ext = '.dat')
 
+    zdata = reform(zdata, ns, nl, nb, /over)
+    envi_write_envi_file, zdata, out_name = zfactor_name, bnames = bnames, data_ignore_value = -9999, inherit = inherit, /no_open
+  endif
+    
 end

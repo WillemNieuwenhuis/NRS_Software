@@ -3,7 +3,7 @@ pro nrs_zonal_ranking_handle_input, event
 
   val_fld = widget_info(event.top, find_by_uname = 'nrs_zonal_ranking_refstack')
   widget_control, val_fld, get_value = stackname
-
+  
   stack_str = strtrim(stackname)
   if strlen(stack_str) eq 0 then return
 
@@ -11,6 +11,23 @@ pro nrs_zonal_ranking_handle_input, event
 
   val_fld = widget_info(event.top, find_by_uname = 'nrs_zonal_ranking_outputFile')
   widget_control, val_fld, set_value = outname
+end
+
+pro nrs_zonal_ranking_handle_class_input, event
+  compile_opt idl2
+
+  val_fld = widget_info(event.top, find_by_uname = 'nrs_zonal_ranking_classfile')
+  widget_control, val_fld, get_value = classname
+
+  class_str = strtrim(classname)
+  if strlen(class_str) eq 0 then return
+
+  envi_open_file, classname, r_fid = fid, /no_interactive_query, /no_realize
+  envi_file_query, fid, file_type = ft
+  enable = ft[0] ne 3  ; 3 == ENVI class image 
+  
+  val_fld = widget_info(event.top, find_by_uname = 'nrs_zonal_ranking_exclude_clzero_base')
+  widget_control, val_fld, sensitive = enable 
 end
 
 pro nrs_zonal_ranking_handleok, event
@@ -26,6 +43,12 @@ pro nrs_zonal_ranking_handleok, event
   widget_control, val_fld, get_value = step
   val_fld = widget_info(event.top, find_by_uname = 'nrs_zonal_ranking_ignore')
   widget_control, val_fld, get_value = ignore
+
+  valfld = widget_info(event.top, find_by_uname = 'nrs_zonal_ranking_zfactor_button')
+  do_zfactor = widget_info(valfld, /button_set)
+
+  valfld = widget_info(event.top, find_by_uname = 'nrs_zonal_ranking_exclude_clzero_button')
+  exclude_clzero = widget_info(valfld, /button_set)
 
   val_fld = widget_info(event.top, find_by_uname = 'nrs_zonal_ranking_outputFile')
   widget_control, val_fld, get_value = outname
@@ -48,6 +71,8 @@ pro nrs_zonal_ranking_handleok, event
 
   nrs_zonal_ranking_temporal, ref, classfile, outname = outname $
     , ignore_value = ignore $
+    , calc_zfactor = do_zfactor $
+    , exclude_clzero = exclude_clzero $
     , step = step $
     , prog_obj = progressBar, cancelled = cancelled
 
