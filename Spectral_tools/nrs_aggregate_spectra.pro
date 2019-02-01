@@ -12,7 +12,7 @@
 ;
 ; :keywords:
 ;    aggr_func : in, optional, default = average
-;      The function to use for the aggregation; only average is implemented
+;      The function to use for the aggregation; 
 ;    kernel : in, optional, default = 3
 ;      The size of the window (in pixels) around the location to include in the aggregation.
 ;      Kernel size can be [1 .. 11].
@@ -43,6 +43,7 @@ pro nrs_aggregate_spectra, pnt_tbl, image $
                          , kernel = kernel, kern_type = kern_type $
                          , xytable = xytable $
                          , outname = outname $
+                         , batch_mode = batch_mode $
                          , prog_obj = prog_obj, cancelled = cancelled
   compile_opt idl2, logical_predicate
 
@@ -56,7 +57,8 @@ pro nrs_aggregate_spectra, pnt_tbl, image $
   aggr_functions = ['min', 'max', 'mean', 'median']
   aggr_ix = where(strlowcase(aggr_func) eq aggr_functions, cnt)
   if cnt eq 0 then begin
-    void = error_message('Unsupported aggregation function')
+    if ~keyword_set(batch_mode) then $
+      void = error_message('Unsupported aggregation function')
     return
   endif
 
@@ -68,7 +70,8 @@ pro nrs_aggregate_spectra, pnt_tbl, image $
   envi_file_query, mapID, nb = nb, nl = nl, ns = ns, data_ignore_value = undef, bnames = bnames
   mi = envi_get_map_info(fid = mapID, undefined = undef_csy)
   if undef_csy eq 1 then begin
-    void = error_message('Spectral image has no coordinates')
+    if ~keyword_set(batch_mode) then $
+      void = error_message('Spectral image has no coordinates')
     return
   endif
   
@@ -76,7 +79,8 @@ pro nrs_aggregate_spectra, pnt_tbl, image $
   if strlowcase(ext) eq '.shp' then begin
     crd = nrs_read_shape_points(pnt_tbl, hint_geo = isGeo)
     if n_elements(crd) eq 0 then begin
-      void = error_message('No points found')
+      if ~keyword_set(batch_mode) then $
+        void = error_message('No points found')
       cancelled = 1
       return
     endif
@@ -85,7 +89,8 @@ pro nrs_aggregate_spectra, pnt_tbl, image $
   endif else begin
     nrs_read_points_csv, pnt_tbl, x, y, hint_geo = isGeo
     if n_elements(x) eq 0 then begin
-      void = error_message('No points found')
+      if ~keyword_set(batch_mode) then $
+        void = error_message('No points found')
       cancelled = 1
       return
     endif
@@ -136,11 +141,13 @@ pro nrs_aggregate_spectra, pnt_tbl, image $
       3  : profiles[i, *] = median(spectotal, dim = 1)
       99 : profiles[i, *] = spectotal   ; single profile, just copy
     endcase
-    valid_profiles[i] = 1
+    check = total(profiles[i, *])
+    valid_profiles[i] = check gt 0
   endfor
   ix = where(valid_profiles eq 1, cnt)
   if cnt eq 0 then begin
-    void = error_message('None of the points (including kernel) overlap image')
+    if ~keyword_set(batch_mode) then $
+      void = error_message('None of the points (including kernel) overlap image')
     return
   endif
   index = make_array(pointCount, type = size(x, /type))
