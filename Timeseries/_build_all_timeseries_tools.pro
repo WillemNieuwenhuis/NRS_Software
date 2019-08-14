@@ -25,6 +25,9 @@ pro _build_all_timeseries_tools
            , 'nrs_interpolate_to_payment.pro' $
            , 'nrs_interpolate_to_payment_gui.pro' $
            , 'nrs_interpolate_to_payment_gui_eventcb.pro' $
+           , 'nrs_average_payment.pro' $
+           , 'nrs_payment_averages_gui.pro' $
+           , 'nrs_payment_averages_gui_eventcb.pro' $
           ]
   _auto_build, files, 'bin' + path_sep() + 'nrs_timeseries.sav', logfile = 'bin' + path_sep() + 'nrs_timeseries.log'
 end

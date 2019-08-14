@@ -158,8 +158,8 @@ pro nrs_average_season_payment, image, classfile, season_table $
     cnt_p1[cli] = in_seascnt
   endfor
 
-  out_undef = !values.f_nan 
-  outname = getoutname(image, postfix = '_gra', ext = '.dat')
+  out_undef = !values.f_nan
+  if n_elements(outname) eq 0 then outname = getoutname(image, postfix = '_gra', ext = '.dat')
   data_out = fltarr(ns, nl, nr_years) + out_undef
 
   ; pass through data line by line
@@ -393,6 +393,6 @@ pro nrs_average_payment, image, classfile, season_table $
   yind = indgen(nr_years * 2) / 2 + start_yy
   bind = indgen(nr_years * 2) mod 2
   bnames = 'Year.period ' + string(yind, format = '(I04)') + '.' + string(bind + 1, format = '(I02)')
-  envi_write_envi_file, data_out, fname = outname, bnames = bnames, data_ignore_value = undef, inherit = meta
+  envi_write_envi_file, data_out, fname = outname, bnames = bnames, data_ignore_value = undef, inherit = meta, /no_open
 end
 

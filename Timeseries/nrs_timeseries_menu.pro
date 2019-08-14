@@ -31,10 +31,14 @@ pro nrs_timeseries_define_buttons, buttonInfo
     uvalue = 'Apply season filter', event_pro = 'nrs_apply_season_filter_gui', $
     ref_value = 'Timeseries', position = 'last', /separator
 
-;  envi_define_menu_button, buttonInfo, value = 'Determine pay percentage', $
-;    uvalue = 'Determine pay percentage', event_pro = 'nrs_interpolate_to_payment_gui', $
-;    ref_value = 'NRS', position = 'last'
+  envi_define_menu_button, buttonInfo, value = 'Determine pay percentage', $
+    uvalue = 'Determine pay percentage', event_pro = 'nrs_interpolate_to_payment_gui', $
+    ref_value = 'Timeseries', position = 'last'
     
+  envi_define_menu_button, buttonInfo, value = 'Calculate payment average', $
+    uvalue = 'Calculate payment average', event_pro = 'nrs_payment_averages_gui', $
+    ref_value = 'Timeseries', position = 'last'
+
 end
     
 ; Also add as ENVI 5 extensions
