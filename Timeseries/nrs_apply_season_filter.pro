@@ -107,7 +107,7 @@ pro nrs_apply_season_filter, image, classfile, season_table $
   nrs_set_progress_property, prog_obj, title = 'Applying growing season filter'
   
   ; mask the actual data one band at a time
-  if n_elements(outname) eq 0 then outname = getoutname(image, postfix = '_mask', ext = '.dat')
+  if n_elements(outname) eq 0 then outname = getoutname(image, postfix = '_perc', ext = '.dat')
   openw, unit, outname, /get_lun
   
   ; first determine year band index
