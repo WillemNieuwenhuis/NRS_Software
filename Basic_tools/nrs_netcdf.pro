@@ -446,12 +446,14 @@ pro nrs_nc_get_data, filename, out_name = base_name $
   
   for v = 0, n_elements(vars) - 1 do begin
     var = vars[v]
-    if var.nb eq 0 then continue
     
     ns = var.ns
     nl = var.nl
     nb = var.nb
     nz = var.nz
+    if var.nb eq 0 then begin
+      if (nl > 0) && (ns > 0) then nb = 1 else continue
+    endif
     if nz gt 1 then begin
       nrs_nc_error_message, nc_id, 'No 3D data cube, skipping ' + var.name $
         , cancelled = cancelled, title = 'Import netCDF'
