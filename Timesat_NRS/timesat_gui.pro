@@ -1,29 +1,3 @@
-; Add a menu item to the supervised classification menu
-pro timesat_nrs_define_buttons, buttonInfo
-  envi_define_menu_button, buttonInfo, VALUE = 'Timesat (NRS)', $
-    UVALUE = 'Timesat (NRS)', EVENT_PRO = 'timesat_gui', $
-    REF_VALUE = 'NRS', POSITION = 'last',/SEPARATOR
-
-  envi_define_menu_button, buttonInfo, VALUE = 'Timesat batch', $
-    UVALUE = 'Timesat batch', EVENT_PRO = 'nrs_timesat_batch', $
-    REF_VALUE = 'NRS', POSITION = 'last',/SEPARATOR
-
-end
-
-pro timesat_nrs_extensions_init
-  compile_opt idl2
-  
-  e = envi(/current)
-  if e eq !NULL then return
-  
-  e.AddExtension, 'Timesat (NRS)', 'timesat_gui';, PATH='Spatial'
-end
-
-; compatibility with ENVI 5.x
-pro timesat_nrs
-  compile_opt idl2
-end
-
 pro timesat_gui_event, event
 	wTarget = (widget_info(Event.id,/NAME) eq 'TREE' ?  $
 	  	widget_info(Event.id, /tree_root) : event.id)
@@ -74,9 +48,7 @@ pro timesat_gui, event
 			, uname = 'tmsat_InfoText' $
 			, ysize = 3 $
 			, xsize = text_width $
-			, value = 'Note: Only complete yearly stack of images should be used as an input. ' $
-				+ 'Using e.g. a stack like 9 years with 8 months ' $
-				+ 'adversely affects the circularity of the data!' $
+			, value = 'Note: Assumed is 36 images per year' $
 		)
 
   tmsat_range_panel = cw_groupbox(tmsat_contentPanel, uname = 'tmsat_range_panel', group_title = 'Specify input data range')              
