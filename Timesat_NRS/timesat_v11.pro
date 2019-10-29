@@ -72,7 +72,7 @@ end
 ;+
 ; :description:
 ;    Check if the array contains a contiguous stretch of zeros of length nn.
-;    The array must contain only zeroes and ones!
+;    The array must contain only zeroes and ones; a zero means missing data.
 ;
 ; :params:
 ;    ar : in, required
@@ -86,16 +86,20 @@ end
 ;
 ; :history:
 ;   - 23 march 2015: created
+;   - 29 october 2019: improved
 ;
 ; :author: nieuwenhuis
 ;-
 function nrs_find_missing, ari, nn
   compile_opt idl2, logical_predicate
   
-  aris = shift(ari, 1)
-  d = ari - aris
+  d = ari eq 0            ; prepare the missing data for labelling
+  if total(d) eq 0 then return, 0 ; no missing data
   
-  return, max(d) gt nn
+  reg = label_region(d)   ; each sequence of zeroes is now labelled with a (sequential) number > 0
+  h = histogram(reg, min = 1)  ; each bin now contains the length of each zero sequence
+  
+  return, max(h) gt nn
 
 end
 
@@ -112,10 +116,11 @@ function tmsat_handle_timeseries, y, win, nptperyear, spikecutoff, forceUpperEnv
 	missingdata = 1
 	wzi = where(y lt 2, lt2_cnt)
   if lt2_cnt lt floor(3 * nb / 4) then begin
-    w = bytarr(nb) + 1
+    w = bytarr(nb) + 1B
     if lt2_cnt gt 0 then w[wzi] = 0
   	ptyear3 = floor(nptperyear / 3)
-  	missingdata = nrs_find_missing(w, ptyear3) ; 120 days assuming 36 images per year
+  	if lt2_cnt gt ptyear3 then $   ; for lt2_cnt below this ptyear3 we cannot exceed ptyear3, so skip the test
+  	  missingdata = nrs_find_missing(w, ptyear3) ; 120 days assuming 36 images per year
 	endif
 
 	if missingdata eq 0 then begin
