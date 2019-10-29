@@ -25,7 +25,7 @@ pro tmsat_handleBrowseInput, event
 	outfile_fld = widget_info(event.top, find_by_uname = 'tmsat_output_text')
 	widget_control, outfile_fld, get_value = outfile
 	if strlen(strtrim(outfile, 2)) eq 0 then begin
-	  outfile = getOutname(filename, ext = '.')
+	  outfile = getOutname(filename, ext = '.dat')
 		widget_control, outfile_fld, set_value = outfile
 	endif
 	
