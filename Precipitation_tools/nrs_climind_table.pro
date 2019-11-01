@@ -48,5 +48,5 @@ pro nrs_climind_table, datafile, tbl_base = tbl_base, out_name = outname, indice
     endif
 
   endforeach
-  
+  clim->destroy
 end
