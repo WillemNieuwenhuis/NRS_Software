@@ -11,12 +11,12 @@ pro tmsat_handleBrowseInput, event
 	envi_file_query, fid, nb = nb, nl = nl, ns = ns, data_type = dt
 
 	; update the UI controls
-	txt_fld = widget_info(event.top, find_by_uname = 'tmsat_InfoText')
-	widget_control, txt_fld, set_value = $
-		'Dimensions: '	+ string(nl, format='(i0)') + ' rows, ' $
-						+ string(ns, format='(i0)') + ' cols, ' $
-						+ string(nb, format='(i0)') + ' bands, ' $
-						+ 'type = ' + nrs_IDL_type_to_string(dt)
+;	txt_fld = widget_info(event.top, find_by_uname = 'tmsat_InfoText')
+;	widget_control, txt_fld, set_value = $
+;		'Dimensions: '	+ string(nl, format='(i0)') + ' rows, ' $
+;						+ string(ns, format='(i0)') + ' cols, ' $
+;						+ string(nb, format='(i0)') + ' bands, ' $
+;						+ 'type = ' + nrs_IDL_type_to_string(dt)
 
   fld = widget_info(event.top, find_by_uname = 'tmsat_range_panel')
   widget_control, fld, sensitiv = (dt ne 1)
@@ -71,7 +71,7 @@ pro tmsat_handleGo, event
 	val_fld = widget_info(event.top, find_by_uname = 'tmsat_RegFitCheck')
 	lastIterTIMESATfit = widget_info(val_fld, /button_set)
 
-	txt_fld = widget_info(event.top, find_by_uname = 'tmsat_InfoText')
+;	txt_fld = widget_info(event.top, find_by_uname = 'tmsat_InfoText')
 
   ; start calculation
   progressBar = Obj_New("PROGRESSBAR", background = 'white', color = 'green' $

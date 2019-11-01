@@ -44,13 +44,13 @@ pro timesat_gui, event
                 , event_pro = 'tmsat_handleBrowseInput' $
               )
 
-	tmsat_InfoText = widget_text(tmsat_inputPanel, /wrap $
-			, uname = 'tmsat_InfoText' $
-			, ysize = 3 $
-			, xsize = text_width $
-			, value = 'Note: Assumed is 36 images per year' $
-		)
-
+;	tmsat_InfoText = widget_text(tmsat_inputPanel, /wrap $
+;			, uname = 'tmsat_InfoText' $
+;			, ysize = 3 $
+;			, xsize = text_width $
+;			, value = 'Note: Assumed is 36 images per year' $
+;		)
+;
   tmsat_range_panel = cw_groupbox(tmsat_contentPanel, uname = 'tmsat_range_panel', group_title = 'Specify input data range')              
   tmsat_range_min = fsc_inputfield(tmsat_range_panel $
                 , uname = 'tmsat_range_min' $
