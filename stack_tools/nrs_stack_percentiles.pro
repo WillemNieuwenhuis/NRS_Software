@@ -58,10 +58,10 @@ pro nrs_stack_percentiles, image, outname = outname, exact = exact $
     valids = where(finite(data))
     cnt_val[*] = 0
     cnt_val[valids] = 1
-    agg_val = total(cnt_val, 2) ; determine valid band values per pixel
-    nb_mat = rebin(agg_val, ns, perc_count)
-    py = long(nb_mat * pperc)
-    pai = px + py * ns   ; calc the index of the percentile based on actual non-nan values, per pixel
+    agg_val = total(cnt_val, 2) ; determine valid band values per pixel (1D array)
+    nb_mat = rebin(agg_val, ns, perc_count)   ; expand to 2D array
+    py = long(nb_mat * pperc)                 ; calc position of percentiles in data (single position, but replicated for all samples)
+    pai = px + py * ns   ; add x-offset: calc the index of the percentile based on actual non-nan values, per pixel
 
     ; sort the data per pixel, NAN values are stored at the end of the data
     ix = sort(data)
