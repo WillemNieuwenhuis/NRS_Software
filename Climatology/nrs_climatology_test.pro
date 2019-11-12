@@ -109,11 +109,15 @@ pro nrs_climatology_test_subset, clim, write = write
     return
   endif
   
-  clim.getproperty, datacube = cube
+  clim.getproperty, datacube = cube, julian = julian
   dims = size(cube, /dim)
 
-  if keyword_set(write) then $  
-    envi_write_envi_file, cube, out_name = 'E:\Projects\ERA5_climatology\subcube.dat'
+  if keyword_set(write) then begin
+    caldat, julian, mm, dd, yy
+    format = '(i4,i02,i02)'
+    bnames = string([transpose(yy),transpose(mm),transpose(dd)], format=format)
+    envi_write_envi_file, cube, out_name = 'E:\Projects\ERA5_climatology\subcube.dat', ns = dims[0], nl = dims[1], bnames = bnames
+  endif
 end
 
 pro nrs_climatology_test_stat_mean_var, clim, write = write
@@ -127,9 +131,10 @@ pro nrs_climatology_test_stat_mean_var, clim, write = write
   clim.statistics   ; mean and variance
 
   if keyword_set(write) then begin
-    clim.getproperty, mean_data = mdata, var_data = vdata
-    envi_write_envi_file, mdata, out_name = 'E:\Projects\ERA5_climatology\mean.dat'
-    envi_write_envi_file, vdata, out_name = 'E:\Projects\ERA5_climatology\var.dat'
+    clim.getproperty, mean_data = mdata, var_data = vdata, dims = dims
+    bnames = string(indgen(365) + 1, format = '("DOY: ",i03)')
+    envi_write_envi_file, mdata, out_name = 'E:\Projects\ERA5_climatology\mean.dat', ns = dims[0], nl = dims[1], bnames = bnames
+    envi_write_envi_file, vdata, out_name = 'E:\Projects\ERA5_climatology\var.dat', ns = dims[0], nl = dims[1], bnames = bnames
   endif
 
 end
@@ -142,11 +147,19 @@ pro nrs_climatology_test_stat_quantile, clim, write = write
     return
   endif
 
-  clim.quantiles, [0, 0.25, 0.5, 0.75, 1.0]
+  quantiles = [0, 0.25, 0.5, 0.75, 1.0]
+  clim.quantiles, quantiles
 
   if keyword_set(write) then begin
+    clim.getproperty, ny = ny, dims = dims
+    days = reform(rebin(indgen(365) + 1, 365, n_elements(quantiles)),  365 * n_elements(quantiles)) 
+    ques = reform(rebin(transpose(quantiles), 365, n_elements(quantiles)), 365 * n_elements(quantiles))
+    form = '("DOY.Quantile: ",i03,".",f5.2)'
+    bnames = string([transpose(days), transpose(ques)], format = form)
     clim.getproperty, quant_data = qdata
-    envi_write_envi_file, qdata, out_name = 'E:\Projects\ERA5_climatology\quantiles.dat'
+    envi_write_envi_file, qdata, out_name = 'E:\Projects\ERA5_climatology\quantiles.dat' $
+      , bnames = bnames $
+      , ns = dims[0], nl = dims[1], nb = ny * 365
   endif
 
 end
