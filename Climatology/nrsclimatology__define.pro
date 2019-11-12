@@ -70,6 +70,7 @@ end
 ;    The resulting indices point to the actual bands in the data array.
 ;
 ; :Author: nieuwenhuis
+; :Obsolete:
 ;-
 pro NrsClimatology::calc_day_indices
   compile_opt idl2, logical_predicate
@@ -175,7 +176,10 @@ pro NrsClimatology::load_data
   t1 = (mm eq 2) * (dd eq 29)
   ix = where(t1 eq 0)
   jd = jd[ix]   ; julian dates except all 29 feb
-  
+
+  if ptr_valid(self.index) then ptr_free, self.index
+  self.index = ptr_new(jd)
+
   ; the final list of data files required
   files = files[ix]  ; exclude 29 feb from analysis
   caldat, jd, mm, dd, yy
@@ -319,17 +323,10 @@ pro NrsClimatology::quantiles, quantiles
   ; Calculate quantiles
   start_ix = self.n12              ; N12 days before jan 1 of first full year
   win_start = start_ix - self.n12  ; start of moving window
-  quant = make_array([dims[0:1], nrdays, n_elements(*(self.quantiles))], /nozero)   ; make space for all quantiles
-
-  ; prepare the proper locations for the indices to extract the quantiles
-  ; quantile values are extracted with linear interpolation if needed  
-  pr = *(self.quantiles) * (self.n12 * 2 + 1) * self.ny   ; actual index of the quantiles
-;  plow  = long(pr)     ; turn into lower index
-;  phigh = long(pr + 1) ; turn into upper index
-;  phigh <= self.ny * (self.n12 * 2 + 1) - 1  ; keep all indices in valid range
+  quant = make_array([dims[0:1], nrdays, n_elements(quantiles)], /nozero)   ; make space for all quantiles
 
   ; collect the samples
-  qvalues = make_array([dims[0:1], ny * (self.n12 * 2 + 1)], /nozero)  ; temporary buffer for calculations
+  qvalues = make_array([dims[0:1], self.ny * (self.n12 * 2 + 1)], /nozero)  ; temporary buffer for calculations
   for day = 0, nrdays - 1 do begin    ; handle every DOY
     ix = lindgen(self.n12 * 2 + 1) + win_start     ; define the temporal window in the datacube (per year)
     qindex = lindgen(self.n12 * 2 + 1)             ; index into temporary storage
@@ -348,8 +345,8 @@ pro NrsClimatology::quantiles, quantiles
         qs = vals[qx]    ; samples are now sorted
         wx = wgt[qx]     ; keep weights aligned with samples
         wsum = total(wx, /cum)        ; cumulative weights; (last element should be 1.0)
-        vl = value_locate(wsum, pr)   ; find the quantiles positions in the cumulative weights (lower weighted)
-        quant[c, r, day, *] = qs[vl]  ; get the samples for the quantile positions
+        vl = value_locate(wsum, quantiles)   ; find the quantiles positions in the cumulative weights (lower weighted)
+        quant[c, r, day, *] = qs[vl]         ; get the samples for the quantile positions
       endfor
     endfor
     win_start += 1    ; move to the next DOY
@@ -423,10 +420,11 @@ pro NrsClimatology::setproperty, start_year = start_year, end_year = end_year $
 
 end
 
-pro NrsClimatology::getproperty, start_year = start_year, end_year = end_year $
+pro NrsClimatology::getproperty, start_year = start_year, end_year = end_year, ny = ny $
                                , base_folder = base_folder, file_mask = file_mask $
-                               , datacube = datacube, weights = weights $
+                               , datacube = datacube, weights = weights, dims = dims $
                                , mean_data = mean_data, var_data = var_data $
+                               , julian = julian $
                                , quant_data = quant_data $
                                , quantiles = quantiles
   compile_opt idl2, logical_predicate
@@ -440,10 +438,12 @@ pro NrsClimatology::getproperty, start_year = start_year, end_year = end_year $
     if (arg_present(date_mask))   then date_mask = self.date_mask
     if (arg_present(n12))         then n12 = self.n12
     if (arg_present(ny))          then ny = self.ny
+    if (arg_present(julian))      then julian = *(self.index)
     if (arg_present(quantiles))   then quantiles = *(self.quantiles)
     if (arg_present(datacube))    then begin
       if ptr_valid(self.datacube) then datacube = *(self.datacube) else datacube = []
     endif
+    if (arg_present(dims))        then dims = size(*(self.datacube), /dim)
     if (arg_present(mean_data))    then begin
       if ptr_valid(self.stat_mean) then mean_data = *(self.stat_mean) else mean_data = []
     endif
