@@ -771,6 +771,7 @@ PRO PROGRESSBAR::Update, percent, Text=theText, Title=theTitle
    percent = 0 > percent < 100
    self.percent = percent
 
+   self.show, /show  ; make visible if it was not
       ; Update the progress box.
 
    thisWindow = !D.Window
@@ -795,6 +796,14 @@ PRO PROGRESSBAR::Update, percent, Text=theText, Title=theTitle
 
 END
 
+PRO PROGRESSBAR::show, show = show, hide = hide
+  if keyword_set(show) then begin
+    Widget_Control, self.tlb, map = 1
+  endif
+  if keyword_set(hide) then begin
+    Widget_Control, self.tlb, map = 0
+  endif
+end
 
 ;*****************************************************************************************************
 ;
