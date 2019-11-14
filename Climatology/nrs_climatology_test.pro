@@ -181,7 +181,12 @@ pro nrs_climatology_run_tests
 
   print, 'test mean, variance'
   tic   ; reset timer
-  nrs_climatology_test_stat_mean_var, clim
+  nrs_climatology_test_stat_mean_var, clim, /write
+  toc   ; elapsed time
+
+  print, 'test quantiles'
+  tic   ; reset timer
+  nrs_climatology_test_stat_quantile, clim, /write
   toc   ; elapsed time
 
    
