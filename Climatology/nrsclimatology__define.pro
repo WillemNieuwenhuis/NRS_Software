@@ -197,8 +197,12 @@ pro NrsClimatology::load_data
   data = make_array(self.xnum, self.ynum, n_elements(files), /float, /nozero)
   ras.close
 
-  ; at the data from all selected files (note: assuming one band per raster)  
+  ; at the data from all selected files (note: assuming one band per raster)
+  nrs_set_progress_property, self.prog_obj, title = 'Loading data', /start  
   for f = 0, n_elements(files) - 1 do begin
+    if f mod 10 eq 0 then begin
+      void = nrs_update_progress(prog_obj, f, n_elements(files))
+    endif
     ras = e.OpenRaster(files[f])
     data[*, *, f] = ras.GetData(bands = [0], sub_rect = [self.xstart, self.ystart $
                                            , self.xstart + self.xnum - 1, self.ystart + self.ynum - 1])
@@ -246,7 +250,9 @@ pro NrsClimatology::statistics
   win_start = start_ix - self.n12    ; start of moving window in datacube (should start at zero == day 30 before start of year)
   subtotal = fltarr(dims[0:1])       ; spatial buffer for mean per day
   
+  nrs_set_progress_property, self.prog_obj, title = 'Calculate mean', /start
   for day = 0, nrdays - 1 do begin    ; handle every DOY
+    void = nrs_update_progress(prog_obj, day, nrdays)
     ix = lindgen(self.n12 * 2 + 1) + win_start     ; define the temporal window in the datacube (per year)
     subtotal[*] = 0
     for y = 0, self.ny - 1 do begin
@@ -267,7 +273,9 @@ pro NrsClimatology::statistics
   subvar = fltarr(dims[0:1])       ; spatial buffer for var per day
 
   ixm = (lindgen(self.n12 * 2 + 1) - self.n12 + nrdays) mod nrdays    ; index into clim_mean (day 0 at 0); wrap around if needed
+  nrs_set_progress_property, self.prog_obj, title = 'Calculate variance', /start
   for day = 0, nrdays - 1 do begin    ; handle every DOY
+    void = nrs_update_progress(prog_obj, day, nrdays)
     ix  = lindgen(self.n12 * 2 + 1) + win_start   ; index into datacube (day 0 at index self.n12)
     subvar[*] = 0
     for y = 0, self.ny - 1 do begin
@@ -326,8 +334,10 @@ pro NrsClimatology::quantiles, quantiles
   quant = make_array([dims[0:1], nrdays, n_elements(quantiles)], /nozero)   ; make space for all quantiles
 
   ; collect the samples
+  nrs_set_progress_property, self.prog_obj, title = 'Calculate quantiles', /start
   qvalues = make_array([dims[0:1], self.ny * (self.n12 * 2 + 1)], /nozero)  ; temporary buffer for calculations
   for day = 0, nrdays - 1 do begin    ; handle every DOY
+    void = nrs_update_progress(prog_obj, day, nrdays)
     ix = lindgen(self.n12 * 2 + 1) + win_start     ; define the temporal window in the datacube (per year)
     qindex = lindgen(self.n12 * 2 + 1)             ; index into temporary storage
     qvalues[*] = 0
@@ -377,7 +387,8 @@ pro NrsClimatology::setproperty, start_year = start_year, end_year = end_year $
                                , base_folder = base_folder, file_mask = file_mask $
                                , date_mask = date_mask $
                                , xstart = xstart, xnum = xnum, ystart = ystart, ynum = ynum $
-                               , datacube = datacube, n12 = n12, ny = ny
+                               , datacube = datacube, n12 = n12, ny = ny $
+                               , prog_obj = prog_obj
   compile_opt idl2, logical_predicate
 
   ; if user passed in a property, then set it.
@@ -443,7 +454,10 @@ pro NrsClimatology::getproperty, start_year = start_year, end_year = end_year, n
     if (arg_present(datacube))    then begin
       if ptr_valid(self.datacube) then datacube = *(self.datacube) else datacube = []
     endif
-    if (arg_present(dims))        then dims = size(*(self.datacube), /dim)
+    if (arg_present(dims))        then begin
+        if ptr_valid(self.datacube) then dims = size(*(self.datacube), /dim) $
+        else dims = []
+    endif
     if (arg_present(mean_data))    then begin
       if ptr_valid(self.stat_mean) then mean_data = *(self.stat_mean) else mean_data = []
     endif
