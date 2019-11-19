@@ -35,6 +35,7 @@ pro NrsClimatology::calc_weights
   if self.weights_valid eq 1 then return
   
   if ptr_valid(self.weights) then ptr_free, self.weights
+  if ptr_valid(self.qweight) then ptr_free, self.qweight
   
   if n_elements(self.N12) eq 0 then self.N12 = 30
 
@@ -322,7 +323,7 @@ pro NrsClimatology::quantiles, quantiles
 
   if self.weights_valid eq 0 then self.calc_weights
 
-  wgt = *(self.qweight)     ; get the weight vector
+  wgt_single = *(self.qweight)     ; get the 1D-weight vector
 
   nrdays = 365
 
@@ -346,19 +347,20 @@ pro NrsClimatology::quantiles, quantiles
       ix = ix + nrdays              ; move window to the next year in the datacube
       qindex += (self.n12 * 2 + 1)
     endfor
-    
+
     ; qvalues contains a cube with samples for one DOY (#samples = ny * (n12*2 + 1))
     for c = 0, dims[0] - 1 do begin
       for r = 0, dims[1] - 1 do begin
         vals = qvalues[c, r, *]
         qx = sort(vals)  ; sort all samples
         qs = vals[qx]    ; samples are now sorted
-        wx = wgt[qx]     ; keep weights aligned with samples
+        wx = wgt_single[qx]     ; keep weights aligned with samples
         wsum = total(wx, /cum)        ; cumulative weights; (last element should be 1.0)
         vl = value_locate(wsum, quantiles)   ; find the quantiles positions in the cumulative weights (lower weighted)
         quant[c, r, day, *] = qs[vl]         ; get the samples for the quantile positions
       endfor
     endfor
+    
     win_start += 1    ; move to the next DOY
   endfor
   
@@ -374,6 +376,7 @@ pro NrsClimatology::cleanup
   if obj_valid(self.prog_obj) then self.prog_obj->destroy
   if ptr_valid(self.index) then ptr_free, self.index
   if ptr_valid(self.weights) then ptr_free, self.weights
+  if ptr_valid(self.qweight) then ptr_free, self.qweight
   if ptr_valid(self.stat_mean) then ptr_free, self.stat_mean
   if ptr_valid(self.stat_var) then ptr_free, self.stat_var
   if ptr_valid(self.stat_quant) then ptr_free, self.stat_quant
