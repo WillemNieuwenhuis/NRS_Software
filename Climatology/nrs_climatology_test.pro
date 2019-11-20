@@ -87,8 +87,8 @@ function nrs_climatology_init_and_load_test
   clim = nrsclimatology()
   clim.setproperty, base_folder = 'E:\Projects\ERA5_climatology\2m_temperature'
   clim.setproperty, file_mask = '2t*.tif'
-  clim.setproperty, start_year = 1980, end_year = 1984, date_mask = '.yyyy.mm.dd'
-  clim.setproperty, xstart = 750, xnum = 10, ystart = 150, ynum = 10
+  clim.setproperty, start_year = 1980, end_year = 1999, date_mask = '.yyyy.mm.dd'
+  clim.setproperty, xstart = 750, xnum = 100, ystart = 150, ynum = 100
   clim.setproperty, n12 = 30
   
   clim.getproperty, datacube = data
