@@ -12,10 +12,12 @@ end
 
 ;+
 ; :Description:
-;    Calculate a normalized weight window for a period of Ny years and a window size 0f N12 days
+;    Calculate a normalized weight window for a period of Ny years and a window size of N12 days
 ;    (See: ERA-Interim Daily Climatology, Martin Janoušek, ECMWF, january 2011)
 ;    It is build for all locations in the datacube; If the datacube has not yet been build
-;    a single weight vector is created
+;    a single weight vector is created.
+;    The created array/vector will have length (2 * n12 + 1) * ny in the time dimension (last dimension)
+;    where the pattern repeats per year.
 ;
 ;
 ; :Keywords:
@@ -43,20 +45,21 @@ pro NrsClimatology::calc_weights
   
   n12 = self.n12
   ny = self.ny
+  win_size = 2 * n12 + 1
   factor = 3.0 * (N12 + 1) / (Ny * (2 * N12 + 1) * (2 * N12 + 3))
   single = factor * (1 - ( (findgen(2 * N12 + 1) - N12) / (N12 + 1) ) ^ 2)
+  single = reform(rebin(single, win_size, self.ny), win_size * self.ny)
 
   if ptr_valid(self.datacube) then begin
     sz = size(*self.datacube, /dim)
     xdim = sz[0]
     ydim = sz[1]
-    wgt = rebin(transpose(single), xdim * ydim, self.n12 * 2 + 1)
-    wgt = reform(wgt, xdim, ydim, self.n12 * 2 + 1, /overwrite)
+    wgt = rebin(transpose(single), xdim * ydim, win_size * self.ny)
+    wgt = reform(wgt, xdim, ydim, win_size * self.ny, /overwrite)
   endif else wgt = single
 
-  single_total = reform(rebin(single, 2 * N12 + 1, Ny), (2 * N12 + 1) * Ny)
   self.weights = ptr_new(wgt)
-  self.qweight = ptr_new(single_total)
+  self.qweight = ptr_new(single)
   self.weights_valid = 1
 end
 
@@ -247,21 +250,17 @@ pro NrsClimatology::statistics
   
   ; first calculate the climatic mean; needed also for the climatic anomaly.
   ; indices are zero-based
-  start_ix = self.n12                ; N12 days before jan 1 of first full year
-  win_start = start_ix - self.n12    ; start of moving window in datacube (should start at zero == day 30 before start of year)
-  subtotal = fltarr(dims[0:1])       ; spatial buffer for mean per day
   
   nrs_set_progress_property, self.prog_obj, title = 'Calculate mean', /start
+
+  win_size = 2 * self.n12 + 1
+  ix1 = lindgen(self.ny * win_size) mod win_size
+  ix2 = (lindgen(self.ny * win_size) / win_size ) * nrdays
+  ix = ix1 + ix2    ; index into datacube for data needed for one DOY
   for day = 0, nrdays - 1 do begin    ; handle every DOY
     void = nrs_update_progress(prog_obj, day, nrdays)
-    ix = lindgen(self.n12 * 2 + 1) + win_start     ; define the temporal window in the datacube (per year)
-    subtotal[*] = 0
-    for y = 0, self.ny - 1 do begin
-      subtotal += total((*self.datacube)[*, *, ix] * wgt, 3) ; calculate the window accumulation
-      ix = ix + nrdays                 ; move window to the next year in the datacube
-    endfor
-    clim_mean[*, *, day] = subtotal
-    win_start += 1    ; move to the next DOY
+    clim_mean[*, *, day] = total((*self.datacube)[*, *, ix] * wgt, 3)
+    ix += 1   ; index for next DOY
   endfor
   
   if ptr_valid(self.stat_mean) then ptr_free, self.stat_mean
@@ -269,23 +268,17 @@ pro NrsClimatology::statistics
 
   ; now calculate the variance using the mean values calculated above
   ; Note that for the calculations the mean values are accessed modular (at the beginning and end of the year)
-  start_ix = self.n12              ; N12 days before jan 1 of first full year
-  win_start = start_ix - self.n12  ; start of moving window
-  subvar = fltarr(dims[0:1])       ; spatial buffer for var per day
-
-  ixm = (lindgen(self.n12 * 2 + 1) - self.n12 + nrdays) mod nrdays    ; index into clim_mean (day 0 at 0); wrap around if needed
   nrs_set_progress_property, self.prog_obj, title = 'Calculate variance', /start
+
+  ix = ix1 + ix2    ; reset index into datacube for data needed for one DOY
+  ixm = (lindgen(win_size) - self.n12 + nrdays) mod nrdays
+  ixm = reform(rebin(ixm, win_size, self.ny), self.ny * win_size, /overwrite)     ; index into clim_mean (day 0 at 0); wrap around if needed
   for day = 0, nrdays - 1 do begin    ; handle every DOY
     void = nrs_update_progress(prog_obj, day, nrdays)
-    ix  = lindgen(self.n12 * 2 + 1) + win_start   ; index into datacube (day 0 at index self.n12)
-    subvar[*] = 0
-    for y = 0, self.ny - 1 do begin
-      subvar += total( ((*self.datacube)[*, *, ix] - clim_mean[*, *, ixm])^2 * wgt, 3)
-      ix = ix + nrdays                 ; move window to the next year in the datacube
-    endfor
-    clim_var[*, *, day] = subvar
-    win_start += 1            ; move to the next day
-    ixm = (ixm + 1) mod nrdays   ; also for the mean index, making sure to wrap around correctly
+    
+    clim_var[*, *, day] = total( ((*self.datacube)[*, *, ix] - clim_mean[*, *, ixm])^2 * wgt, 3)
+    ix += 1           ; to next DOY in datacube
+    ixm = (ixm + 1) mod nrdays  ; to next DOY in mean cube
   endfor
 
   if ptr_valid(self.stat_var) then ptr_free, self.stat_var
@@ -323,45 +316,37 @@ pro NrsClimatology::quantiles, quantiles
 
   if self.weights_valid eq 0 then self.calc_weights
 
-  wgt_single = *(self.qweight)     ; get the 1D-weight vector
+  win_size = 2 * self.n12 + 1
+  wgt_single = *(self.qweight)     ; get the 1D-weight vector with length of windows size (2 * n12 + 1) * ny
 
   nrdays = 365
 
   dims = size(*self.datacube, /dim)    ; the size of the cube with the additional required day data
 
   ; Calculate quantiles
-  start_ix = self.n12              ; N12 days before jan 1 of first full year
-  win_start = start_ix - self.n12  ; start of moving window
   quant = make_array([dims[0:1], nrdays, n_elements(quantiles)], /nozero)   ; make space for all quantiles
 
   ; collect the samples
   nrs_set_progress_property, self.prog_obj, title = 'Calculate quantiles', /start
-  qvalues = make_array([dims[0:1], self.ny * (self.n12 * 2 + 1)], /nozero)  ; temporary buffer for calculations
+  ix1 = lindgen(self.ny * win_size) mod win_size
+  ix2 = (lindgen(self.ny * win_size) / win_size ) * nrdays
+  ix = ix1 + ix2    ; index into datacube for data needed for one DOY
   for day = 0, nrdays - 1 do begin    ; handle every DOY
     void = nrs_update_progress(prog_obj, day, nrdays)
-    ix = lindgen(self.n12 * 2 + 1) + win_start     ; define the temporal window in the datacube (per year)
-    qindex = lindgen(self.n12 * 2 + 1)             ; index into temporary storage
-    qvalues[*] = 0
-    for y = 0, self.ny - 1 do begin
-      qvalues[*, *, qindex] = (*self.datacube)[*, *, ix]
-      ix = ix + nrdays              ; move window to the next year in the datacube
-      qindex += (self.n12 * 2 + 1)
-    endfor
 
-    ; qvalues contains a cube with samples for one DOY (#samples = ny * (n12*2 + 1))
     for c = 0, dims[0] - 1 do begin
       for r = 0, dims[1] - 1 do begin
-        vals = qvalues[c, r, *]
+        vals = (*self.datacube)[c, r, ix]
         qx = sort(vals)  ; sort all samples
         qs = vals[qx]    ; samples are now sorted
-        wx = wgt_single[qx]     ; keep weights aligned with samples
+        wx = wgt[qx]     ; keep weights aligned with samples
         wsum = total(wx, /cum)        ; cumulative weights; (last element should be 1.0)
         vl = value_locate(wsum, quantiles)   ; find the quantiles positions in the cumulative weights (lower weighted)
         quant[c, r, day, *] = qs[vl]         ; get the samples for the quantile positions
       endfor
     endfor
     
-    win_start += 1    ; move to the next DOY
+    ix += 1     ; index to next DOY
   endfor
   
   if ptr_valid(self.stat_quant) then ptr_free, self.stat_quant
@@ -436,7 +421,7 @@ end
 
 pro NrsClimatology::getproperty, start_year = start_year, end_year = end_year, ny = ny $
                                , base_folder = base_folder, file_mask = file_mask $
-                               , datacube = datacube, weights = weights, dims = dims $
+                               , datacube = datacube, weights = weights, qweight = qweight, dims = dims $
                                , mean_data = mean_data, var_data = var_data $
                                , julian = julian $
                                , quant_data = quant_data $
@@ -473,6 +458,10 @@ pro NrsClimatology::getproperty, start_year = start_year, end_year = end_year, n
     if (arg_present(weights))    then begin
       if self.weights_valid eq 0 then self.calc_weights
       if ptr_valid(self.weights) then weights = *(self.weights) else weights = []
+    endif
+    if (arg_present(qweight))    then begin
+      if self.weights_valid eq 0 then self.calc_weights
+      if ptr_valid(self.qweight) then qweight = *(self.qweight) else qweight = []
     endif
   endif
 
