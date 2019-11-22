@@ -154,12 +154,12 @@ pro nrs_climatology_test_stat_quantile, clim, write = write
     clim.getproperty, ny = ny, dims = dims
     days = reform(rebin(indgen(365) + 1, 365, n_elements(quantiles)),  365 * n_elements(quantiles)) 
     ques = reform(rebin(transpose(quantiles), 365, n_elements(quantiles)), 365 * n_elements(quantiles))
-    form = '("DOY.Quantile: ",i03,".",f5.2)'
+    form = '("DOY.Quantile: ",i03,"-",f-5.2)'
     bnames = string([transpose(days), transpose(ques)], format = form)
     clim.getproperty, quant_data = qdata
     envi_write_envi_file, qdata, out_name = 'E:\Projects\ERA5_climatology\quantiles.dat' $
       , bnames = bnames $
-      , ns = dims[0], nl = dims[1], nb = ny * 365
+      , ns = dims[0], nl = dims[1], nb = n_elements(quantiles) * 365
   endif
 
 end
