@@ -334,12 +334,12 @@ pro NrsClimatology::quantiles, quantiles
   for day = 0, nrdays - 1 do begin    ; handle every DOY
     void = nrs_update_progress(prog_obj, day, nrdays)
 
-    for c = 0, dims[0] - 1 do begin
-      for r = 0, dims[1] - 1 do begin
+    for r = 0, dims[1] - 1 do begin
+      for c = 0, dims[0] - 1 do begin
         vals = (*self.datacube)[c, r, ix]
         qx = sort(vals)  ; sort all samples
         qs = vals[qx]    ; samples are now sorted
-        wx = wgt[qx]     ; keep weights aligned with samples
+        wx = wgt_single[qx]     ; keep weights aligned with samples
         wsum = total(wx, /cum)        ; cumulative weights; (last element should be 1.0)
         vl = value_locate(wsum, quantiles)   ; find the quantiles positions in the cumulative weights (lower weighted)
         quant[c, r, day, *] = qs[vl]         ; get the samples for the quantile positions
