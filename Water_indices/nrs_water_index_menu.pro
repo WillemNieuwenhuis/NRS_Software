@@ -19,7 +19,8 @@ pro nrs_water_index_extensions_init
   compile_opt IDL2
 
   e = ENVI(/CURRENT)
-  e.AddExtension, 'Water indices', 'nrs_water_index_gui', PATH='Water indices'
+  e.AddExtension, 'Water indices', 'nrs_water_index_gui', PATH='NRS/Precipitation Tools/Water indices'
+  e.AddExtension, 'Batch water indices', 'nrs_water_index_batch_gui', PATH='NRS/Precipitation Tools/Water indices'
 end
 
 pro nrs_water_index

@@ -17,7 +17,7 @@ end
 pro nrs_climatology_extensions_init
   compile_opt idl2
 
-;  e = ENVI(/CURRENT)
+  e = ENVI(/CURRENT)
   e.AddExtension, 'Statistics', 'nrs_climate_weighted_gui', PATH='NRS/Climatology'
 end
 

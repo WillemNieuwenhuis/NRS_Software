@@ -21,7 +21,7 @@ end
 pro nrs_eos_tools_extensions_init
   compile_opt idl2
 
-;  e = ENVI(/CURRENT)
+  e = envi(/current)
   e.AddExtension, 'Convert MODIS Grid', 'nrs_modis_convert_grid_gui', PATH='NRS/EOS'
   e.AddExtension, 'Batch convert MODIS Grid', 'nrs_modis_batch_convert_grid_gui', PATH='NRS/EOS'
 end

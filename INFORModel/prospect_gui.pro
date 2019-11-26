@@ -1,9 +1,3 @@
-pro nrs_prospect_define_buttons, buttonInfo
-	envi_define_menu_button, buttonInfo, VALUE = 'InforM prospect', $
-		UVALUE = 'InforM prospect', EVENT_PRO = 'prospect_gui', $
-		REF_VALUE = 'NRS', POSITION = 'last'
-end
-
 pro prospect_gui_event, Event
   	wTarget = (widget_info(Event.id,/NAME) eq 'TREE' ?  $
       	widget_info(Event.id, /tree_root) : event.id)

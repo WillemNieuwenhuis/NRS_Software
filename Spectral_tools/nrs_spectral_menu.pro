@@ -17,13 +17,13 @@ pro nrs_spectral_tools_extensions_init
   compile_opt idl2
 
   e = envi(/current)
-  if e eq !NULL then return
-
   e.addextension, 'Spectrum extraction', 'nrs_aggregate_spectrum_gui', PATH='NRS/Spectral'
-  e.addextension, 'Spectrum extraction (polygon)', 'Spectrum extraction (polygon)', PATH='NRS/Spectral'
+  e.AddExtension, 'Average spectrum (batch)', 'nrs_average_spectrum_gui', PATH='NRS/Spectral'
+  e.addextension, 'Spectrum extraction (polygon)', 'nrs_aggregate_spectra_by_pol_gui', PATH='NRS/Spectral'
 end
 
 ; ENVI 5 compatibility
 pro nrs_spectral_tools
   compile_opt idl2
 end
+

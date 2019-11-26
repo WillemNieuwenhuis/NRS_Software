@@ -71,6 +71,7 @@ pro nrs_stack_tools_extensions_init
   e.AddExtension, 'Stack layers', 'nrs_stack_gui', PATH='NRS/Stack tools'
   e.AddExtension, 'Unstack layers', 'nrs_unstack_gui', PATH='NRS/Stack tools'
   e.addextension, 'Reverse layers', 'nrs_stack_reverse_gui', PATH='NRS/Stack tools'
+  e.AddExtension, 'Batch reverse layers', 'nrs_stack_reverse_batch_gui', PATH='NRS/Stack tools'
 end
 
 ; ENVI 5 compatibility

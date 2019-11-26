@@ -1,12 +1,3 @@
-pro nrs_average_spectrum_gui_extensions_init
-  compile_opt idl2
-  
-  e = envi(/current)
-  if e eq !NULL then return
-  
-  e.AddExtension, 'Average spectrum (batch)', 'nrs_average_spectrum_gui', PATH='Spectral'
-end
-
 pro nrs_average_spectrum_gui_event, event
   compile_opt idl2
   
