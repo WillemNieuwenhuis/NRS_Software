@@ -132,12 +132,12 @@ pro nrs_climate_weighted_gui, event
     )
 
   nrs_climate_weighted_output_panel = widget_base(nrs_climate_weighted_contentPanel, /frame, /col)
-;  nrs_climate_weighted_raster_base = widget_base(nrs_climate_weighted_output_panel, /nonexclusive, uname = 'nrs_climate_weighted_raster_base')
-;  nrs_climate_weighted_raster_button = widget_button(nrs_climate_weighted_raster_base $
-;    , uname = 'nrs_climate_weighted_raster_button' $
-;    , value = 'Create percentile raster(s)' $
-;    )
-;
+  nrs_climate_weighted_overwrite_base = widget_base(nrs_climate_weighted_output_panel, /nonexclusive, uname = 'nrs_climate_weighted_raster_base')
+  nrs_climate_weighted_overwrite_button = widget_button(nrs_climate_weighted_overwrite_base $
+    , uname = 'nrs_climate_weighted_overwrite_button' $
+    , value = 'Overwrite existing output' $
+    )
+
   nrs_climate_weighted_outputfolder = cw_dirfile(nrs_climate_weighted_output_panel $
     , title = 'Output folder' $
     , style = 'directory' $
