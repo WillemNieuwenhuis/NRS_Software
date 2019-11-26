@@ -76,6 +76,9 @@ pro nrs_climate_weighted_handleok, event
 
   endif
 
+  val_fld = widget_info(event.top, find_by_uname = 'nrs_climate_weighted_overwrite_button')
+  allowOverwrite = widget_info(event.id, /button_set)
+
   val_fld = widget_info(event.top, find_by_uname = 'nrs_climate_weighted_outputfolder')
   widget_control, val_fld, get_value = output_folder
   output_folder = strtrim(output_folder[0], 2)
@@ -88,6 +91,7 @@ pro nrs_climate_weighted_handleok, event
 
   nrs_climatology_weighted_statistics, base_folder, file_mask = file_pattern $
     , output_folder = output_folder $
+    , overwrite = allowOverwrite $
     , start_year = start_year, end_year = end_year, date_pattern = date_pattern $
     , n12 = n12 $
     , xstart = xstart, xnum = xnum, ystart = ystart, ynum = ynum $

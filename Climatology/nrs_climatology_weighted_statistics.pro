@@ -1,5 +1,24 @@
+function nrs_climatology_weighted_check_delete, fn, overwrite = overwrite
+  compile_opt idl2, logical_predicate
+
+  fi = file_info(fn)
+  if fi.exists then begin
+    if keyword_set(overwrite) then begin
+      file_delete, fn
+      file_delete, getoutname(fn, postfix = '', ext = '.hdr')
+    endif $
+    else begin
+      void = error_message('Cannot overwrite existing file', /error)
+      return, 0
+    endelse
+  endif
+
+  return, 1
+end
+
 pro nrs_climatology_weighted_statistics, base_folder, file_mask = file_mask $
                      , output_folder = output_folder $
+                     , overwrite = overwrite $
                      , start_year = start_year, end_year = end_year, date_pattern = date_pattern $
                      , n12 = n12 $
                      , quantiles = quantiles $
@@ -51,6 +70,7 @@ pro nrs_climatology_weighted_statistics, base_folder, file_mask = file_mask $
   if output_folder.lastIndexOf(path_sep()) ne (output_folder.strlen() - 1) then $
     output_folder = output_folder + path_sep()
 
+  nrdays = 365
   clim = nrsclimatology()
   clim.setproperty, base_folder = base_folder
   clim.setproperty, file_mask = file_mask
@@ -69,8 +89,12 @@ pro nrs_climatology_weighted_statistics, base_folder, file_mask = file_mask $
 
   mean_name = output_folder + 'mean.dat'
   var_name = output_folder + 'var.dat'
+  ; remove previous files if existing and if allowed
+  if ~nrs_climatology_weighted_check_delete(mean_name, overwrite = overwrite) then return
+  if ~nrs_climatology_weighted_check_delete(var_name, overwrite = overwrite) then return
+    
   clim.getproperty, mean_data = mdata, var_data = vdata, dims = dims
-  bnames = string(indgen(365) + 1, format = '("DOY: ",i03)')
+  bnames = string(indgen(nrdays) + 1, format = '("DOY: ",i03)')
   meta = envirastermetadata()
   meta.AddItem, 'band names', bnames
   mras = enviraster(mdata, uri = mean_name, metadata = meta, interleave = 'bsq')
@@ -80,28 +104,23 @@ pro nrs_climatology_weighted_statistics, base_folder, file_mask = file_mask $
   vras.save
   vras.close
   meta = 0
-;  envi_write_envi_file, mdata, out_name = mean_name, ns = dims[0], nl = dims[1], bnames = bnames
-;  envi_write_envi_file, vdata, out_name = var_name, ns = dims[0], nl = dims[1], bnames = bnames
 
   ; calculate the quantiles
   clim.quantiles, quantiles
   
-  quant_name = output_folder + 'quantiles.dat'
+  quant_basename = output_folder + 'quantile_'
 
   clim.getproperty, ny = ny, dims = dims
-  days = reform(rebin(indgen(365) + 1, 365, n_elements(quantiles)),  365 * n_elements(quantiles))
-  ques = reform(rebin(transpose(quantiles), 365, n_elements(quantiles)), 365 * n_elements(quantiles))
-  form = '("DOY.Quantile: ",i03,"-",f-5.2)'
-  bnames = string([transpose(days), transpose(ques)], format = form)
   clim.getproperty, quant_data = qdata
 
   qmeta = envirastermetadata()
   qmeta.AddItem, 'band names', bnames
-  mras = enviraster(mdata, uri = quant_name, metadata = qmeta, interleave = 'bsq', ncolums = dims[0], nrows = dims[1], nbands = n_elements(quantiles) * 365)
-  mras.save
-  mras.close
-;  envi_write_envi_file, qdata, out_name = quant_name $
-;      , bnames = bnames $
-;      , ns = dims[0], nl = dims[1], nb = n_elements(quantiles) * 365
+  for q = 0, n_elements(quantiles) - 1 do begin
+    quant_name = quant_basename + string(quantiles[q], format = '(f-5.2,".dat")')
+    if ~nrs_climatology_weighted_check_delete(quant_name, overwrite = overwrite) then return
+    mras = enviraster(qdata[*, *, *, q], uri = quant_name, metadata = qmeta, interleave = 'bsq', ncolumns = dims[0], nrows = dims[1], nbands = nrdays)
+    mras.save
+    mras.close
+  endfor
 
 end
