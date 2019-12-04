@@ -539,13 +539,15 @@ pro nrs_nc_get_data, filename, out_name = base_name $
     buf = make_array(nsstep, type = dt)
     var_cnt = [nsstep, nlstep]
     var_offset = [0, 0]
-    if nb gt 0 then begin
-      var_cnt = [nsstep, nlstep, 1]
-      var_offset = [0, 0, sd_ix]
-    endif
-    if nz eq 1 then begin ; needs checking with spatial 3D data (last dimension = temporal / spectral)
-      var_cnt = [nsstep, nlstep, 1, 1]
-      var_offset = [0, 0, 0, sd_ix]
+    if var.n_dim gt 2 then begin
+      if nb gt 0 then begin
+        var_cnt = [nsstep, nlstep, 1]
+        var_offset = [0, 0, sd_ix]
+      endif
+      if nz eq 1 then begin ; needs checking with spatial 3D data (last dimension = temporal / spectral)
+        var_cnt = [nsstep, nlstep, 1, 1]
+        var_offset = [0, 0, 0, sd_ix]
+      endif
     endif
     nb = nb eq 0 ? 1 : nb 
     
