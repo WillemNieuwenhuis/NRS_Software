@@ -89,6 +89,8 @@ pro nrs_climatology_weighted_statistics, base_folder, file_mask = file_mask $
 
   mean_name = output_folder + 'mean.dat'
   var_name = output_folder + 'var.dat'
+  min_name = output_folder + 'min.dat'
+  max_name = output_folder + 'max.dat'
   ; remove previous files if existing and if allowed
   if ~nrs_climatology_weighted_check_delete(mean_name, overwrite = overwrite) then return
   if ~nrs_climatology_weighted_check_delete(var_name, overwrite = overwrite) then return
@@ -111,16 +113,25 @@ pro nrs_climatology_weighted_statistics, base_folder, file_mask = file_mask $
   quant_basename = output_folder + 'quantile_'
 
   clim.getproperty, ny = ny, dims = dims
-  clim.getproperty, quant_data = qdata
+  clim.getproperty, quant_data = qdata, min_data = min_data, max_data = max_data
 
   qmeta = envirastermetadata()
   qmeta.AddItem, 'band names', bnames
   for q = 0, n_elements(quantiles) - 1 do begin
-    quant_name = quant_basename + string(quantiles[q], format = '(f-5.2,".dat")')
+    quant_name = quant_basename + string(quantiles[q], format = '(f-4.2,".dat")')
     if ~nrs_climatology_weighted_check_delete(quant_name, overwrite = overwrite) then return
     mras = enviraster(qdata[*, *, *, q], uri = quant_name, metadata = qmeta, interleave = 'bsq', ncolumns = dims[0], nrows = dims[1], nbands = nrdays)
     mras.save
     mras.close
   endfor
+
+  if ~nrs_climatology_weighted_check_delete(min_name, overwrite = overwrite) then return
+  mnras = enviraster(min_data, uri = min_name, metadata = qmeta, interleave = 'bsq', ncolumns = dims[0], nrows = dims[1], nbands = nrdays)
+  mnras.save
+  mnras.close
+  if ~nrs_climatology_weighted_check_delete(max_name, overwrite = overwrite) then return
+  mxras = enviraster(max_data, uri = max_name, metadata = qmeta, interleave = 'bsq', ncolumns = dims[0], nrows = dims[1], nbands = nrdays)
+  mxras.save
+  mxras.close
 
 end

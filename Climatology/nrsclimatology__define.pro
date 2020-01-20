@@ -191,6 +191,7 @@ pro NrsClimatology::load_data
   ; Now start filling the cube
   ; first setup the datacube
   e = envi(/headless)
+;  e.preferences['data manager:launch after open'] = 'Never'   ; don't display data manager
   ras = e.OpenRaster(files[0])
   if (self.xnum * self.ynum) eq 0 then begin
     self.xstart = 0
@@ -252,13 +253,21 @@ pro NrsClimatology::statistics
   ; indices are zero-based
   
   nrs_set_progress_property, self.prog_obj, title = 'Calculate mean', /start
-
+;  e = envi(/headless)
+;  Channel = e.GetBroadcastChannel()
+;  Abort = ENVIAbortable()
+;  Start = ENVIStartMessage('Climatology', Abort)
+;  Channel.Broadcast, Start
+;  Progress = ENVIProgressMessage('Calculate mean', 0, Abort)
+  
   win_size = 2 * self.n12 + 1
   ix1 = lindgen(self.ny * win_size) mod win_size
   ix2 = (lindgen(self.ny * win_size) / win_size ) * nrdays
   ix = ix1 + ix2    ; index into datacube for data needed for one DOY
   for day = 0, nrdays - 1 do begin    ; handle every DOY
     void = nrs_update_progress(prog_obj, day, nrdays)
+;    Progress.Percent = day / nrdays
+;    Channel.Broadcast, Progress
     clim_mean[*, *, day] = total((*self.datacube)[*, *, ix] * wgt, 3)
     ix += 1   ; index for next DOY
   endfor
@@ -269,12 +278,15 @@ pro NrsClimatology::statistics
   ; now calculate the variance using the mean values calculated above
   ; Note that for the calculations the mean values are accessed modular (at the beginning and end of the year)
   nrs_set_progress_property, self.prog_obj, title = 'Calculate variance', /start
+;  Progress = ENVIProgressMessage('Calculate variance', 0, Abort)
 
   ix = ix1 + ix2    ; reset index into datacube for data needed for one DOY
   ixm = (lindgen(win_size) - self.n12 + nrdays) mod nrdays
   ixm = reform(rebin(ixm, win_size, self.ny), self.ny * win_size, /overwrite)     ; index into clim_mean (day 0 at 0); wrap around if needed
   for day = 0, nrdays - 1 do begin    ; handle every DOY
     void = nrs_update_progress(prog_obj, day, nrdays)
+;    Progress.Percent = day / nrdays
+;    Channel.Broadcast, Progress
     
     clim_var[*, *, day] = total( ((*self.datacube)[*, *, ix] - clim_mean[*, *, ixm])^2 * wgt, 3)
     ix += 1           ; to next DOY in datacube
@@ -284,6 +296,9 @@ pro NrsClimatology::statistics
   if ptr_valid(self.stat_var) then ptr_free, self.stat_var
   self.stat_var = ptr_new(clim_var)
 
+;  Finish = ENVIFinishMessage(Abort)
+;  Channel.Broadcast, Finish
+  
 end
 
 ;+
@@ -325,6 +340,8 @@ pro NrsClimatology::quantiles, quantiles
 
   ; Calculate quantiles
   quant = make_array([dims[0:1], nrdays, n_elements(quantiles)], /nozero)   ; make space for all quantiles
+  clim_min = fltarr([dims[0], dims[1], nrdays])
+  clim_max = fltarr([dims[0], dims[1], nrdays])
 
   ; collect the samples
   nrs_set_progress_property, self.prog_obj, title = 'Calculate quantiles', /start
@@ -343,6 +360,8 @@ pro NrsClimatology::quantiles, quantiles
         wsum = total(wx, /cum)        ; cumulative weights; (last element should be 1.0)
         vl = value_locate(wsum, quantiles)   ; find the quantiles positions in the cumulative weights (lower weighted)
         quant[c, r, day, *] = qs[vl]         ; get the samples for the quantile positions
+        clim_min[c, r, day] = qs[0]
+        clim_max[c, r, day] = qs[-1]
       endfor
     endfor
     
@@ -351,6 +370,12 @@ pro NrsClimatology::quantiles, quantiles
   
   if ptr_valid(self.stat_quant) then ptr_free, self.stat_quant
   self.stat_quant = ptr_new(quant)
+
+  if ptr_valid(self.stat_min) then ptr_free, self.stat_min
+  self.stat_min = ptr_new(clim_min)
+
+  if ptr_valid(self.stat_max) then ptr_free, self.stat_max
+  self.stat_max = ptr_new(clim_max)
 
 end
 
@@ -423,6 +448,7 @@ pro NrsClimatology::getproperty, start_year = start_year, end_year = end_year, n
                                , base_folder = base_folder, file_mask = file_mask $
                                , datacube = datacube, weights = weights, qweight = qweight, dims = dims $
                                , mean_data = mean_data, var_data = var_data $
+                               , min_data = min_data, max_data = max_data $
                                , julian = julian $
                                , quant_data = quant_data $
                                , quantiles = quantiles
@@ -454,6 +480,12 @@ pro NrsClimatology::getproperty, start_year = start_year, end_year = end_year, n
     endif
     if (arg_present(quant_data))  then begin
       if ptr_valid(self.stat_quant) then quant_data = *(self.stat_quant) else quant_data = []
+    endif
+    if (arg_present(min_data))  then begin
+      if ptr_valid(self.stat_min) then min_data = *(self.stat_min) else min_data = []
+    endif
+    if (arg_present(max_data))  then begin
+      if ptr_valid(self.stat_max) then max_data = *(self.stat_max) else max_data = []
     endif
     if (arg_present(weights))    then begin
       if self.weights_valid eq 0 then self.calc_weights
@@ -487,6 +519,8 @@ pro NrsClimatology__define
     , stat_mean:       ptr_new() $        ; BSQ datacube, contains climatic mean (weighted average result)
     , stat_var:        ptr_new() $        ; BSQ datacube; contains the anomaly around the climatic mean result.
     , stat_quant:      ptr_new() $        ; BSQ datacube; contains the weighted quantile values (spatial * nrdays * nr_quantiles)
+    , stat_min:        ptr_new() $        ; BSQ datacube; contains minimum data value
+    , stat_max:        ptr_new() $        ; BSQ datacube; contains maximum data value
     , start_year:      0 $                ; start year of data cube
     , end_year:        0 $                ; end year of data cube (contains at least 30 days in the last year)
     , n12:            30 $                ; N12: size of the moving window
