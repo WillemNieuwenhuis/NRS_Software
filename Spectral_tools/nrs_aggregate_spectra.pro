@@ -11,6 +11,11 @@
 ;      The input stack with the spectral information
 ;
 ; :keywords:
+;    ignore_value : in, optional, default is empty
+;      User specified value to handle as nodata value. Overrules the data provided nodata value!
+;    debug : in, optional, default = off
+;      Generate additional output: per location output a csv table with the all 
+;      spectral profiles relevant for the aggregation
 ;    aggr_func : in, optional, default = average
 ;      The function to use for the aggregation; 
 ;    kernel : in, optional, default = 3
@@ -37,8 +42,11 @@
 ;   - jan 2014 - created
 ;   - jan 2015 - now allows kernel sizes from 1 (single profile) to 11
 ;   - aug 2015 - added kern_type keyword, allowing square or circular spectral sampling
+;   - jan 2020 - added ignore_value, debug keywords
 ;-
 pro nrs_aggregate_spectra, pnt_tbl, image $
+                         , ignore_value = ignore_value $
+                         , debug = debug $      ; not available in GUI, defaults to 0 (== No)
                          , aggr_func = aggr_func $
                          , kernel = kernel, kern_type = kern_type $
                          , xytable = xytable $
@@ -67,12 +75,17 @@ pro nrs_aggregate_spectra, pnt_tbl, image $
   cancelled = 0
   
   envi_open_file, image, r_fid = mapID, /no_realize, /no_interactive_query
-  envi_file_query, mapID, nb = nb, nl = nl, ns = ns, data_ignore_value = undef, bnames = bnames
+  envi_file_query, mapID, nb = nb, nl = nl, ns = ns, data_ignore_value = undef, bnames = bnames, data_type = dt
   mi = envi_get_map_info(fid = mapID, undefined = undef_csy)
   if undef_csy eq 1 then begin
     if ~keyword_set(batch_mode) then $
       void = error_message('Spectral image has no coordinates')
     return
+  endif
+  has_undef = (size(undef, /type) eq dt) or ( (size(undef, /type) eq 5) and undef ne 1e34)
+  if n_elements(ignore_value) gt 0 then begin
+    has_undef = 1
+    undef = fix(ignore_value, type = dt)
   endif
   
   ext = nrs_get_file_extension(pnt_tbl)
@@ -133,16 +146,26 @@ pro nrs_aggregate_spectra, pnt_tbl, image $
       specTotal[index[l] : index[l + 1] - 1, *] = envi_get_slice(fid = mapID, line = line, xs = xs, xe = xe, /bil)
     endfor
     
-    ;spectotal = reform(spectotal, kernel * kernel, nb, /overwrite) 
+    if has_undef then begin
+      ix = where(specTotal eq undef, ucnt)
+      if ucnt gt 0 then specTotal[ix] = !values.F_NAN
+    endif
+
     case aggr_ix of
-      0  : profiles[i, *] = min(spectotal, dim = 1)
-      1  : profiles[i, *] = max(spectotal, dim = 1)
-      2  : profiles[i, *] = mean(spectotal, dim = 1)
-      3  : profiles[i, *] = median(spectotal, dim = 1)
+      0  : profiles[i, *] = min(spectotal, dim = 1, nan = has_undef)
+      1  : profiles[i, *] = max(spectotal, dim = 1, nan = has_undef)
+      2  : profiles[i, *] = mean(spectotal, dim = 1, nan = has_undef)
+      3  : profiles[i, *] = median(spectotal, dim = 1)  ; median automatically discards NaN values
       99 : profiles[i, *] = spectotal   ; single profile, just copy
     endcase
     check = total(profiles[i, *])
     valid_profiles[i] = check gt 0
+    
+    if keyword_set(debug) then begin
+      basename = 'debug' + string(i, format = '(i03)')
+      debug_outname = getOutname(image, basename = basename, postfix = '', ext = '.csv')
+      write_csv, debug_outname, specTotal
+    endif
   endfor
   ix = where(valid_profiles eq 1, cnt)
   if cnt eq 0 then begin

@@ -22,7 +22,10 @@ pro nrs_aggregate_spectrum_handleOK, event
 
   fld = widget_info(event.top, find_by_uname = 'nrs_aggregate_spectrum_input_image')
   widget_control, fld, get_value = image
-  
+
+  fld = widget_info(event.top, find_by_uname = 'nrs_aggregate_spectrum_input_ignore')
+  widget_control, fld, get_value = ignore_value
+ 
   fld = widget_info(event.top, find_by_uname = 'nrs_aggregate_spectrum_input_table')
   widget_control, fld, get_value = pnt_tbl
   
@@ -45,6 +48,10 @@ pro nrs_aggregate_spectrum_handleOK, event
   if strlen(image) eq 0 then begin
     void = error_message('No spectral image specified', traceback = 0, /error)
     return
+  endif
+  
+  if strlen(ignore_value[0]) gt 0 then begin
+    ignore_value = strtrim(ignore_value[0], 2)
   endif
   
   pnt_tbl = strtrim(pnt_tbl[0], 2)
@@ -70,6 +77,7 @@ pro nrs_aggregate_spectrum_handleOK, event
   
   ; calculate the spectrum
   nrs_aggregate_spectra, pnt_tbl, image $
+                       , ignore_value = ignore_value $
                        , outname = outname $
                        , kern_type = kern_type $
                        , kernel = kern, aggr_func = aggr_func $

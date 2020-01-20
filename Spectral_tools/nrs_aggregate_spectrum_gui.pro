@@ -43,6 +43,14 @@ pro nrs_aggregate_spectrum_gui, event
                 , event_pro = 'nrs_aggregate_spectrum_handle_input' $
               )
 
+  nrs_aggregate_spectrum_input_ignore = fsc_inputfield(nrs_aggregate_spectrum_mainPanel $
+                , uname = 'nrs_aggregate_spectrum_input_ignore' $
+                , title = 'Ignore value' $
+                , labelalign = 1 $
+                , labelsize = label_width $
+                , xsize = text_medium_width $
+              )
+
   nrs_aggregate_spectrum_input_table = cw_dirfile(nrs_aggregate_spectrum_mainPanel $
                 , title = 'Input locations' $
                 , style = 'file' $
