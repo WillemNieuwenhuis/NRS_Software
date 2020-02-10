@@ -120,7 +120,8 @@ function tmsat_handle_timeseries, y, win, nptperyear, spikecutoff, forceUpperEnv
     if lt2_cnt gt 0 then w[wzi] = 0
   	ptyear3 = floor(nptperyear / 3)
   	if lt2_cnt gt ptyear3 then $   ; for lt2_cnt below this ptyear3 we cannot exceed ptyear3, so skip the test
-  	  missingdata = nrs_find_missing(w, ptyear3) ; 120 days assuming 36 images per year
+  	  missingdata = nrs_find_missing(w, ptyear3) $ ; 120 days assuming 36 images per year
+  	else missingdata = 0
 	endif
 
 	if missingdata eq 0 then begin
