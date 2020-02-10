@@ -1,5 +1,5 @@
 ; Add a menu item to the supervised classification menu
-pro timesat_nrs_define_buttons, buttonInfo
+pro nrs_timesat_define_buttons, buttonInfo
   envi_define_menu_button, buttonInfo, VALUE = 'Timesat (NRS)', $
     UVALUE = 'Timesat (NRS)', EVENT_PRO = 'timesat_gui', $
     REF_VALUE = 'NRS', POSITION = 'last',/SEPARATOR
@@ -10,7 +10,7 @@ pro timesat_nrs_define_buttons, buttonInfo
 
 end
 
-pro timesat_nrs_extensions_init
+pro nrs_timesat_extensions_init
   compile_opt idl2
 
   e = envi(/current)
@@ -20,7 +20,7 @@ pro timesat_nrs_extensions_init
 end
 
 ; compatibility with ENVI 5.x
-pro timesat_nrs
+pro nrs_timesat
   compile_opt idl2
 end
 
