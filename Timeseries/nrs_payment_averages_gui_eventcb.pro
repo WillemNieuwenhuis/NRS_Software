@@ -92,16 +92,16 @@ pro nrs_payment_averages_calculation, ref, climage, table $
     , img_per_year = img_per_year $
     , prog_obj = prog_obj, cancelled = cancelled
   
-  ; Step 2: Determine pay percentages
-  nrs_interpolate_to_payment, ref, climage, p5table, p25table $
+  ; Step 2: Determine pay percentages, use output from step 1 as input
+  nrs_interpolate_to_payment, grow, climage, p5table, p25table $
     , start_date = start_date $
     , end_date = end_date $
     , outname = perc $
     , img_per_year = img_per_year $
     , prog_obj = prog_obj, cancelled = cancelled
   
-  ; Step 3: Calculate the average payment
-  nrs_average_season_payment, ref, climage, table $
+  ; Step 3: Calculate the average payment, use output from step 2 as input
+  nrs_average_season_payment, perc, climage, table $
     , outname = outname $
     , start_date = start_date, end_date = end_date $
     , prog_obj = prog_obj, cancelled = cancelled
@@ -174,7 +174,7 @@ pro nrs_payment_averages_handlego, event
 
   val_fld = widget_info(event.top, find_by_uname = 'nrs_payment_averages_season_p25table')
   widget_control, val_fld, get_value = p25table
-  p25table = strtrim(p5table, 2)
+  p25table = strtrim(p25table, 2)
 
   val_fld = widget_info(event.top, find_by_uname = 'nrs_payment_averages_grow_season_button')
   retainGrow = widget_info(val_fld, /button_set)
