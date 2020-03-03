@@ -100,7 +100,7 @@ pro nrs_payment_averages_gui, event, GROUP_LEADER = wGroup, _EXTRA = _VWBExtra_
     )
 
   nrs_payment_averages_season_p5table = cw_dirfile(nrs_payment_averages_inputPanel $
-    , title = 'Low percentile table' $
+    , title = 'Low percentile table (exit)' $
     , style = 'file' $
     , xsize = text_width $
     , xtitlesize = label_width $
@@ -108,7 +108,7 @@ pro nrs_payment_averages_gui, event, GROUP_LEADER = wGroup, _EXTRA = _VWBExtra_
     )
 
   nrs_payment_averages_season_p25table = cw_dirfile(nrs_payment_averages_inputPanel $
-    , title = 'High percentile table' $
+    , title = 'High percentile table (trigger)' $
     , style = 'file' $
     , xsize = text_width $
     , xtitlesize = label_width $
