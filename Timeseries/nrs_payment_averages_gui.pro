@@ -150,14 +150,15 @@ pro nrs_payment_averages_gui, event, GROUP_LEADER = wGroup, _EXTRA = _VWBExtra_
     )
 
   nrs_payment_averages_outputPanel = widget_base(nrs_payment_averages_contentPanel, /frame, /col)
+  frame_offset = 13
 
-  nrs_payment_averages_grow_season_output = widget_base(nrs_payment_averages_outputPanel, /nonexclusive, uname = 'nrs_payment_averages_grow_season_output', xsize=label_width)
+  nrs_payment_averages_grow_season_output = widget_base(nrs_payment_averages_outputPanel, /nonexclusive, uname = 'nrs_payment_averages_grow_season_output', xsize=label_width + frame_offset)
   nrs_payment_averages_grow_season_button = widget_button(nrs_payment_averages_grow_season_output $
     , uname = 'nrs_payment_averages_grow_season_button' $
     , value = 'Retain growing season result' $
     )
 
-  nrs_payment_averages_percentages_output = widget_base(nrs_payment_averages_outputPanel, /nonexclusive, uname = 'nrs_payment_averages_percentages_output', xsize=label_width)
+  nrs_payment_averages_percentages_output = widget_base(nrs_payment_averages_outputPanel, /nonexclusive, uname = 'nrs_payment_averages_percentages_output', xsize=label_width + frame_offset)
   nrs_payment_averages_percentages_button = widget_button(nrs_payment_averages_percentages_output $
     , uname = 'nrs_payment_averages_percentages_button' $
     , value = 'Retain payment percentages result' $
@@ -167,7 +168,7 @@ pro nrs_payment_averages_gui, event, GROUP_LEADER = wGroup, _EXTRA = _VWBExtra_
     , title = 'Payment averages' $
     , style = 'file' $
     , xsize = text_width $
-    , xtitlesize = label_width $
+    , xtitlesize = label_width + frame_offset $
     , uname = 'nrs_payment_averages_output' $
     )
 
