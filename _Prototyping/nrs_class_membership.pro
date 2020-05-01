@@ -11,7 +11,7 @@ pro nrs_class_membership, image $
   envi_file_query, fid, ns = ns, nl = nl, nb = nb, dims = dims, data_type = dt, data_ignore_value = nodata
   has_nodata = n_elements(nodata) gt 0
   if nb gt 1 then begin
-    void = error_message('More than one band in the file, quitting')
+    void = error_message('More than one band in the file, quitting', title = 'Class membership')
     return
   endif
   
@@ -39,6 +39,15 @@ pro nrs_class_membership, image $
 
   ; only positive kernels allowed, defaults to 3  
   if n_elements(kernel) le 0 then kernel = 3
+  ; only odd kernel size allowed
+  if (kernel mod 2) eq 0 then begin
+    void = error_message('Only odd kernel sizes are allowed, quitting', title = 'Class membership')
+    return
+  endif
+  if (kernel gt ns / 3) || (kernel ft nl / 3) eq 0 then begin
+    void = error_message('Kernel size larger than 33% of the data, select a smaller kernel size', title = 'Class membership')
+    return
+  endif
 
   ; create moving window indices
   ver = rebin(transpose((indgen(kernel) - kernel / 2) * (ns + kernel - 1)), kernel, kernel)
