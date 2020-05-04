@@ -35,7 +35,7 @@ pro nrs_class_membership, image $
   if n_elements(outname) eq 0 then outname = image
   
   ; overrule ignore value if user specified
-  if n_elements(ignore_value) gt 0 then nodata = ignote_value
+  if n_elements(ignore_value) gt 0 then nodata = ignore_value
 
   ; only positive kernels allowed, defaults to 3  
   if n_elements(kernel) le 0 then kernel = 3
@@ -44,7 +44,7 @@ pro nrs_class_membership, image $
     void = error_message('Only odd kernel sizes are allowed, quitting', title = 'Class membership')
     return
   endif
-  if (kernel gt ns / 3) || (kernel ft nl / 3) eq 0 then begin
+  if (kernel gt ns / 3) || (kernel gt nl / 3) then begin
     void = error_message('Kernel size larger than 33% of the data, select a smaller kernel size', title = 'Class membership')
     return
   endif

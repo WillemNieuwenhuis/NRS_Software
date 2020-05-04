@@ -11,6 +11,9 @@ pro _build_prototype
     , 'nrs_gwp_convert.pro' $
     , 'nrs_gwp_tiff_gui.pro' $
     , 'nrs_gwp_tiff_gui_eventcb.pro' $
+    , 'nrs_class_membership.pro' $
+    , 'nrs_class_membership_gui.pro' $
+    , 'nrs_class_membership_gui_eventcb.pro' $
     ]
   _auto_build, files, 'bin' + path_sep() + 'nrs_prototype.sav', logfile = 'bin' + path_sep() + 'nrs_prototype.log'
 
