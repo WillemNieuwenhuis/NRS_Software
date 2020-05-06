@@ -67,6 +67,9 @@ pro nrs_class_membership, image $
   filedata[xxundef] = maxval + 1  ; change undef value to unused clas to keep histogram result compact
   data[*] = maxval + 2    ; set edge to non existing class
   data[kernel2 : ns + kernel2 - 1, kernel2 : nl + kernel2 - 1] = filedata
+  
+  ; calculate histogram to determine if there are unused classes
+  class_cnt = histogram(filedata[xx], min = minval, max = maxval)
 
   ; initialise progress indicator
   nrs_set_progress_property, prog_obj, /start, title = 'Class membership'
@@ -94,6 +97,8 @@ pro nrs_class_membership, image $
   ; write output to files  
   for f = minval, maxval do begin
     filename = getoutname(outname, postfix = string(f, format = '("_class", I0)'), ext = ext)
+    if class_cnt[f - minval] eq 0 then continue  ; skip output for classes that do no appear in the data
+    
     if isTiff then begin
       write_tiff, filename, out_data[*,*, f - minval], /float, geotiff = geokeys
     endif else begin
