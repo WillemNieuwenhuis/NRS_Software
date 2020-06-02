@@ -77,6 +77,7 @@ pro nrs_climate_weighted_gui, event
   nrs_climate_weighted_window = fsc_inputfield(nrs_climate_weighted_mainPanel $
     , uname = 'nrs_climate_weighted_window' $
     , title = 'Window (N12)' $
+    , unit = 'days' $
     , labelalign = 1 $
     , labelsize = label_width $
     , value = '30' $
@@ -147,8 +148,8 @@ pro nrs_climate_weighted_gui, event
     )
 
   nrs_gui_createbuttonpanel, nrs_climate_weighted_contentPanel $
-    , ok_uname = 'nrs_climate_weighted_gobutton', ok_value = 'Go!', ok_tooltip = 'Calculate zonal percentiles' $
-    , cancel_uname = 'nrs_climate_weighted_cancelbutton', cancel_value = 'Done', cancel_tooltip = 'Cancel the operation'
+    , ok_uname = 'nrs_climate_weighted_gobutton', ok_value = 'Calculate', ok_tooltip = 'Calculate zonal percentiles' $
+    , cancel_uname = 'nrs_climate_weighted_cancelbutton', cancel_value = 'Close', cancel_tooltip = 'Cancel the operation'
 
   ; Make sure we create the form
   widget_control, /realize, nrs_climate_weighted_contentpanel
