@@ -191,7 +191,6 @@ pro NrsClimatology::load_data
   ; Now start filling the cube
   ; first setup the datacube
   e = envi(/headless)
-;  e.preferences['data manager:launch after open'] = 'Never'   ; don't display data manager
   ras = e.OpenRaster(files[0])
   if (self.xnum * self.ynum) eq 0 then begin
     self.xstart = 0
@@ -251,23 +250,15 @@ pro NrsClimatology::statistics
   
   ; first calculate the climatic mean; needed also for the climatic anomaly.
   ; indices are zero-based
-  
   nrs_set_progress_property, self.prog_obj, title = 'Calculate mean', /start
-;  e = envi(/headless)
-;  Channel = e.GetBroadcastChannel()
-;  Abort = ENVIAbortable()
-;  Start = ENVIStartMessage('Climatology', Abort)
-;  Channel.Broadcast, Start
-;  Progress = ENVIProgressMessage('Calculate mean', 0, Abort)
   
   win_size = 2 * self.n12 + 1
   ix1 = lindgen(self.ny * win_size) mod win_size
   ix2 = (lindgen(self.ny * win_size) / win_size ) * nrdays
-  ix = ix1 + ix2    ; index into datacube for data needed for one DOY
+  ix = ix1 + ix2    ; 1D-index into datacube for data needed for one DOY: this selects multiple separate sets of bands in the datacube
   for day = 0, nrdays - 1 do begin    ; handle every DOY
     void = nrs_update_progress(prog_obj, day, nrdays)
-;    Progress.Percent = day / nrdays
-;    Channel.Broadcast, Progress
+
     clim_mean[*, *, day] = total((*self.datacube)[*, *, ix] * wgt, 3)
     ix += 1   ; index for next DOY
   endfor
@@ -278,15 +269,12 @@ pro NrsClimatology::statistics
   ; now calculate the variance using the mean values calculated above
   ; Note that for the calculations the mean values are accessed modular (at the beginning and end of the year)
   nrs_set_progress_property, self.prog_obj, title = 'Calculate variance', /start
-;  Progress = ENVIProgressMessage('Calculate variance', 0, Abort)
 
   ix = ix1 + ix2    ; reset index into datacube for data needed for one DOY
-  ixm = (lindgen(win_size) - self.n12 + nrdays) mod nrdays
+  ixm = (lindgen(win_size) - self.n12 + nrdays) mod nrdays    ; 1D array with indices for the data window 
   ixm = reform(rebin(ixm, win_size, self.ny), self.ny * win_size, /overwrite)     ; index into clim_mean (day 0 at 0); wrap around if needed
   for day = 0, nrdays - 1 do begin    ; handle every DOY
     void = nrs_update_progress(prog_obj, day, nrdays)
-;    Progress.Percent = day / nrdays
-;    Channel.Broadcast, Progress
     
     clim_var[*, *, day] = total( ((*self.datacube)[*, *, ix] - clim_mean[*, *, ixm])^2 * wgt, 3)
     ix += 1           ; to next DOY in datacube
@@ -296,9 +284,6 @@ pro NrsClimatology::statistics
   if ptr_valid(self.stat_var) then ptr_free, self.stat_var
   self.stat_var = ptr_new(clim_var)
 
-;  Finish = ENVIFinishMessage(Abort)
-;  Channel.Broadcast, Finish
-  
 end
 
 ;+
@@ -342,6 +327,7 @@ pro NrsClimatology::quantiles, quantiles
   quant = make_array([dims[0:1], nrdays, n_elements(quantiles)], /nozero)   ; make space for all quantiles
   clim_min = fltarr([dims[0], dims[1], nrdays])
   clim_max = fltarr([dims[0], dims[1], nrdays])
+  self.quantile_type = 0  ; normal quantiles
 
   ; collect the samples
   nrs_set_progress_property, self.prog_obj, title = 'Calculate quantiles', /start
@@ -368,6 +354,97 @@ pro NrsClimatology::quantiles, quantiles
     ix += 1     ; index to next DOY
   endfor
   
+  if ptr_valid(self.stat_quant) then ptr_free, self.stat_quant
+  self.stat_quant = ptr_new(quant)
+
+  if ptr_valid(self.stat_min) then ptr_free, self.stat_min
+  self.stat_min = ptr_new(clim_min)
+
+  if ptr_valid(self.stat_max) then ptr_free, self.stat_max
+  self.stat_max = ptr_new(clim_max)
+
+end
+
+;+
+; :Description:
+;    Calculate the weighted quantiles of the anomalies on the datacube. One or more quantiles
+;    can be calculated at the same time. Quantile values range from [0 .. 1]
+;    Note that the weights have been precalculated to directly give the mean and variance
+;
+;    For each DOY each quantile is calculated with an large temporal window size (2 * N12 days) around
+;
+; :Params:
+;    quantiles, in, required:
+;       Specify one or more quantiles to be calculated
+;
+; :Author: nieuwenhuis
+; :History:
+;   - 25 May 2020: created
+;-
+pro NrsClimatology::quantiles_anomaly, quantiles
+  compile_opt idl2, logical_predicate
+
+  if n_elements(quantiles) eq 0 then begin
+    void = error_message('No quantiles specified; stopping')
+    return
+  endif
+
+  if ptr_valid(self.quantiles) then ptr_free, self.quantiles
+  quantiles = quantiles[sort(quantiles)]
+  self.quantiles = ptr_new(quantiles)
+
+  if self.weights_valid eq 0 then self.calc_weights
+  
+  ; make sure the Weighted Mean is calculated 
+  if ~ptr_valid(self.stat_mean) then self.statistics
+  clim_mean = *(self.stat_mean)
+
+  win_size = 2 * self.n12 + 1
+  wgt_single = *(self.qweight)     ; get the 1D-weight vector with length of windows size (2 * n12 + 1) * ny
+
+  nrdays = 365
+
+  dims = size(*self.datacube, /dim)    ; the size of the cube with the additional required day data
+
+  ; Calculate quantiles
+  quant = make_array([dims[0:1], nrdays, n_elements(quantiles)], /nozero)   ; make space for all quantiles
+  clim_min = fltarr([dims[0], dims[1], nrdays])
+  clim_max = fltarr([dims[0], dims[1], nrdays])
+
+  self.quantile_type = 1  ; anomaly quantiles
+
+  ; collect the samples
+  nrs_set_progress_property, self.prog_obj, title = 'Calculate quantiles', /start
+  
+  ix1 = lindgen(self.ny * win_size) mod win_size
+  ix2 = (lindgen(self.ny * win_size) / win_size ) * nrdays
+  ix = ix1 + ix2    ; index into datacube for data needed for one DOY
+  
+  ixm = (lindgen(win_size) - self.n12 + nrdays) mod nrdays    ; 1-D indices: retrieve Mean values
+  ixm = reform(rebin(ixm, win_size, self.ny), self.ny * win_size, /overwrite)     ; extend the index to match with the datacube size; wrap around if needed
+  weights = reform(rebin(wgt_single, win_size, self.ny), self.ny * win_size, /overwrite)
+  quant_ix = fix(quantiles * win_size * self.ny)  ; calculate the indices for the quantiles  
+  
+  for day = 0, nrdays - 1 do begin    ; handle every DOY
+    void = nrs_update_progress(prog_obj, day, nrdays)
+
+    for r = 0, dims[1] - 1 do begin
+      for c = 0, dims[0] - 1 do begin
+        vals = (*self.datacube)[c, r, ix] - clim_mean[c, r, ixm]    ; turn data values into anomaly values
+;        vals = abs( (*self.datacube)[c, r, ix] - clim_mean[c, r, ixm])    ; turn data values into anomaly values
+        vals *= weights     ; for the weighted anomalies
+        qx = sort(vals)  ; sort all samples 
+        cdf = total(vals[qx], /cum) ; creating the cumulative distribution function
+        quant[c, r, day, *] = cdf[quant_ix]   ; get the samples for the quantile positions
+        clim_min[c, r, day] = cdf[0]    ; first
+        clim_max[c, r, day] = cdf[-1]   ; last
+      endfor
+    endfor
+
+    ix += 1     ; index to next DOY
+    ixm = (ixm + 1) mod nrdays  ; to next DOY in mean cube
+  endfor
+
   if ptr_valid(self.stat_quant) then ptr_free, self.stat_quant
   self.stat_quant = ptr_new(quant)
 
@@ -517,7 +594,7 @@ pro NrsClimatology__define
     , need_loading:    0L $               ;
     , datacube:        ptr_new() $        ; BSQ; data cube includes addtional data required for the moving window
     , stat_mean:       ptr_new() $        ; BSQ datacube, contains climatic mean (weighted average result)
-    , stat_var:        ptr_new() $        ; BSQ datacube; contains the anomaly around the climatic mean result.
+    , stat_var:        ptr_new() $        ; BSQ datacube; variance: contains the anomaly around the climatic mean result.
     , stat_quant:      ptr_new() $        ; BSQ datacube; contains the weighted quantile values (spatial * nrdays * nr_quantiles)
     , stat_min:        ptr_new() $        ; BSQ datacube; contains minimum data value
     , stat_max:        ptr_new() $        ; BSQ datacube; contains maximum data value
@@ -525,6 +602,7 @@ pro NrsClimatology__define
     , end_year:        0 $                ; end year of data cube (contains at least 30 days in the last year)
     , n12:            30 $                ; N12: size of the moving window
     , ny:             20 $                ; NY: number of years in the timeseries
+    , quantile_type:  -1 $                ; stores the currently calculated type: -1 = not calculated, 0 = normal quantiles; 1 = anomaly quantiles
     , quantiles:       ptr_new() $        ; list with quantiles (values between 0 and 1) to extract  
     , weights_valid:   0 $                ; if zero, weights need to be recalculated
     , weights:         ptr_new() $        ; the weights for the weighted moving window (spatial as well: 3D vector)
