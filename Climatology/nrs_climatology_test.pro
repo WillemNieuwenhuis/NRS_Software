@@ -165,6 +165,32 @@ pro nrs_climatology_test_stat_quantile, clim, write = write
 end
 
 
+pro nrs_climatology_test_stat_anomaly_quantile, clim, write = write
+  compile_opt idl2, logical_predicate
+
+  if ~obj_valid(clim) then begin
+    void = error_message('Need to init climate object and load data first')
+    return
+  endif
+
+  quantiles = [0, 0.25, 0.5, 0.75, 1.0]
+  clim.quantiles_anomaly, quantiles
+
+  if keyword_set(write) then begin
+    clim.getproperty, ny = ny, dims = dims
+    days = reform(rebin(indgen(365) + 1, 365, n_elements(quantiles)),  365 * n_elements(quantiles))
+    ques = reform(rebin(transpose(quantiles), 365, n_elements(quantiles)), 365 * n_elements(quantiles))
+    form = '("DOY.Quantile: ",i03,"-",f-5.2)'
+    bnames = string([transpose(days), transpose(ques)], format = form)
+    clim.getproperty, quant_data = qdata
+    envi_write_envi_file, qdata, out_name = 'E:\Projects\ERA5_climatology\q_anomalies.dat' $
+      , bnames = bnames $
+      , ns = dims[0], nl = dims[1], nb = n_elements(quantiles) * 365
+  endif
+
+end
+
+
 pro nrs_climatology_run_tests
   compile_opt idl2, logical_predicate
 
