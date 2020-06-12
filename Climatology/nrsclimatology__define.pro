@@ -46,7 +46,7 @@ pro NrsClimatology::calc_weights
   n12 = self.n12
   ny = self.ny
   win_size = 2 * n12 + 1
-  factor = 3.0 * (N12 + 1) / (Ny * (2 * N12 + 1) * (2 * N12 + 3))
+  factor = double(3.0) * (N12 + 1) / (Ny * (2 * N12 + 1) * (2 * N12 + 3))
   single = factor * (1 - ( (findgen(2 * N12 + 1) - N12) / (N12 + 1) ) ^ 2)
   single = reform(rebin(single, win_size, self.ny), win_size * self.ny)
 
@@ -296,7 +296,7 @@ end
 ;
 ; :Params:
 ;    quantiles, in, required:
-;       Specify one or more quantiles to be calculated
+;       Specify one or more quantiles to be calculated (range: 0.0 - 1.0)
 ;
 ; :Author: nieuwenhuis
 ; :History:
@@ -310,6 +310,7 @@ pro NrsClimatology::quantiles, quantiles
     return
   endif
 
+  ; quantiles = the list of percentile values (0.0 - 1.0) 
   if ptr_valid(self.quantiles) then ptr_free, self.quantiles
   quantiles = quantiles[sort(quantiles)]
   self.quantiles = ptr_new(quantiles)
@@ -323,14 +324,15 @@ pro NrsClimatology::quantiles, quantiles
 
   dims = size(*self.datacube, /dim)    ; the size of the cube with the additional required day data
 
-  ; Calculate quantiles
+  ; initialize datastructures
   quant = make_array([dims[0:1], nrdays, n_elements(quantiles)], /nozero)   ; make space for all quantiles
   clim_min = fltarr([dims[0], dims[1], nrdays])
   clim_max = fltarr([dims[0], dims[1], nrdays])
   self.quantile_type = 0  ; normal quantiles
+  remain = (quantiles * n_elements(wgt_single)) mod 1  ; determine index remainder for interpolation of quantiles
 
-  ; collect the samples
   nrs_set_progress_property, self.prog_obj, title = 'Calculate quantiles', /start
+  ; calculate the indices for retrieval of values for calculation of a single DOY
   ix1 = lindgen(self.ny * win_size) mod win_size
   ix2 = (lindgen(self.ny * win_size) / win_size ) * nrdays
   ix = ix1 + ix2    ; index into datacube for data needed for one DOY
@@ -339,13 +341,16 @@ pro NrsClimatology::quantiles, quantiles
 
     for r = 0, dims[1] - 1 do begin
       for c = 0, dims[0] - 1 do begin
-        vals = (*self.datacube)[c, r, ix]
-        qx = sort(vals)  ; sort all samples
-        qs = vals[qx]    ; samples are now sorted
-        wx = wgt_single[qx]     ; keep weights aligned with samples
-        wsum = total(wx, /cum)        ; cumulative weights; (last element should be 1.0)
-        vl = value_locate(wsum, quantiles)   ; find the quantiles positions in the cumulative weights (lower weighted)
-        quant[c, r, day, *] = qs[vl]         ; get the samples for the quantile positions
+        vals = (*self.datacube)[c, r, ix] ; get samples
+        qx = sort(vals)                   ; sort all samples
+        qs = vals[qx]                     ; samples are now sorted
+        wx = wgt_single[qx]               ; keep weights aligned with samples
+        wsum = total(wx, /double, /cum)      ; cumulative weights; (last element should be 1.0)
+        v1 = value_locate(wsum, quantiles)   ; find the quantiles positions in the cumulative weights
+        v2 = (v1 + 1) < (n_elements(wgt_single) - 1)
+
+        ; linear (weighted) interpolation
+        quant[c, r, day, *] = (1 - remain) * qs[v1] + remain * qs[v2]
         clim_min[c, r, day] = qs[0]
         clim_max[c, r, day] = qs[-1]
       endfor
