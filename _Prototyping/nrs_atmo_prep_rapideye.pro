@@ -72,6 +72,19 @@ pro nrs_atmo_prep_rapideye, image, sundist, solar_illumination
 
 end
 
+pro reevalnov2018
+  compile_opt idl2, logical_predicate
+
+  ; NL site (tile: 3263807)
+  print, 'NL site, day 199'
+  file = 'E:\NRS_processing\RS4EBV\Re-eval2018\NL site 2015-07-18\3263807_2015-07-18_RE4_3A_305965\3263807_2015-07-18_RE4_3A_305965.tif'
+  sun_dist = 1.0162939
+  illum_elev = 57.51854
+  print, file_basename(file)
+  nrs_atmo_prep_rapideye, file, sun_dist, illum_elev
+
+end
+
 ;+
 ; :description:
 ;   Batch run of Raw RapidEye 3A to top of atmosphere preprocessing.
