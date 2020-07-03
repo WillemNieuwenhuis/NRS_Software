@@ -319,10 +319,12 @@ end
 ; :Keywords:
 ;    dn_to_reflection : in, optional, default = no
 ;      If set and yes, perform the DN to reflectance correction
+;    output_prod : out, optional
+;      Reports back the name of the generated stack
 ;
 ; :Author: nieuwenhuis
 ;-
-pro nrs_sentinel_stack, folder, out_folder, gain, resolution = resolution, dn_to_reflection = dn_to_reflection
+pro nrs_sentinel_stack, folder, out_folder, gain, resolution = resolution, dn_to_reflection = dn_to_reflection, output_prod = outname
   compile_opt idl2, logical_predicate
 
   ; find tile data folder and extract meta data
@@ -456,6 +458,10 @@ pro nrs_convert_S2ENVI_to_ENVIstack, folders, out_folder, dn_to_reflection = dn_
       xml_key = 'L2A_BOA_QUANTIFICATION_VALUE'
       if new_format then xml_key = 'BOA_QUANTIFICATION_VALUE'
       nrs_sentinel_meta, meta_top[0], scale = scale, key = xml_key
+      if n_elements(scale) eq 0 then begin
+        xml_key = 'QUANTIFICATION_VALUE'
+        nrs_sentinel_meta, meta_top[0], scale = scale, key = xml_key
+      endif
       gain = 1.0 / scale
     endif
 
