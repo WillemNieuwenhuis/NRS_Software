@@ -63,17 +63,17 @@
 		<link>
 			<name>nrs_zonal_percentiles.pro</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/stack_tools/nrs_zonal_percentiles.pro</locationURI>
+			<location>E:/NRS/Software develop/stack_tools/nrs_zonal_percentiles.pro</location>
 		</link>
 		<link>
 			<name>nrs_zonal_percentiles_gui.pro</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/stack_tools/nrs_zonal_percentiles_gui.pro</locationURI>
+			<location>E:/NRS/Software develop/stack_tools/nrs_zonal_percentiles_gui.pro</location>
 		</link>
 		<link>
 			<name>nrs_zonal_percentiles_gui_eventcb.pro</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/stack_tools/nrs_zonal_percentiles_gui_eventcb.pro</locationURI>
+			<location>E:/NRS/Software develop/stack_tools/nrs_zonal_percentiles_gui_eventcb.pro</location>
 		</link>
 	</linkedResources>
 </projectDescription>
