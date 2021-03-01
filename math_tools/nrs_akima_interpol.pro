@@ -1,4 +1,4 @@
-pro ttt
+pro ttt_akima
   m = findgen(7)+1
   print,m
   for i = 2, n_elements(m) - 2 do begin 
