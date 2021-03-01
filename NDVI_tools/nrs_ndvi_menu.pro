@@ -31,6 +31,10 @@ pro nrs_ndvi_tools_define_buttons, buttonInfo
     uvalue = 'Find start of growing season', event_pro = 'nrs_growth_gui', $
     ref_value = 'NDVI', position = 'last'
 
+  envi_define_menu_button, buttonInfo, value = 'Extract BRDF flags', $
+    uvalue = 'Extract BRDF flags', event_pro = 'nrs_extract_brdf_flags_gui', $
+    ref_value = 'NDVI', position = 'last'
+
 end
 
 ; Also add as ENVI 5 extensions
@@ -44,6 +48,7 @@ pro nrs_ndvi_tools_extensions_init
   e.AddExtension, 'GWI Threshold', 'nrs_rpd_perc_gui', PATH='NRS/NDVI tools'
   e.AddExtension, 'Winter NDVI', 'nrs_winter_ndvi_gui', PATH='NRS/NDVI tools'
   e.AddExtension, 'Find start of growing season', 'nrs_growth_gui', PATH='NRS/NDVI tools'
+  e.AddExtension, 'Extract BRDF flags', 'nrs_extract_brdf_flags_gui', PATH='NRS/NDVI tools'
 end
 
 ; ENVI 5 compatibility
