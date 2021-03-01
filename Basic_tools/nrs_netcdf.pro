@@ -273,7 +273,7 @@ function nrs_nc_get_data_vars, nc_id, cancelled = cancelled
   
   ; find coordinate axis for the variables (spatial)
   for i = 0, n_elements(var_ids) - 1 do begin
-    nrs_nc_get_varatt, nc_id, var_ids[i].vid, crd_str = crd_str, bnds_str = bnds_str
+    nrs_nc_get_varatt, nc_id, var_ids[i].vid, crd_str = crd_str, bnds_str = bnds_str, grid_mapping = gm
     if n_elements(crd_str) gt 0 then begin  ; parse coordinates attribute
       parts = strsplit(crd_str, /extract, count = pcnt)
       if pcnt eq 2 then begin
