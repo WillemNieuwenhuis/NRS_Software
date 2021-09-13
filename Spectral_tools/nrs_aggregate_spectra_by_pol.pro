@@ -107,7 +107,7 @@ pro nrs_aggregate_spectra_by_pol, shapefile, image $
     cur_image = all_images[img]
 
     envi_open_file, cur_image, r_fid = mapID, /no_realize, /no_interactive_query
-    envi_file_query, mapID, nb = nbloc, nl = nl, ns = ns, data_ignore_value = undef, data_type = dtloc
+    envi_file_query, mapID, nb = nbloc, nl = nl, ns = ns, data_ignore_value = undef, data_type = dtloc, bnames = bnloc
     mi = envi_get_map_info(fid = mapID, undefined = undef_csy)
     if img eq 0 then begin
       ns_all = ns
@@ -128,7 +128,10 @@ pro nrs_aggregate_spectra_by_pol, shapefile, image $
       endif
     endelse
     img_fids = [img_fids, mapID]
-    bnames = [bnames, file_basename(cur_image)]
+    if nbloc eq 1 then $
+      bnames = [bnames, file_basename(cur_image)] $
+    else $
+      bnames = [bnames, bnloc]
   endfor
 
   if n_elements(img_fids) eq 0 then begin
@@ -231,7 +234,7 @@ pro nrs_aggregate_spectra_by_pol, shapefile, image $
     hdr = ['Image_name', string(aval[ix])]
     profiles = profiles[ix, *]
     out_struct = create_struct('field001', bnames)
-    for f = 0, n_elements(aval) - 1 do begin
+    for f = 0, n_elements(ix) - 1 do begin
       fname = string(f + 2, format = '("field",i03)') 
       ts = create_struct([fname], reform(profiles[f, *], n_elements(bnames), /over))
       out_struct = create_struct([], out_struct, ts)
