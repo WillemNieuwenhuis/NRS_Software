@@ -19,7 +19,7 @@
 ;      is one of 'degrees_north', 'degrees_east', degrees_south', 'degrees_west'
 ;    missing_value : out
 ;      The missing value as specified by the _FillValue attribute or the missing_value attribute,
-;      whichever is available. No distinction is made between the two attributes. If both 
+;      whichever is available. No distinction is made between the two attributes. If both
 ;      attributes do no occur, the value will be undefined
 ;    crd_str : out
 ;      A string with the value of the coordinates attribute; if not present an empty string is returned
@@ -81,43 +81,43 @@ pro nrs_nc_get_varatt, nc_id, var_id, desc = desc, grid_mapping = grid_mapping, 
       endcase
     endfor
   endif
-  
+
   if strlen(desc) eq 0 then desc = v_att.name
 end
 
 function nrs_nc_parse_units, unit_str
   compile_opt idl2, logical_predicate
-  
+
   switch unit_str of
-    'degree_n' : 
+    'degree_n' :
     'degree_north' :
-    'degrees_n' : 
+    'degrees_n' :
     'degrees_north' : return, 'degrees_north'
-    'degree_e' : 
-    'degree_east' : 
-    'degrees_e' : 
-    'degrees_east' : return, 'degrees_east' 
-    'degree_w' : 
+    'degree_e' :
+    'degree_east' :
+    'degrees_e' :
+    'degrees_east' : return, 'degrees_east'
+    'degree_w' :
     'degree_west' :
-    'degrees_w' : 
+    'degrees_w' :
     'degrees_west' : return, 'degrees_west'
-    'degree_s' : 
-    'degree_south' : 
-    'degrees_s' : 
+    'degree_s' :
+    'degree_south' :
+    'degrees_s' :
     'degrees_south' : return, 'degrees_east'
   endswitch
-  
+
   return, unit_str
 end
- 
+
 function nrs_datatype_from_string, datatype_str
   compile_opt idl2, logical_predicate
-  
+
   all_dts = ['byte', 'char', 'int', 'long', 'float', 'double']
   all_dt  = [1, 1, 2, 3, 4, 5]
-  
+
   ix = where(all_dts eq strlowcase(datatype_str), cnt)
-  
+
   return, cnt eq 0 ? 4 : all_dt[ix[0]]
 end
 
@@ -166,7 +166,7 @@ function nrs_nc_get_var_cand, nc_id, grid_mapping = gm_ids, crd_vars = crd_vars
       }
 
   nc_vars = ncdf_inquire(nc_id)
-  
+
   ; get the dimensions
   dim_names = strarr(nc_vars.ndims)
   dim_size = intarr(nc_vars.ndims)
@@ -178,8 +178,8 @@ function nrs_nc_get_var_cand, nc_id, grid_mapping = gm_ids, crd_vars = crd_vars
     dim_size[d] = size
     dim_ids[d] = d
   endfor
-  
-  nvars = nc_vars.nvars 
+
+  nvars = nc_vars.nvars
   crd_vars = []
   var_ids = []
   var_names = []
@@ -191,7 +191,7 @@ function nrs_nc_get_var_cand, nc_id, grid_mapping = gm_ids, crd_vars = crd_vars
     dims = varstruct.dim
     dt = varstruct.datatype
     case ndim of
-      0 : gm_ids = [gm_ids, id] 
+      0 : gm_ids = [gm_ids, id]
       1 : if name eq dim_names[dims[0]] then begin
             crd_vars = [crd_vars, {coord, name:name, did:dims[0], vid:id} ]
           endif
@@ -210,7 +210,7 @@ function nrs_nc_get_var_cand, nc_id, grid_mapping = gm_ids, crd_vars = crd_vars
   for v = 0, n_elements(var_ids) - 1 do begin
     dims = var_ids[v].dim_ids
     nd = var_ids[v].n_dim
-    
+
     ; time coordinate
     if nd ge 3 then begin
       ix = where(crd_vars.did eq dims[nd - 1], cnt)
@@ -247,7 +247,7 @@ function nrs_nc_get_var_cand, nc_id, grid_mapping = gm_ids, crd_vars = crd_vars
       var_ids[v].ns = size
     endif
   endfor
-  
+
   return, var_ids
 end
 
@@ -267,10 +267,10 @@ end
 ;-
 function nrs_nc_get_data_vars, nc_id, cancelled = cancelled
   compile_opt idl2, logical_predicate
-  
+
   cancelled = 1
   var_ids = nrs_nc_get_var_cand(nc_id, grid_mapping = gm_ids, crd_vars = crd_vars)
-  
+
   ; find coordinate axis for the variables (spatial)
   for i = 0, n_elements(var_ids) - 1 do begin
     nrs_nc_get_varatt, nc_id, var_ids[i].vid, crd_str = crd_str, bnds_str = bnds_str, grid_mapping = gm
@@ -287,7 +287,7 @@ function nrs_nc_get_data_vars, nc_id, cancelled = cancelled
     endif
   endfor
 
-  ; find coordinate bounds for the variables 
+  ; find coordinate bounds for the variables
   for i = 0, n_elements(crd_vars) - 1 do begin
     nrs_nc_get_varatt, nc_id, crd_vars[i].vid, bnds_str = bnds_str
     if n_elements(bnds_str) gt 0 then begin  ; temporal
@@ -295,7 +295,7 @@ function nrs_nc_get_data_vars, nc_id, cancelled = cancelled
       if bcnt eq 1 then bnds_dep = parts
     endif
   endfor
-  
+
   ; check if the coordinate variables are also listed as regular variables
   ; if so remove them as variables
   ; Spatial
@@ -316,9 +316,9 @@ function nrs_nc_get_data_vars, nc_id, cancelled = cancelled
       var_ids = var_ids[nix]
     endif
   endif
-  
+
   cancelled = 0
-  
+
   return, var_ids
 end
 
@@ -342,7 +342,7 @@ end
 ;-
 pro nrs_nc_error_message, nc_id, msg, title = title, cancelled = cancelled
   compile_opt idl2, logical_predicate
-  
+
   ans = dialog_message(msg, title = title, /error)
   ncdf_close, nc_id
   cancelled = 1
@@ -360,7 +360,7 @@ function nrs_nc_get_data_vars_from_file, filename
   ncdf_close, nc_id  ; done reading; close the nc file
 
   return, vars
-  
+
 end
 
 function nrs_nc_get_time_from_file, filename, var, interval = interval
@@ -390,14 +390,14 @@ function nrs_nc_get_time_from_file, filename, var, interval = interval
 
   ncdf_close, nc_id  ; done reading; close the nc file
 
-  return, julian  
+  return, julian
 end
 
 ;+
 ; :Description:
 ;    Import a single netCDF file. It parses the netCDF file to find all data variables.
 ;    For each data variable an output file is created. Also scale and offset are applied
-;    if specified, unless the DN keyword is set 
+;    if specified, unless the DN keyword is set
 ;
 ; :Params:
 ;    filename :
@@ -426,9 +426,9 @@ pro nrs_nc_get_data, filename, out_name = base_name $
                    , date_range = date_range $
                    , prog_obj = prog_obj, cancelled = cancelled
   compile_opt idl2, logical_predicate
-  
+
   if n_elements(base_name) eq 0 then base_name = getOutname(filename, postfix = '_imp', ext = '.dat')
-  
+
   nc_id = ncdf_open(filename)
 
   nrs_set_progress_property, prog_obj, /start, title = 'Importing ' + file_basename(filename)
@@ -442,11 +442,11 @@ pro nrs_nc_get_data, filename, out_name = base_name $
   if n_elements(var_list) eq 0 then $
     vars = nrs_nc_get_data_vars(nc_id, cancelled = cancelled) $
   else $
-    vars = var_list 
-  
+    vars = var_list
+
   for v = 0, n_elements(vars) - 1 do begin
     var = vars[v]
-    
+
     ns = var.ns
     nl = var.nl
     nb = var.nb
@@ -473,20 +473,24 @@ pro nrs_nc_get_data, filename, out_name = base_name $
       ncdf_varget, nc_id, var.t_id, timar
       isCF = nrs_get_dt_from_units(timar, time_units, julian = julian, interval = interval)
       if has_date_range then begin
-        sd_off = min(abs(julian - sd), sd_ix) 
-        ed_off = min(abs(julian - ed), ed_ix)
-        if sd lt julian[0] then sd_ix = 0
-        if ed gt julian[-1] then ed_ix = nb - 1
+        sd_ix = 0
+        ed_ix = nb - 1
+        if interval ge 86400 then begin
+          sd_off = min(abs(julian - sd), sd_ix)
+          ed_off = min(abs(julian - ed), ed_ix)
+          if sd lt julian[0] then sd_ix = 0
+          if ed gt julian[-1] then ed_ix = nb - 1
+        endif
         julian = julian[sd_ix : ed_ix]
         nb = ed_ix - sd_ix + 1
       endif
-     
+
       nrs_get_days_indices, julian, dmbands = dmbands, dybands = dybands, doy = doy
       dmbands = fix(total(dmbands, /cum)) - 1
       dybands = fix(total(dybands, /cum)) - 1
       caldat, julian, mm, dd, yy, hh, mn, ss
     endif
-  
+
     ; now spatial extent
     nrs_set_progress_property, prog_obj, title = 'Loading coordinates'
     ncdf_varget, nc_id, var.y_id, lats
@@ -494,11 +498,11 @@ pro nrs_nc_get_data, filename, out_name = base_name $
     min_lat = min(lats, max = max_lat)
     min_lon = min(lons, max = max_lon)
     need_hor_mirror = (lats[n_elements(lats) - 1] - lats[0]) gt 0
-  
+
     mc = [0.0, 0.0, min_lon, max_lat]
     ps = [(max_lon - min_lon) / (ns - 1), (max_lat - min_lat) / (nl - 1)]
     mi = envi_map_info_create(/geographic, mc = mc, ps = ps)
-    
+
     nrs_set_progress_property, prog_obj, title = 'Converting ' + var.name
     nrs_nc_get_varatt, nc_id, var.vid $
                      , units = unit_desc, missing_value = nodata, desc = var_desc $
@@ -520,7 +524,7 @@ pro nrs_nc_get_data, filename, out_name = base_name $
       do_offset = 0
       dt = var.data_type
     endif
-  
+
     ; open the output for writing
     openw, unit, output_name, /get_lun
 
@@ -530,11 +534,11 @@ pro nrs_nc_get_data, filename, out_name = base_name $
 ;    nsstep = chunking[0]
 ;    nr_chunk_x = ceil(1.0 * ns / nsstep)
 ;    nr_chunk_y = ceil(1.0 * nl / nlstep)
-;    last_chunk_ns = ns - (nr_chunk_x - 1) * nsstep 
+;    last_chunk_ns = ns - (nr_chunk_x - 1) * nsstep
 ;    last_chunk_nl = nl - (nr_chunk_y - 1) * nlstep
     nsstep = ns
     nlstep = 1
-    
+
     ; assume BSQ organisation for now
     buf = make_array(nsstep, type = dt)
     var_cnt = [nsstep, nlstep]
@@ -549,48 +553,48 @@ pro nrs_nc_get_data, filename, out_name = base_name $
         var_offset = [0, 0, 0, sd_ix]
       endif
     endif
-    nb = nb eq 0 ? 1 : nb 
-    
+    nb = nb eq 0 ? 1 : nb
+
     for b = sd_ix, ed_ix do begin
       if nb gt 1 then if nrs_update_progress(prog_obj, b - sd_ix, nb, cancelled = cancelled, /console) then return
       for line = 0, nl - 1 do begin
         ; if pixels run from bottom to top, read from bottom
         curline = line
         if need_hor_mirror then curline = nl - line - 1
-      
+
         if b gt 0 then var_offset[-1] = b
         var_offset[1] = curline
         ncdf_varget, nc_id, var.vid, buf, count = var_cnt, offset = var_offset  ; read next line
         if nz eq 1 then buf = reform(buf, ns, nlstep, /overwrite)
-        
+
         if nodata_set then ndix = where(buf eq nodata, nd_cnt)
         if do_scale || do_offset then begin
           if do_scale then buf *= scale_factor
           if do_offset then buf += offset
           if nd_cnt gt 0 then buf[ndix] = nodata
         endif
-        
+
         ; TODO: check for 2D-coord vars; for north oriented we are OK here
         if var.px_id ge 0 && var.py_id ge 0 then begin
           if strlen(gm) gt 0 then begin
             gm_id = ncdf_varid(nc_id, gm)
-            
+
             nrs_nc_get_varatt, nc_id, gm_id, pole_lat = pole_lat, pole_lon = pole_lon
-  
+
             ; only rotate / resample if needed
             if n_elements(pole_lat) gt 0 then begin
               if ~(abs(pole_lat - 90) lt 0.000001) then begin
-                ncdf_varget, nc_id, var.px_id, lons 
-                ncdf_varget, nc_id, var.py_id, lats 
+                ncdf_varget, nc_id, var.px_id, lons
+                ncdf_varget, nc_id, var.py_id, lats
               endif
             endif
           endif
         endif
-        
+
         writeu, unit, buf   ; write to disk
       endfor  ; line
     endfor  ; b (band)
-      
+
     ; build band names
     bnames = var.name
     if nb gt 1 then begin
@@ -618,28 +622,28 @@ pro nrs_nc_get_data, filename, out_name = base_name $
             , bnames = bnames $
             , map_info = mi $
             , data_ignore_value = nodata
-  
+
   endfor ; v
-  
+
   ncdf_close, nc_id  ; done reading; close the nc file
 end
 
 function nrs_yyyymmdd_to_julian, ymd
   compile_opt idl2, logical_predicate
-  
+
   y = fix(ymd / 10000)
   m = fix((ymd - y * 10000L) / 100)
   d = fix(ymd - y * 10000L - m * 100)
   t = ymd - y * 10000L - m * 100 - d
   m = m > 1
   d = d > 1
-  
+
   return, julday(m, d, y) + t
 end
 
 ;+
 ; :Description:
-;    Calculate the start date and end date of the start and end offsets in domain of time_units 
+;    Calculate the start date and end date of the start and end offsets in domain of time_units
 ;
 ; :Returns:
 ;   <ul>
@@ -647,7 +651,7 @@ end
 ;   <li> 1        the conversion was succesful for CF compliant file
 ;   <li> 2        the conversion was succesful for non-CF compliant file
 ;   </ul>
-;    
+;
 ; :Params:
 ;    timar : in, required
 ;      Array with numerical value indicating all dates and time
@@ -667,13 +671,14 @@ end
 ;-
 function nrs_get_dt_from_units, timar, time_units, julian = julian, interval = interval, period = period
   compile_opt idl2, logical_predicate
-  
+
   ; first determine the absolute start date and the time interval
   periods = ['yr', 'year', 'years', 'mon', 'month', 'months', 'week', 'weeks', 'd', 'day', 'days', 'h', 'hr', 'hour', 'hours', 'min', 'minute', 'minutes', 's', 'sec', 'seconds']
   periods_full = ['year', 'month', 'week', 'day', 'hour', 'minute', 'second']
+  ; index into periods array. Periods larger than a day are negativ to distiguish them from sub-day periods
   piv = [-365, -365, -365, -31,-31, -31, -7, -7, 86400, 86400, 86400, 3600, 3600, 3600, 3600, 60, 60, 60, 1, 1, 1]
   parts = strsplit(time_units, ' ', /extract)
-  
+
   min_date = min(timar, max = max_date)
   if n_elements(parts) ge 3 then begin
     day = 1
@@ -684,16 +689,25 @@ function nrs_get_dt_from_units, timar, time_units, julian = julian, interval = i
     second = 0
     ix = where(periods eq parts[0], cix)
     if cix eq 0 then return, 0
-    
+
     interval = piv[ix[0]]
+    multiplier = 1
+    ; special case of subday time period, when unit specifies days
+    if interval eq 86400 then begin
+      ival = timar[1] - timar[0]
+      if abs(ival - 0.0416) gt 0.0001 then begin ; 0.0416 == 1 hour
+        interval = ival * 86400D
+        multiplier = 4
+      endif
+    endif
     if parts[1] eq 'since' then begin
       ymd = strsplit(parts[2], '-', /extract)
       ymd_cnt = n_elements(ymd)
       if ymd_cnt eq 0 then return, 0
-      
+
       switch ymd_cnt of
         3 : day = fix(ymd[2])
-        2 : month = fix(ymd[1]) 
+        2 : month = fix(ymd[1])
         1 : year = fix(ymd[0])
       endswitch
       if n_elements(parts) ge 4 then begin
@@ -714,22 +728,22 @@ function nrs_get_dt_from_units, timar, time_units, julian = julian, interval = i
           -7 : julian = (double(-interval) * timar * 7) / 86400D + jd
         endcase
       endif $
-      else julian = (double(interval) * timar) / 86400D + jd
-      
+      else julian = (double(interval) * timar * multiplier) / 86400D + jd
+
       return, 1
     endif else if parts[1] eq 'as' then begin
       ; unit:day as %Y%m%d.%f
       ;   assume %4d%2d%2d.%0.f
       julian = nrs_yyyymmdd_to_julian(timar)
-      
+
       if n_elements(timar) eq 1 then interval = 0 $
       else  interval = (julian[1] - julian[0]) * 86400D
-      
+
       return, 2 ; indicate non CF compliant
     endif
-    
+
   endif
-  
+
   return, 0
 end
 
@@ -750,7 +764,7 @@ end
 pro nrs_nc_import, folder, DN = DN
   compile_opt idl2, logical_predicate
 
-  ; outer progress indicator  
+  ; outer progress indicator
   progressBar = Obj_New("PROGRESSBAR", background = 'white', color = 'green' $
                         , ysize = 15, title = 'Importing netCDF files to ENVI' $
                         , /fast_loop $
@@ -776,18 +790,18 @@ pro nrs_nc_import, folder, DN = DN
 
   if obj_valid(progressBar) gt 0 then progressBar -> Destroy
   if obj_valid(progressInner) gt 0 then progressInner -> Destroy
-  
+
 end
 
 function nrs_nc_def_chunk, xs, ys
   compile_opt idl2
-  
+
   tot = xs * ys
   chunks = tot / 2 ^ 22 ; default chunk size (nc 4.1) == 4MB
   dimxy = ceil(sqrt(chunks))
-  
+
   xsize = dimxy eq 0 ? xs : 1 + xs / dimxy
   ysize = dimxy eq 0 ? ys : 1 + ys / dimxy
-  
+
   return, [xsize, ysize]
 end
