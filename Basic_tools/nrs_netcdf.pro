@@ -697,7 +697,7 @@ function nrs_get_dt_from_units, timar, time_units, julian = julian, interval = i
       ival = timar[1] - timar[0]
       if abs(ival - 0.0416) gt 0.0001 then begin ; 0.0416 == 1 hour
         interval = ival * 86400D
-        multiplier = 4
+        multiplier = 86400D / interval
       endif
     endif
     if parts[1] eq 'since' then begin
