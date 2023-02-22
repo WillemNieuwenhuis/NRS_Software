@@ -64,7 +64,8 @@ end
 ;+
 ; :Description:
 ;    Calculate the class separability. The separability is calculated using
-;    the divergence formula of Swain and Davis (1978, pag 168, formula 3.33).
+;    the divergence formula of Swain and Davis ( Remote Sensing: The Quantitative
+;    Approach, 1978, pag 168, formula 3.33).
 ;
 ; :Params:
 ;    stack : in
