@@ -6,20 +6,20 @@ function parse_readme, folder
   if file_count eq 0 then begin
     return, []
   endif
-  
+
   ; Only one readme expected, but select the first anyway
   xml = xml_files[0]
   p = obj_new('IDLffXMLDOMDocument')
-  p->load, filename = xml, schema_checking = 0, /quiet
+  p.load, filename = xml, schema_checking = 0, /quiet
 
-  oTopLevel = p->getDocumentElement() ;return root IDLffXMLDOMDocument
+  oTopLevel = p.getDocumentElement() ; return root IDLffXMLDOMDocument
 
   files = []
-  node = otoplevel->getElementsByTagName('FILE')
-  nr_files = node->getlength()
+  node = oTopLevel.getElementsByTagName('FILE')
+  nr_files = node.getlength()
   for i = 0, nr_files - 1 do begin
-    item = (node->item(i))->getFirstChild()
-    filename = item->getNodeValue()
+    item = (node.item(i)).getFirstChild()
+    filename = item.getNodeValue()
     if filename.Matches('_R[0-9]{1,2}C[0-9]{1,2}-') then begin
       files = [files, filename]
     endif
@@ -27,8 +27,8 @@ function parse_readme, folder
   files = files.extract('.*(MUL|PAN).*_(R[0-9]{1,2}C[0-9]{1,2})-.*', /sub)
   ; sort data by rowcol
   files = colsort(files, 2)
-  rowcol_all = files[2,*]
-  
+  rowcol_all = files[2, *]
+
   rc_uniq = rowcol_all[uniq(rowcol_all)]
   gs_files = make_array(2, n_elements(rc_uniq), /string)
   for rc = 0, n_elements(rc_uniq) - 1 do begin
@@ -50,7 +50,7 @@ end
 ;+
 ; :Description:
 ;    Run the Gramm-Schmidt pan-sharpening on
-;    WorldView2 multispectral and panchromatric data  
+;    WorldView2 multispectral and panchromatric data
 ;
 ; :Params:
 ;    root_folder: indicate the folder containing the data folders for the PAN data and
@@ -58,19 +58,31 @@ end
 ;       fe: <local folder>\1_104001008BC29100\015975768010_01_003\015975768010_01_003\015975768010_01
 ;
 ; :Keywords:
-;   resample_method: 'Nearest Neighbor', 'Bilinear', 'Cubic Convolution' 
+;   resample_method: in, optional, default='Nearest Neighbor'
+;     'Nearest Neighbor', 'Bilinear', 'Cubic Convolution'
+;   overwrite: in, optional, default = off
+;     When true any pre-existing output will be removed before processing
+;   bands: in, optional, default = all bands
+;     if specified only process the bands in this list
+;   out_folder: in, optional, default= <root_folder>\pan_sharp
+;     Specify a different output folder
 ;
 ; :Author: nieuwenhuis
-; 
+;
 ; :History:
 ;   - created september 2023
 ;-
-pro GS_pan_worldview2_batch, root_folder, resample_method = resample, overwrite = overwrite
+pro GS_pan_worldview2_batch, root_folder $
+      , resample_method = resample $
+      , overwrite = overwrite $
+      , bands = bands $
+      , out_folder = out_folder
   compile_opt idl2, logical_predicate
 
   e = envi(/headless)
 
-  out_folder = root_folder + path_sep() + 'pan_sharp'
+  if ~arg_present(out_folder) then $
+    out_folder = root_folder + path_sep() + 'pan_sharp'
   if ~file_test(out_folder, /directory) then $
     file_mkdir, out_folder
   raw_files = file_search(count = file_count, out_folder + path_sep() + '*.*')
@@ -84,43 +96,46 @@ pro GS_pan_worldview2_batch, root_folder, resample_method = resample, overwrite 
 
   Task = ENVITask('GramSchmidtPanSharpening')
   Task.sensor = 'worldview2'
-  if arg_present(resample_method) then $
-    Task.resampling = resample    ; default = bilinear
+  if arg_present(resample) then $
+    Task.resampling = resample ; default = bilinear
 
-  nr_files = n_elements(file_list[0,*])
+  nr_files = n_elements(file_list[0, *])
   for f = 0, nr_files - 1 do begin
     mul_file = root_folder + path_sep() + file_list[1, f]
-    outname = out_folder + path_sep() + getoutname(file_basename(mul_file), ext = '.tif', postfix = '_gs')
+    outname = out_folder + path_sep() + getOutname(file_basename(mul_file), ext = '.tif', postfix = '_gs')
     ; skip processing if output is already created.
     if file_test(outname, /regular) then begin
       print, 'Skipping: ', mul_file
       continue
     endif
- 
-    mul_raster = e.OpenRaster(mul_file)
-    mul_rgbi = ENVISubsetRaster(mul_raster, BANDS=[1, 2, 4, 6]) ; B,G,R,NIR 
+
+    mul_raster = e.openRaster(mul_file)
+    if ~arg_present(bands) then $
+      bands = indgen(mul_raster.nbands)
+    mul_rgbi = ENVISubsetRaster(mul_raster, bands = bands) 
 
     pan_file = root_folder + path_sep() + file_list[0, f]
-    pan_raster = e.OpenRaster(pan_file)
+    pan_raster = e.openRaster(pan_file)
 
     Task.input_low_resolution_raster = mul_rgbi
     Task.input_high_resolution_raster = pan_raster
-    Task.output_raster_uri = ''  ; leave empty, we are creating tiff file instead
+    Task.output_raster_uri = '' ; leave empty, we are creating tiff file instead
 
-    Task.Execute
-    
+    Task.execute
+
     raster = Task.output_raster
     raster.export, outname, 'TIFF'
 
     ; remove temporary large data files
-    e.CleanupTemporaryWorkspace
+    e.cleanupTemporaryWorkspace
   endfor
-  
 end
 
 pro gs_batch
-;  GS_pan_worldview2_batch, 'F:\Data\Tiejun\1_104001008BC29100\015975768010_01_003\015975768010_01_003\015975768010_01'
-;  GS_pan_worldview2_batch, 'F:\Data\Tiejun\2_104001008AB0C300\015975739010_01_003\015975739010_01_003\015975739010_01'
-  GS_pan_worldview2_batch, 'F:\Data\Tiejun\3_1040010089383500\015975757010_01_003\015975757010_01_003\015975757010_01'
-  GS_pan_worldview2_batch, 'F:\Data\Tiejun\4_1040010089C37300\015975756010_01_003\015975756010_01_003\015975756010_01'
+  compile_opt idl2
+  ; GS_pan_worldview2_batch, 'F:\Data\Tiejun\1_104001008BC29100\015975768010_01_003\015975768010_01_003\015975768010_01', bands = [1, 2, 4, 6] ; B,G,R,NIR
+  ; GS_pan_worldview2_batch, 'F:\Data\Tiejun\2_104001008AB0C300\015975739010_01_003\015975739010_01_003\015975739010_01', bands = [1, 2, 4, 6]
+;  GS_pan_worldview2_batch, 'F:\Data\Tiejun\3_1040010089383500\015975757010_01_003\015975757010_01_003\015975757010_01', bands = [1, 2, 4, 6]
+;  GS_pan_worldview2_batch, 'F:\Data\Tiejun\4_1040010089C37300\015975756010_01_003\015975756010_01_003\015975756010_01', bands = [1, 2, 4, 6]
+  GS_pan_worldview2_batch, 'E:\Data\Tiejun\Masai Mara WV2 20201008\015997558010_01_003\015997558010_01_003\015997558010_01'
 end

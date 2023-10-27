@@ -6,26 +6,20 @@ pro nrs_sentinel_config, sen2cor = sen2cor
   if ~isOK then begin
     file_mkdir, config_path
   endif
-
-  
-
 end
-
 
 pro nrs_sentinel2_run_sen2cor, folder
   compile_opt idl2, logical_predicate
 
-  
   config_path = getenv('homedrive') + getenv('homepath') + path_sep() + 'nrs_sentinel'
   isOK = file_test(config_path, /dir)
   if ~isOK then begin
-    file_mkdir, config_path 
+    file_mkdir, config_path
   endif
-  
-  
+
   pushd, folder
 
-  sen2cor = "E:\temp\Sen2Cor-2.4.0-win64\L2A_Process.bat " + folder
+  sen2cor = 'E:\temp\Sen2Cor-2.4.0-win64\L2A_Process.bat ' + folder
 
   spawn, sen2cor, unit = unit
   print, 'File handle=', unit
@@ -53,7 +47,7 @@ function nrs_sentinel2_level, base_folder, level_str = level_str
 
   level_str = ''
   level = -1
-  
+
   pattern = 'MTD_MSIL'
   meta_file = nrs_find_images(base_folder, pattern, ext = 'xml')
   if n_elements(meta_file) eq 1 then begin
@@ -64,7 +58,7 @@ function nrs_sentinel2_level, base_folder, level_str = level_str
       level = fix(level_str)
     endif
   endif
-  
+
   return, level
 end
 
@@ -90,47 +84,47 @@ pro nrs_sentinel_xml_csy, xml, map_info = map_info, res_dims = res_dims, sense_d
   compile_opt idl2, logical_predicate
 
   p = obj_new('IDLffXMLDOMDocument')
-  p->load, filename = xml, schema_checking = 0, /quiet
+  p.load, filename = xml, schema_checking = 0, /quiet
 
-  oTopLevel = p->getDocumentElement() ;return root IDLffXMLDOMDocument
+  oTopLevel = p.getDocumentElement() ; return root IDLffXMLDOMDocument
 
   ; get the sensing date (at start time)
-  node = otoplevel->getElementsByTagName('SENSING_TIME')
-  item = node->item(0)
-  dt = (item->getFirstChild())->getNodeValue()
+  node = oTopLevel.getElementsByTagName('SENSING_TIME')
+  item = node.item(0)
+  dt = (item.getFirstChild()).getNodeValue()
   parts = strsplit(dt, 'T', /extract)
   parts = strsplit(parts[0], '-', /extract)
   sense_date = strjoin(parts)
 
   ; get the projection information (EPSG number)
-  prjnode = oTopLevel->getElementsByTagName('HORIZONTAL_CS_CODE')
-  prjitem = prjnode->item(0)
-  prj = (prjitem->getFirstChild())->getNodeValue()
+  prjnode = oTopLevel.getElementsByTagName('HORIZONTAL_CS_CODE')
+  prjitem = prjnode.item(0)
+  prj = (prjitem.getFirstChild()).getNodeValue()
   parts = strsplit(prj, ':', /extract)
   epsg = long(parts[1])
 
   ; get projection details
-  metaList = oTopLevel->getElementsByTagName('Tile_Geocoding')
+  metaList = oTopLevel.getElementsByTagName('Tile_Geocoding')
   ; how many KeyMeta tags in documents
-  metaElement = metaList->item(0)
+  metaElement = metaList.item(0)
 
   ; get the tiepoints for the different resolutions
-  positions = metaElement->getElementsByTagname('Geoposition')
+  positions = metaElement.getElementsByTagname('Geoposition')
   map_info = []
-  for c = 0L, positions->getLength() - 1L do begin
-    node = positions->item(c)
-    items = node->getElementsByTagname('*')
-    attr = node->getAttributes()
-    attritem= attr->item(0)
-    ps = fix(attritem->getNodeValue())
+  for c = 0l, positions.getLength() - 1l do begin
+    node = positions.item(c)
+    items = node.getElementsByTagname('*')
+    attr = node.getAttributes()
+    attritem = attr.item(0)
+    ps = fix(attritem.getNodeValue())
     ps = [ps, ps]
     mc = dblarr(4)
-    mc[0:1] = 0
-    for k = 0L, items->getLength() - 1L do begin
-      item = items->item(k)
-      name = item->getTagname()
-      dataList = item->getFirstChild()
-      value = dataList->getNodeValue()
+    mc[0 : 1] = 0
+    for k = 0l, items.getLength() - 1l do begin
+      item = items.item(k)
+      name = item.getTagname()
+      dataList = item.getFirstChild()
+      value = dataList.getNodeValue()
       if name eq 'ULX' then mc[2] = double(value)
       if name eq 'ULY' then mc[3] = double(value)
     endfor
@@ -138,20 +132,20 @@ pro nrs_sentinel_xml_csy, xml, map_info = map_info, res_dims = res_dims, sense_d
   endfor
 
   ; get the X and Y dimensions for the different resolutions
-  positions = metaElement->getElementsByTagname('Size')
-  res_dims = lonarr(2,3)
-  for c = 0L, positions->getLength() - 1L do begin
-    node = positions->item(c)
-    items = node->getElementsByTagname('*')
-    attr = node->getAttributes()
-    attritem = attr->item(0)
-    ps = fix(attritem->getNodeValue())
+  positions = metaElement.getElementsByTagname('Size')
+  res_dims = lonarr(2, 3)
+  for c = 0l, positions.getLength() - 1l do begin
+    node = positions.item(c)
+    items = node.getElementsByTagname('*')
+    attr = node.getAttributes()
+    attritem = attr.item(0)
+    ps = fix(attritem.getNodeValue())
     ix = where(ps eq [10, 20, 60])
-    for k = 0L, items->getLength() - 1L do begin
-      item = items->item(k)
-      name = item->getTagname()
-      dataList = item->getFirstChild()
-      value = dataList->getNodeValue()
+    for k = 0l, items.getLength() - 1l do begin
+      item = items.item(k)
+      name = item.getTagname()
+      dataList = item.getFirstChild()
+      value = dataList.getNodeValue()
       if name eq 'NCOLS' then res_dims[k, ix] = long(value)
       if name eq 'NROWS' then res_dims[k, ix] = long(value)
     endfor
@@ -164,22 +158,21 @@ pro nrs_sentinel_meta, xml, scale = scale, key = xml_key
   compile_opt idl2, logical_predicate
 
   if n_elements(xml_key) eq 0 then xml_key = 'L2A_BOA_QUANTIFICATION_VALUE'
-  
-  p = obj_new('IDLffXMLDOMDocument')
-  p->load, filename = xml, schema_checking = 0, /quiet
 
-  oTopLevel = p->getDocumentElement() ;return root IDLffXMLDOMDocument
+  p = obj_new('IDLffXMLDOMDocument')
+  p.load, filename = xml, schema_checking = 0, /quiet
+
+  oTopLevel = p.getDocumentElement() ; return root IDLffXMLDOMDocument
 
   ; get the sensing date (at start time)
-  node = otoplevel->getElementsByTagName(xml_key)
-  if node->getlength() eq 0 then return
-  
-  item = node->item(0)
-  scale = long( (item->getFirstChild())->getNodeValue())
-  
+  node = oTopLevel.getElementsByTagName(xml_key)
+  if node.getlength() eq 0 then return
+
+  item = node.item(0)
+  scale = long((item.getFirstChild()).getNodeValue())
+
   obj_destroy, p
 end
-
 
 ;+
 ; :Description:
@@ -210,14 +203,14 @@ function nrs_convert_S2_geokeys, fid
   endif
 
   geokeys = { $
-    ModelPixelScaleTag: [mi.ps[0], mi.ps[1], 0d], $
-    ModelTiepointTag: [0, 0, 0, xm, ym, 0], $
-    GTModelTypeGeoKey: 1, $           ; (ModelTypeProjected)
-    GTRasterTypeGeoKey: 1, $          ; (RasterPixelIsArea)
-    GeogLinearUnitsGeoKey: 9001, $    ; (Linear_Meter)
-    GeogAngularUnitsGeokey: 9102, $   ; (Angular Degree)
-    ProjectedCSTypeGeoKey: syscode $  ; UTM code
-  }
+    modelpixelscaletag: [mi.ps[0], mi.ps[1], 0d], $
+    modeltiepointtag: [0, 0, 0, xm, ym, 0], $
+    gtmodeltypegeokey: 1, $ ; (ModelTypeProjected)
+    gtrastertypegeokey: 1, $ ; (RasterPixelIsArea)
+    geoglinearunitsgeokey: 9001, $ ; (Linear_Meter)
+    geogangularunitsgeokey: 9102, $ ; (Angular Degree)
+    projectedcstypegeokey: syscode $ ; UTM code
+    }
 
   return, geokeys
 end
@@ -229,10 +222,7 @@ pro nrs_sentinel_product_error, folder = folder, multiple = multiple
     print, 'No Sentinel L2 product found' $
   else $
     print, 'No Sentinel L2 product found in: ' + folder
-
 end
-
- 
 
 ;+
 ; :Description:
@@ -241,27 +231,26 @@ end
 ;
 ; :Params:
 ;    folders : in, required
-;      A string or array of strings indicating the full path(s) of sentinel folder(s). 
+;      A string or array of strings indicating the full path(s) of sentinel folder(s).
 ;      The base folder of the sentinel datastructure. The GRANULE folder should be found in this base folder
 ;
 ;
 ; :Author: nieuwenhuis
-; 
+;
 ; :History:
 ;   - august 2017: created
 ;-
 pro nrs_convert_S2L2_to_S2ENVI, folders
   compile_opt idl2, logical_predicate
-  
+
   multiple = n_elements(folders) gt 1
   for fold = 0, n_elements(folders) - 1 do begin
-    
     folder = folders[fold]
     if multiple then print, 'starting: ', folder
-    
+
     ; find tile data folder and extract meta data
-    tile_folder = file_search(count = fc, folder + '\granule\s2*')    ; old structure
-    if fc eq 0 then tile_folder = file_search(folder + '\granule\l2*')  ; new structure
+    tile_folder = file_search(count = fc, folder + '\granule\s2*') ; old structure
+    if fc eq 0 then tile_folder = file_search(folder + '\granule\l2*') ; new structure
     meta_file = nrs_find_images(tile_folder, ext = 'xml')
     if n_elements(meta_file) ne 1 then begin
       nrs_sentinel_product_error, folder = folder, multiple = multiple
@@ -269,20 +258,20 @@ pro nrs_convert_S2L2_to_S2ENVI, folders
     endif
     meta_xml = meta_file[0]
     nrs_sentinel_xml_csy, meta_xml, map_info = map_info, res_dims = res_dims, sense_date = sense_date
-  
+
     folder_10m = tile_folder + path_sep() + 'IMG_DATA\R10m'
     folder_20m = tile_folder + path_sep() + 'IMG_DATA\R20m'
-    folder_scl  = tile_folder + path_sep() + 'IMG_DATA'    ; old structure
-    if fc eq 0 then folder_scl  = tile_folder + path_sep() + 'IMG_DATA\R20m'  ; new structure
+    folder_scl = tile_folder + path_sep() + 'IMG_DATA' ; old structure
+    if fc eq 0 then folder_scl = tile_folder + path_sep() + 'IMG_DATA\R20m' ; new structure
     flist = [folder_10m[0], folder_20m[0], folder_scl[0]]
     pattern = ['', '', 'SCL']
-  
+
     extract_bands = []
     scl_file = ''
     ; Add ENVI headers if needed
     total_files = 0
     for fo = 0, n_elements(flist) - 1 do begin
-      files = nrs_find_images(flist[fo], pattern[fo], ext = 'jp2')  ; select all spectral bands
+      files = nrs_find_images(flist[fo], pattern[fo], ext = 'jp2') ; select all spectral bands
       total_files += n_elements(files)
       if n_elements(files) gt 0 then begin
         for f = 0, n_elements(files) - 1 do begin
@@ -291,7 +280,7 @@ pro nrs_convert_S2L2_to_S2ENVI, folders
           if select then extract_bands = [extract_bands, files[f]]
           if scl then begin
             scl_file = files[f]
-            mi = map_info[1]  ; force to 20m
+            mi = map_info[1] ; force to 20m
           endif
           nrs_sentinel_jp2_add_header, files[f], mapinfo = mi
         endfor
@@ -300,9 +289,7 @@ pro nrs_convert_S2L2_to_S2ENVI, folders
     if total_files eq 0 then begin
       nrs_sentinel_product_error, tile_folder, multiple
     endif
-    
   endfor
-
 end
 
 ;+
@@ -328,18 +315,18 @@ pro nrs_sentinel_stack, folder, out_folder, gain, resolution = resolution, dn_to
   compile_opt idl2, logical_predicate
 
   ; find tile data folder and extract meta data
-  tile_folder = file_search(count = fc, folder + '\granule\s2*')    ; old structure
-  if fc eq 0 then tile_folder = file_search(folder + '\granule\l2*')  ; new structure
+  tile_folder = file_search(count = fc, folder + '\granule\s2*') ; old structure
+  if fc eq 0 then tile_folder = file_search(folder + '\granule\l2*') ; new structure
 
   resol_lut = [10, 20, 60]
   imgfolder = [tile_folder, tile_folder, tile_folder] + ['\IMG_DATA\R10m', '\IMG_DATA\R20m', '\IMG_DATA\R60m']
 
   res_ix = where(resol_lut eq resolution)
   folder_res = imgfolder[res_ix]
-  pattern = '_B'  ; only select the regular spectral bands
+  pattern = '_B' ; only select the regular spectral bands
   fi = file_info(folder_res)
   if ~fi.exists then return ; folder does not exist: do nothing
-  
+
   files = nrs_find_images(folder_res, pattern, ext = 'jp2')
 
   nrfiles = n_elements(files)
@@ -349,10 +336,20 @@ pro nrs_sentinel_stack, folder, out_folder, gain, resolution = resolution, dn_to
   files = files[six] ; put the bands in correct order
 
   ; prepare arrays for layer stacking
+  ; if B1 is in the list remove it, but only for 20m resolution
   case res_ix of
-    0 : bnames = ['02', '03', '04', '08']
-    1 : bnames = ['02', '03', '04', '05', '06', '07', '8A', '11', '12']
-    2 : bnames = ['01', '02', '03', '04', '05', '06', '07', '8A', '9', '11', '12']
+    0: bnames = ['02', '03', '04', '08']
+    1: begin
+      bnames = ['02', '03', '04', '05', '06', '07', '8A', '11', '12']
+      newlist = []
+      for f = 0, n_elements(files) - 1 do begin
+        fn = files[f]
+        if strmid(fn, bpos[f], 4) ne '_B01' then $
+          newlist = [newlist, fn]
+      endfor
+      files = newlist
+    end
+    2: bnames = ['01', '02', '03', '04', '05', '06', '07', '8A', '9', '11', '12']
   endcase
 
   ; stack bands
@@ -367,7 +364,6 @@ pro nrs_sentinel_stack, folder, out_folder, gain, resolution = resolution, dn_to
       envi_file_query, fid_cur, dims = dims, data_type = dt
       mi = envi_get_map_info(fid = fid_cur)
     endif
-
     fids = [fids, fid_cur]
   endfor
 
@@ -377,12 +373,12 @@ pro nrs_sentinel_stack, folder, out_folder, gain, resolution = resolution, dn_to
   tmpfile = nrs_get_temporary_filename(root = folder)
   if keyword_set(dn_to_reflection) then sname = tmpfile else sname = outname
   envi_doit, 'envi_layer_stacking_doit', fid = fids, pos = pos $
-    , out_name = sname $
-    , dims = all_dims $
-    , out_dt = dt, out_bname = bnames $
-    , out_proj = mi.proj, out_ps = mi.ps $
-    , r_fid = fid_stack $
-    , /invisible, /no_realize
+  , out_name = sname $
+  , dims = all_dims $
+  , out_dt = dt, out_bname = bnames $
+  , out_proj = mi.proj, out_ps = mi.ps $
+  , r_fid = fid_stack $
+  , /invisible, /no_realize
 
   for fi = 0, nr_bands - 1 do $
     envi_file_mng, id = fids[fi], /remove
@@ -391,32 +387,30 @@ pro nrs_sentinel_stack, folder, out_folder, gain, resolution = resolution, dn_to
     ; fid_stack now points to the temp output. This is used as input for the gain correction giving a new output
     ; make sure the output type is set to float (out_dt == 4)
     envi_doit, 'gainoff_doit', dims = dims, fid = fid_stack $
-      , gain = fltarr(nr_bands) + gain, offset = fltarr(nr_bands), pos = lindgen(nr_bands) $
-      , out_dt = 4, out_name = outname, r_fid = r_fid
+    , gain = fltarr(nr_bands) + gain, offset = fltarr(nr_bands), pos = lindgen(nr_bands) $
+    , out_dt = 4, out_name = outname, r_fid = r_fid
 
     envi_assign_header_value, fid = r_fid, keyword = 'band names', value = bnames
     envi_write_file_header, r_fid
-    envi_file_mng, id = r_fid, /remove       ; close file
-    envi_file_mng, id = fid_stack, /delete   ; close and delete the temp file
+    envi_file_mng, id = r_fid, /remove ; close file
+    envi_file_mng, id = fid_stack, /delete ; close and delete the temp file
   endif else begin
-    envi_file_mng, id = fid_stack, /remove   ; just close the new file
+    envi_file_mng, id = fid_stack, /remove ; just close the new file
   endelse
-
 end
-
 
 ;+
 ; :Description:
 ;    Create ENVI stacks for the 10m and 20m atmospherically corrected Sentinel2 bands (L2A product).
 ;    The 10m stack contains: B2, B3, B4, B8, in that order
 ;    The 20m stack contains: B2, B3, B4, B5, B6, B7, B8A, B11, B12, in that order.
-;    
-;    The data in the corrected bands is still in DN. Optionally this can be corrected by reading the 
-;    scale factor from the metadata and applying the correct gain to get actual reflectance values. 
-;    
+;
+;    The data in the corrected bands is still in DN. Optionally this can be corrected by reading the
+;    scale factor from the metadata and applying the correct gain to get actual reflectance values.
+;
 ;    The band names reflect the Sentinel2 band.
-;    
-;    It is assumed that the Sentinel bands already have ENVI headers. These can be added by using <i>nrs_S2_L2_to_ENVI</i>
+;
+;    It is assumed that the Sentinel bands already have ENVI headers. These can be added by using <i>nrs_S2L2_to_ENVI</i>
 ;
 ; :Params:
 ;    folders : in, required
@@ -427,7 +421,7 @@ end
 ;
 ; :Keywords:
 ;    dn_to_reflection : in, optional, default = no
-;      Convert the DN numbers to actual reflection values   
+;      Convert the DN numbers to actual reflection values
 ;
 ; :Author: nieuwenhuis
 
@@ -438,7 +432,6 @@ pro nrs_convert_S2ENVI_to_ENVIstack, folders, out_folder, dn_to_reflection = dn_
   compile_opt idl2, logical_predicate
 
   for fold = 0, n_elements(folders) - 1 do begin
-    
     folder = folders[fold]
 
     gain = 1
@@ -446,7 +439,7 @@ pro nrs_convert_S2ENVI_to_ENVIstack, folders, out_folder, dn_to_reflection = dn_
     if keyword_set(dn_to_reflection) then begin
       meta_top = nrs_find_images(folder, 'SAFL2', ext = 'xml')
       if n_elements(meta_top) ne 1 then begin
-        ds_folder = file_search(folder + '\datastrip\ds*')  ; new structure
+        ds_folder = file_search(folder + '\datastrip\ds*') ; new structure
         ds_folder = ds_folder[0]
         meta_top = nrs_find_images(ds_folder, 'MTD_DS', ext = 'xml')
         if n_elements(meta_top) ne 1 then begin
@@ -468,9 +461,7 @@ pro nrs_convert_S2ENVI_to_ENVIstack, folders, out_folder, dn_to_reflection = dn_
     ; only stack 10m and 20m, skip 60m
     nrs_sentinel_stack, folder, out_folder, gain, resolution = 10, dn_to_reflection = dn_to_reflection
     nrs_sentinel_stack, folder, out_folder, gain, resolution = 20, dn_to_reflection = dn_to_reflection
-
   endfor
-
 end
 
 ;+
@@ -483,11 +474,11 @@ end
 ;    folder : in, required
 ;      The folder containing the ENVI images to convert
 ;    out_folder : out, required
-;      The folder to store the converted tiff files 
-;      
+;      The folder to store the converted tiff files
+;
 ; :Keywords:
 ;    verbose : in, optional, default = yes
-;      if set (to non-zero) then show warnings and errors. If set to zero then do not show warnings and errors 
+;      if set (to non-zero) then show warnings and errors. If set to zero then do not show warnings and errors
 ;
 ; :history:
 ;   september 2016: WN, created
@@ -504,12 +495,12 @@ pro nrs_convert_S2ENVI_to_tiff, folder, out_folder, verbose = verbose
       void = error_message('Please specify an existing output folder', title = 'Convert ENVI to TIFF', /error)
     return
   endif
-  
+
   pattern = '_10m,_20m,_60m'
   files = nrs_find_images(folder, pattern, ext = 'dat')
 
   for f = 0, n_elements(files) - 1 do begin
-    outname = getoutname(files[f], postfix = '_pcd', ext = '.tif')
+    outname = getOutname(files[f], postfix = '_pcd', ext = '.tif')
     name = file_basename(outname)
     outname = out_folder + path_sep() + name
     envi_open_file, files[f], r_fid = fid, /no_interactive_query, /no_realize
@@ -525,7 +516,6 @@ pro nrs_convert_S2ENVI_to_tiff, folder, out_folder, verbose = verbose
     write_tiff, outname, grid, /short, geotiff = geokeys
 
     envi_file_mng, id = fid, /remove
-
   endfor
 end
 
@@ -540,12 +530,12 @@ pro nrs_convert_S2TIFF_subset_roi, files, out_folder, clip_roi, verbose = verbos
   res_dims = [ns, nl]
 
   ; prepare for clipping
-  envi_delete_rois, /all  ; make sure no rois are defined
+  envi_delete_rois, /all ; make sure no rois are defined
   envi_restore_rois, clip_roi
   roiids = envi_get_roi_ids(fid = fid, roi_names = attr_ids)
   if roiids[0] eq -1 then begin
     if ~keyword_set(verbose) then $
-      void = error_message('ROI not suitable for this resolution: ' + string(mi.ps[0], format = '(i0)'), title = 'Sentinel L2A clipping', /error)
+      void = error_message('ROI not suitable for this resolution: ' + string(res_dims[0], format = '(i0)'), title = 'Sentinel L2A clipping', /error)
     return
   endif
   rids = envi_get_roi(roiids[0])
@@ -557,11 +547,11 @@ pro nrs_convert_S2TIFF_subset_roi, files, out_folder, clip_roi, verbose = verbos
   ns = high[0] - low[0] + 1
   nl = high[1] - low[1] + 1
   dims = [-1, low[0], high[0], low[1], high[1]]
-  grid = make_array(nb, ns, nl, type = 12)  ; 12 = unsigned 16-bit
+  grid = make_array(nb, ns, nl, type = 12) ; 12 = unsigned 16-bit
   mask = big_mask[low[0] : high[0], low[1] : high[1]]
 
   envi_convert_file_coordinates, fid, low[0], low[1], x, y, /to_map
-  geokeys.ModelTiepointTag = [0, 0, 0, x, y, 0]
+  geokeys.modeltiepointtag = [0, 0, 0, x, y, 0]
 
   for file = 0, n_elements(files) - 1 do begin
     envi_open_file, files[file], r_fid = fid, /no_interactive_query, /no_realize
@@ -569,15 +559,12 @@ pro nrs_convert_S2TIFF_subset_roi, files, out_folder, clip_roi, verbose = verbos
       data = envi_get_data(fid = fid, dims = dims, pos = b)
       grid[b, *, *] = (data * mask)
     endfor
-    
-    outname = getoutname(files[file], postfix = '_clip', ext = '.tif')
+
+    outname = getOutname(files[file], postfix = '_clip', ext = '.tif')
     outname = out_folder + path_sep() + file_basename(outname)
-  
+
     write_tiff, outname, grid, /short, geotiff = geokeys
-  
-    envi_file_mng, id = fid, /remove  ; close the opened file again
 
+    envi_file_mng, id = fid, /remove ; close the opened file again
   endfor
-
 end
-
