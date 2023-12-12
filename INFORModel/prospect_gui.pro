@@ -1070,3 +1070,19 @@ pro drawColor, drawer, color
   	Erase, Color = color
 end
 
+pro nrs_prospect_extensions_init
+  compile_opt IDL2
+
+  e = ENVI(/CURRENT)
+  e.AddExtension, 'INFORM Prospect', 'nrs_prospect_gui', PATH='NRS'
+end
+
+; For ENVI 5 compatibility
+pro nrs_prospect
+  compile_opt IDL2
+  
+  prospect_gui
+end
+
+
+
