@@ -46,6 +46,7 @@
 ;-
 pro nrs_aggregate_spectra, pnt_tbl, image $
                          , ignore_value = ignore_value $
+                         , allow_undef = allow_undef $  ; for cases where input contains undefs as valid values
                          , debug = debug $      ; not available in GUI, defaults to 0 (== No)
                          , aggr_func = aggr_func $
                          , kernel = kernel, kern_type = kern_type $
@@ -146,9 +147,12 @@ pro nrs_aggregate_spectra, pnt_tbl, image $
       specTotal[index[l] : index[l + 1] - 1, *] = envi_get_slice(fid = mapID, line = line, xs = xs, xe = xe, /bil)
     endfor
     
-    if has_undef then begin
-      ix = where(specTotal eq undef, ucnt)
-      if ucnt gt 0 then specTotal[ix] = !values.F_NAN
+    allow_undef = 1 ; for debug only, comment out or remove during normal operation
+    if ~allow_undef then begin
+      if has_undef then begin
+        ix = where(specTotal eq undef, ucnt)
+        if ucnt gt 0 then specTotal[ix] = !values.F_NAN
+      endif
     endif
 
     case aggr_ix of
@@ -158,8 +162,11 @@ pro nrs_aggregate_spectra, pnt_tbl, image $
       3  : profiles[i, *] = median(spectotal, dim = 1)  ; median automatically discards NaN values
       99 : profiles[i, *] = spectotal   ; single profile, just copy
     endcase
-    check = total(profiles[i, *])
-    valid_profiles[i] = check gt 0
+    valid_profiles[*] = 1
+    if ~allow_undef then begin
+      check = total(profiles[i, *])
+      valid_profiles[i] = check gt 0
+    endif
     
     if keyword_set(debug) then begin
       basename = 'debug' + string(i, format = '(i03)')
